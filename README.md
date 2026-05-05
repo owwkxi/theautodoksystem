@@ -1,12 +1,11 @@
 # theautodoksystem
 School project - CS PROFESSIONAL ELECTIVE 1(CSE7)
 
-# The Autodok - Quick Start Guide
+## The Autodok - Quick Start Guide
 
 
-# Get Started in 5 Minutes
 
-# Prerequisites
+## Prerequisites
 - XAMPP/WAMP installed
 - Web browser
 
@@ -15,7 +14,7 @@ School project - CS PROFESSIONAL ELECTIVE 1(CSE7)
 Extract the project to:
 - **XAMPP**: `C:/xampp/htdocs/autodok/`
 
-# Step 2: Create Database (1 minute)
+## Step 2: Create Database 
 
 1. Start Apache and MySQL in XAMPP
 2. Open: `http://localhost/phpmyadmin`
@@ -23,7 +22,7 @@ Extract the project to:
 4. Click "Import" → Choose `database/autodok_db.sql`
 5. Click "Go"
 
-# Step 3: Configure 
+## Step 3: Configure 
 
 Open `includes/config.php` and verify:
 
@@ -35,7 +34,7 @@ define('DB_NAME', 'autodok_db');
 define('APP_URL', 'http://localhost/autodok');
 ```
 
-# Step 4: Access Application (30 seconds)
+## Step 4: Access Application 
 
 Open browser and go to:
 ```
@@ -46,7 +45,7 @@ You'll be redirected to the login page.
 
 ---
 
-## Step 5: Login (30 seconds)
+## Step 5: Login 
 
 Use these demo credentials:
 
