@@ -1,0 +1,231 @@
+<?php
+/**
+ * Report Model - Version 2.0
+ * Simplified for new database schema
+ * Handles report generation and statistics
+ */
+
+class Report {
+    private $db;
+
+    public function __construct() {
+        $this->db = Database::getInstance();
+    }
+
+    /**
+     * Get dashboard statistics
+     */
+    public function getDashboardStats() {
+        $stats = [];
+
+        // Total job orders
+        $sql = "SELECT COUNT(*) as total FROM job_orders";
+        $result = $this->db->fetch($sql);
+        $stats['total_job_orders'] = $result['total'] ?? 0;
+
+        // Pending job orders
+        $sql = "SELECT COUNT(*) as total FROM job_orders WHERE status = 'pending'";
+        $result = $this->db->fetch($sql);
+        $stats['pending_job_orders'] = $result['total'] ?? 0;
+
+        // In progress job orders
+        $sql = "SELECT COUNT(*) as total FROM job_orders WHERE status = 'in_progress'";
+        $result = $this->db->fetch($sql);
+        $stats['in_progress_job_orders'] = $result['total'] ?? 0;
+
+        // Completed job orders
+        $sql = "SELECT COUNT(*) as total FROM job_orders WHERE status = 'completed'";
+        $result = $this->db->fetch($sql);
+        $stats['completed_job_orders'] = $result['total'] ?? 0;
+
+        // Total users (staff + admin)
+        $sql = "SELECT COUNT(*) as total FROM users";
+        $result = $this->db->fetch($sql);
+        $stats['total_users'] = $result['total'] ?? 0;
+
+        // Today's income
+        $sql = "SELECT SUM(total_amount) as total FROM job_orders 
+                WHERE DATE(created_at) = CURDATE() AND payment_status = 'paid'";
+        $result = $this->db->fetch($sql);
+        $stats['today_income'] = $result['total'] ?? 0;
+
+        // This month's income
+        $sql = "SELECT SUM(total_amount) as total FROM job_orders 
+                WHERE YEAR(created_at) = YEAR(CURDATE()) 
+                AND MONTH(created_at) = MONTH(CURDATE()) 
+                AND payment_status = 'paid'";
+        $result = $this->db->fetch($sql);
+        $stats['month_income'] = $result['total'] ?? 0;
+
+        // This year's income
+        $sql = "SELECT SUM(total_amount) as total FROM job_orders 
+                WHERE YEAR(created_at) = YEAR(CURDATE()) 
+                AND payment_status = 'paid'";
+        $result = $this->db->fetch($sql);
+        $stats['year_income'] = $result['total'] ?? 0;
+
+        return $stats;
+    }
+
+    /**
+     * Get income report by date range
+     */
+    public function getIncomeReport($dateFrom, $dateTo) {
+        $sql = "SELECT 
+                    DATE(created_at) as date,
+                    COUNT(*) as job_orders_count,
+                    SUM(total_amount) as total_income,
+                    SUM(CASE WHEN payment_status = 'paid' THEN total_amount ELSE 0 END) as paid_income,
+                    SUM(CASE WHEN payment_status = 'pending' THEN total_amount ELSE 0 END) as pending_income
+                FROM job_orders
+                WHERE DATE(created_at) BETWEEN ? AND ?
+                GROUP BY DATE(created_at)
+                ORDER BY DATE(created_at) ASC";
+        
+        return $this->db->fetchAll($sql, [$dateFrom, $dateTo]);
+    }
+
+    /**
+     * Get monthly income statistics
+     */
+    public function getMonthlyIncomeStats($year = null) {
+        if (!$year) $year = date('Y');
+
+        $sql = "SELECT 
+                    MONTH(created_at) as month,
+                    COUNT(*) as job_orders_count,
+                    SUM(total_amount) as total_income
+                FROM job_orders
+                WHERE YEAR(created_at) = ? AND payment_status = 'paid'
+                GROUP BY MONTH(created_at)
+                ORDER BY MONTH(created_at) ASC";
+        
+        $results = $this->db->fetchAll($sql, [$year]);
+        
+        // Fill in missing months with zero values, keyed by month number 1-12
+        $monthlyData = [];
+        for ($m = 1; $m <= 12; $m++) {
+            $monthlyData[$m] = ['month' => $m, 'job_orders_count' => 0, 'total_income' => 0];
+        }
+        foreach ($results as $row) {
+            $monthlyData[$row['month']] = $row;
+        }
+        
+        return array_values($monthlyData);
+    }
+
+    /**
+     * Get service type statistics
+     */
+    public function getServiceTypeStats($dateFrom = null, $dateTo = null) {
+        $sql = "SELECT 
+                    service_type,
+                    COUNT(*) as count,
+                    SUM(total_amount) as total_revenue
+                FROM job_orders";
+        
+        $params = [];
+        if ($dateFrom && $dateTo) {
+            $sql .= " WHERE DATE(created_at) BETWEEN ? AND ?";
+            $params[] = $dateFrom;
+            $params[] = $dateTo;
+        }
+
+        $sql .= " GROUP BY service_type ORDER BY count DESC";
+        
+        return $this->db->fetchAll($sql, $params);
+    }
+
+    /**
+     * Get payment method statistics
+     */
+    public function getPaymentMethodStats($dateFrom = null, $dateTo = null) {
+        $sql = "SELECT 
+                    payment_method,
+                    COUNT(*) as count,
+                    SUM(total_amount) as total_amount
+                FROM job_orders
+                WHERE payment_status = 'paid'";
+        
+        $params = [];
+        if ($dateFrom && $dateTo) {
+            $sql .= " AND DATE(created_at) BETWEEN ? AND ?";
+            $params[] = $dateFrom;
+            $params[] = $dateTo;
+        }
+
+        $sql .= " GROUP BY payment_method ORDER BY count DESC";
+        
+        return $this->db->fetchAll($sql, $params);
+    }
+
+    /**
+     * Get top customers
+     */
+    public function getTopCustomers($limit = 10) {
+        $sql = "SELECT 
+                    customer_name,
+                    customer_phone,
+                    COUNT(*) as total_visits,
+                    SUM(total_amount) as total_spent
+                FROM job_orders
+                GROUP BY customer_name, customer_phone
+                ORDER BY total_spent DESC
+                LIMIT ?";
+        
+        return $this->db->fetchAll($sql, [(int)$limit]);
+    }
+
+    /**
+     * Get payment status summary
+     */
+    public function getPaymentStatusSummary() {
+        $sql = "SELECT 
+                    payment_status,
+                    COUNT(*) as count,
+                    SUM(total_amount) as total_amount
+                FROM job_orders
+                GROUP BY payment_status
+                ORDER BY count DESC";
+        
+        return $this->db->fetchAll($sql);
+    }
+
+    /**
+     * Get job order status summary
+     */
+    public function getJobOrderStatusSummary() {
+        $sql = "SELECT 
+                    status,
+                    COUNT(*) as count,
+                    SUM(total_amount) as total_amount
+                FROM job_orders
+                GROUP BY status
+                ORDER BY 
+                    CASE status
+                        WHEN 'pending' THEN 1
+                        WHEN 'in_progress' THEN 2
+                        WHEN 'completed' THEN 3
+                        WHEN 'cancelled' THEN 4
+                    END";
+        
+        return $this->db->fetchAll($sql);
+    }
+
+    /**
+     * Get recent activity
+     */
+    public function getRecentActivity($limit = 10) {
+        $sql = "SELECT 
+                    al.action,
+                    al.description,
+                    al.created_at,
+                    u.username
+                FROM activity_logs al
+                LEFT JOIN users u ON al.user_id = u.id
+                ORDER BY al.created_at DESC
+                LIMIT ?";
+        
+        return $this->db->fetchAll($sql, [(int)$limit]);
+    }
+}
