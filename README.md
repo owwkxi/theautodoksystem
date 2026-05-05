@@ -9,7 +9,7 @@ School project - CS PROFESSIONAL ELECTIVE 1(CSE7)
 - XAMPP/WAMP installed
 - Web browser
 
-# Step 1: Extract Files 
+## Step 1: Extract Files 
 
 Extract the project to:
 - **XAMPP**: `C:/xampp/htdocs/autodok/`
