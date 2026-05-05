@@ -1,0 +1,58 @@
+<?php
+if (!defined('APP_ACCESS')) {
+    die('Direct access not permitted');
+}
+$p = $_SERVER['PHP_SELF'];
+?>
+<div class="sidebar">
+
+    <div class="sidebar-brand">
+        <div class="sidebar-brand-name">The Autodok</div>
+        <div class="sidebar-brand-sub">Automotive Care Services</div>
+    </div>
+
+    <div class="user-badge">
+        <i class="bi bi-person-fill badge-icon"></i>
+        <span><?php echo ucfirst($_SESSION['user_role'] ?? 'user'); ?></span>
+        <span class="bell-wrap">
+            <i class="bi bi-bell-fill"></i>
+            <span class="bell-dot"></span>
+        </span>
+    </div>
+
+    <nav class="sidebar-nav">
+        <a href="<?php echo APP_URL; ?>/views/dashboard/index.php"
+           class="nav-item <?php echo strpos($p, '/dashboard/') !== false ? 'active' : ''; ?>">
+            <i class="bi bi-grid-fill"></i>
+            <span>Dashboard</span>
+        </a>
+
+        <a href="<?php echo APP_URL; ?>/views/job_orders/index.php"
+           class="nav-item <?php echo strpos($p, '/job_orders/') !== false ? 'active' : ''; ?>">
+            <i class="bi bi-file-earmark-text"></i>
+            <span>Job Order</span>
+        </a>
+
+        <?php if (hasAnyRole(['admin'])): ?>
+        <a href="<?php echo APP_URL; ?>/views/staff/index.php"
+           class="nav-item <?php echo strpos($p, '/staff/') !== false ? 'active' : ''; ?>">
+            <i class="bi bi-people-fill"></i>
+            <span>Staff Management</span>
+        </a>
+        <?php endif; ?>
+
+        <a href="<?php echo APP_URL; ?>/views/reports/index.php"
+           class="nav-item <?php echo strpos($p, '/reports/') !== false ? 'active' : ''; ?>">
+            <i class="bi bi-file-earmark-bar-graph"></i>
+            <span>Report</span>
+        </a>
+    </nav>
+
+    <div class="sidebar-footer">
+        <a href="<?php echo APP_URL; ?>/views/auth/logout.php" class="nav-item logout">
+            <i class="bi bi-box-arrow-left"></i>
+            <span>Logout</span>
+        </a>
+    </div>
+
+</div>
