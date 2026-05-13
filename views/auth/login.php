@@ -52,6 +52,17 @@ $csrfToken = generateCSRFToken();
             box-shadow: 0 8px 32px rgba(0,0,0,0.18);
         }
 
+        .login-logo {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .login-logo img {
+            width: 80px;
+            height: 80px;
+            display: inline-block;
+        }
+
         .field-label {
             font-size: 13px;
             font-weight: 500;
@@ -128,6 +139,11 @@ $csrfToken = generateCSRFToken();
 <body class="login-body">
 
     <div class="login-card">
+
+        <!-- Logo -->
+        <div class="login-logo">
+            <img src="<?php echo APP_URL; ?>/assets/images/logo.png" alt="The Autodok Logo">
+        </div>
 
         <?php if ($error): ?>
         <div class="error-alert">

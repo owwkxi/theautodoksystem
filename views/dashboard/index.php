@@ -49,6 +49,11 @@ include __DIR__ . '/../partials/header.php';
         <span class="qnav-label">Technician</span>
         <i class="bi bi-chevron-right qnav-arrow"></i>
     </a>
+    <a href="<?php echo APP_URL; ?>/views/inventory/index.php" class="qnav-card">
+        <div class="qnav-icon"><i class="bi bi-box-seam"></i></div>
+        <span class="qnav-label">Inventory</span>
+        <i class="bi bi-chevron-right qnav-arrow"></i>
+    </a>
     <a href="<?php echo APP_URL; ?>/views/reports/index.php" class="qnav-card">
         <div class="qnav-icon"><i class="bi bi-file-earmark-bar-graph"></i></div>
         <span class="qnav-label">Reports</span>

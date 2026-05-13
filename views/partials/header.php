@@ -17,12 +17,18 @@ if (!defined('APP_ACCESS')) {
 <body>
 <div class="dashboard-wrapper">
 
+    <!-- Sidebar overlay for mobile -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
     <?php include __DIR__ . '/sidebar.php'; ?>
 
     <div class="main-content">
 
         <!-- Top bar -->
         <div class="topbar">
+            <button class="hamburger-btn" id="sidebarToggle">
+                <i class="bi bi-list"></i>
+            </button>
             <div class="topbar-title"><?php echo isset($pageTitle) ? $pageTitle : 'Dashboard'; ?></div>
             <div class="topbar-user">
                 <div class="topbar-avatar">

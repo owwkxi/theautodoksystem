@@ -74,6 +74,7 @@ CREATE TABLE `activity_logs` (
   `action` varchar(100) NOT NULL,
   `description` text DEFAULT NULL,
   `ip_address` varchar(45) DEFAULT NULL,
+  `user_agent` text DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `idx_user` (`user_id`),

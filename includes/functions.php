@@ -290,3 +290,30 @@ function getBearerToken() {
     }
     return null;
 }
+
+
+/**
+ * Generate unique staff ID
+ * @return string Staff ID in format STF-YYYY-NNNN
+ */
+function generateStaffId() {
+    $year = date('Y');
+    $db = Database::getInstance();
+    
+    $sql = "SELECT staff_id FROM staff 
+            WHERE staff_id LIKE ? 
+            ORDER BY id DESC LIMIT 1";
+    $result = $db->fetch($sql, ["STF-{$year}-%"]);
+    
+    if ($result) {
+        $lastNumber = intval(substr($result['staff_id'], -4));
+        $newNumber = $lastNumber + 1;
+    } else {
+        $newNumber = 1;
+    }
+    
+    return sprintf("STF-%s-%04d", $year, $newNumber);
+}
+
+// Note: setMessage(), getMessage(), and hasMessage() functions 
+// are already defined in includes/session.php

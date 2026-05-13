@@ -7,8 +7,11 @@ $p = $_SERVER['PHP_SELF'];
 <div class="sidebar">
 
     <div class="sidebar-brand">
-        <div class="sidebar-brand-name">The Autodok</div>
-        <div class="sidebar-brand-sub">Automotive Care Services</div>
+        <img src="<?php echo APP_URL; ?>/assets/images/logo.png" alt="The Autodok Logo" class="sidebar-logo">
+        <div class="sidebar-brand-text">
+            <div class="sidebar-brand-name">The Autodok</div>
+            <div class="sidebar-brand-sub">Automotive Care Services</div>
+        </div>
     </div>
 
     <div class="user-badge">
@@ -40,6 +43,12 @@ $p = $_SERVER['PHP_SELF'];
             <span>Staff Management</span>
         </a>
         <?php endif; ?>
+
+        <a href="<?php echo APP_URL; ?>/views/inventory/index.php"
+           class="nav-item <?php echo strpos($p, '/inventory/') !== false ? 'active' : ''; ?>">
+            <i class="bi bi-box-seam"></i>
+            <span>Inventory</span>
+        </a>
 
         <a href="<?php echo APP_URL; ?>/views/reports/index.php"
            class="nav-item <?php echo strpos($p, '/reports/') !== false ? 'active' : ''; ?>">
