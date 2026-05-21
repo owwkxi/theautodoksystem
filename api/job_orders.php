@@ -183,3 +183,109 @@ try {
 }
 
 echo json_encode($response);
+
+/*
+Job Estimate Print Template
+---------------------------
+This template is for the Job Estimate print view and is typically used in a front-end view file,
+not in an API endpoint. It is provided here for reference.
+
+<div class="modal fade" id="jobEstimateModal" tabindex="-1" aria-labelledby="jobEstimateModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header" style="background: #f8f9fa; border-bottom: 2px solid #e0e0e0;">
+                <h5 class="modal-title" id="jobEstimateModalLabel" style="color: #000;">
+                    <i class="bi bi-calculator"></i> Job Estimate Calculator
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" style="padding: 30px;">
+                <div class="row g-3">
+                    <div class="col-12">
+                        <h6 style="color: #000; margin-bottom: 15px;">Select Services</h6>
+                        <div style="max-height: 300px; overflow-y: auto; border: 1.5px solid #e0e0e0; border-radius: 8px; padding: 15px; background: #f9f9f9;">
+                            <?php if (!empty($allActiveServices)): ?>
+                                <?php foreach ($allActiveServices as $service): ?>
+                                    <div class="form-check mb-2" style="padding: 10px; background: #fff; border-radius: 6px;">
+                                        <input class="form-check-input estimate-service" type="checkbox"
+                                               data-price="<?php echo $service['service_price'] + $service['labor_cost']; ?>"
+                                               id="est_service_<?php echo $service['id']; ?>">
+                                        <label class="form-check-label" for="est_service_<?php echo $service['id']; ?>" style="color: #000; width: 100%;">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <div>
+                                                    <strong><?php echo escape($service['service_name']); ?></strong>
+                                                </div>
+                                                <div>
+                                                    <strong><?php echo formatCurrency($service['service_price'] + $service['labor_cost']); ?></strong>
+                                                </div>
+                                            </div>
+                                        </label>
+                                    </div>
+                                <?php endforeach; ?>
+                            <?php else: ?>
+                                <p style="color: #666; text-align: center;">No services available</p>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+
+                    <div class="col-12">
+                        <div class="card" style="background: #f8f9fa; border: 2px solid #e0e0e0;">
+                            <div class="card-body">
+                                <h6 style="color: #000; margin-bottom: 15px;">Estimate Summary</h6>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span style="color: #666;">Services Total:</span>
+                                    <strong style="color: #000;" id="estimateTotal">₱0.00</strong>
+                                </div>
+
+                                <div class="mb-2">
+                                    <label class="form-label form-label-sm" style="color:#000;font-weight:500;">
+                                        <i class="bi bi-box-seam"></i> Products
+                                    </label>
+                                    <div class="d-flex gap-1 mb-1">
+                                        <select class="form-select form-select-sm" id="est_product_select" style="flex:1;">
+                                            <option value="">— Select product —</option>
+                                            <?php foreach ($allInventoryProducts as $prod): ?>
+                                            <option value="<?php echo $prod['id']; ?>"
+                                                data-name="<?php echo addslashes(escape($prod['product_name'])); ?>"
+                                                data-price="<?php echo $prod['selling_price']; ?>"
+                                                data-stock="<?php echo $prod['quantity']; ?>">
+                                                <?php echo escape($prod['product_name']); ?> — ₱<?php echo number_format($prod['selling_price'], 2); ?> (<?php echo $prod['quantity']; ?> in stock)
+                                            </option>
+                                            <?php endforeach; ?>
+                                            <?php if (empty($allInventoryProducts)): ?>
+                                            <option disabled>No products in inventory</option>
+                                            <?php endif; ?>
+                                        </select>
+                                        <input type="number" id="est_product_qty" class="form-control form-control-sm text-center" value="1" min="1" style="width:55px;">
+                                        <button type="button" class="btn btn-sm btn-dark px-2" onclick="estAddProduct()"><i class="bi bi-plus"></i></button>
+                                    </div>
+                                    <div id="estProductsList" style="max-height:120px;overflow-y:auto;"></div>
+                                </div>
+
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span style="color: #666;">Products Total:</span>
+                                    <strong style="color: #000;" id="estimateProductsTotal">₱0.00</strong>
+                                </div>
+
+                                <hr style="border-color: #e0e0e0;">
+                                <div class="d-flex justify-content-between">
+                                    <strong style="color: #000;">Grand Total:</strong>
+                                    <h4 style="color: #000; margin: 0;" id="estimateGrandTotal">₱0.00</h4>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer" style="background: #f8f9fa; border-top: 2px solid #e0e0e0;">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle"></i> Close
+                </button>
+                <button type="button" class="btn btn-primary" onclick="window.print()">
+                    <i class="bi bi-printer"></i> Print Estimate
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+*/

@@ -23,11 +23,14 @@ $hour = (int)date('H');
 $greeting = $hour < 12 ? 'Good Morning' : ($hour < 18 ? 'Good Afternoon' : 'Good Evening');
 $firstName = escape(explode(' ', $_SESSION['full_name'])[0]);
 
-// Income stats from job_orders (simplified - no income_statistics table)
-$dailyIncome  = (float)($stats['today_income'] ?? 0);
-$dailyDate    = date('Y-m-d');
-$monthlyVal   = (float)($stats['month_income'] ?? 0);
-$monthlyDate  = date('Y-m-01');
+// Income stats - Show yesterday's daily income and last month's monthly income
+// Daily Income: Yesterday's date
+$dailyDate    = date('Y-m-d', strtotime('-1 day'));
+$dailyIncome  = (float)($stats['yesterday_income'] ?? 0);
+
+// Monthly Income: Last month (first day of previous month)
+$monthlyDate  = date('Y-m-01', strtotime('first day of last month'));
+$monthlyVal   = (float)($stats['last_month_income'] ?? 0);
 
 include __DIR__ . '/../partials/header.php';
 ?>
@@ -39,7 +42,7 @@ include __DIR__ . '/../partials/header.php';
 
 <!-- Quick nav -->
 <div class="quick-nav">
-    <a href="<?php echo APP_URL; ?>/views/job_orders/index.php" class="qnav-card">
+    <a href="<?php echo APP_URL; ?>/views/services/manage.php?tab=job_orders" class="qnav-card">
         <div class="qnav-icon"><i class="bi bi-file-earmark-text"></i></div>
         <span class="qnav-label">Job Order</span>
         <i class="bi bi-chevron-right qnav-arrow"></i>

@@ -49,6 +49,12 @@ class Report {
         $result = $this->db->fetch($sql);
         $stats['today_income'] = $result['total'] ?? 0;
 
+        // Yesterday's income
+        $sql = "SELECT SUM(total_amount) as total FROM job_orders 
+                WHERE DATE(created_at) = DATE_SUB(CURDATE(), INTERVAL 1 DAY) AND payment_status = 'paid'";
+        $result = $this->db->fetch($sql);
+        $stats['yesterday_income'] = $result['total'] ?? 0;
+
         // This month's income
         $sql = "SELECT SUM(total_amount) as total FROM job_orders 
                 WHERE YEAR(created_at) = YEAR(CURDATE()) 
@@ -56,6 +62,14 @@ class Report {
                 AND payment_status = 'paid'";
         $result = $this->db->fetch($sql);
         $stats['month_income'] = $result['total'] ?? 0;
+
+        // Last month's income
+        $sql = "SELECT SUM(total_amount) as total FROM job_orders 
+                WHERE YEAR(created_at) = YEAR(DATE_SUB(CURDATE(), INTERVAL 1 MONTH)) 
+                AND MONTH(created_at) = MONTH(DATE_SUB(CURDATE(), INTERVAL 1 MONTH)) 
+                AND payment_status = 'paid'";
+        $result = $this->db->fetch($sql);
+        $stats['last_month_income'] = $result['total'] ?? 0;
 
         // This year's income
         $sql = "SELECT SUM(total_amount) as total FROM job_orders 

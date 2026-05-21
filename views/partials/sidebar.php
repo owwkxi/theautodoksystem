@@ -30,10 +30,10 @@ $p = $_SERVER['PHP_SELF'];
             <span>Dashboard</span>
         </a>
 
-        <a href="<?php echo APP_URL; ?>/views/job_orders/index.php"
-           class="nav-item <?php echo strpos($p, '/job_orders/') !== false ? 'active' : ''; ?>">
-            <i class="bi bi-file-earmark-text"></i>
-            <span>Job Order</span>
+        <a href="<?php echo APP_URL; ?>/views/services/manage.php"
+           class="nav-item <?php echo strpos($p, '/services/') !== false ? 'active' : ''; ?>">
+            <i class="bi bi-wrench"></i>
+            <span>Services</span>
         </a>
 
         <?php if (hasAnyRole(['admin'])): ?>
