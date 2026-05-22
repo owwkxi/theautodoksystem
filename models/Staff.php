@@ -12,6 +12,18 @@ class Staff {
     }
 
     /**
+     * Split a full name into first and last name values
+     * @param string $fullName
+     * @return array [first_name, last_name]
+     */
+    private function splitFullName($fullName) {
+        $parts = preg_split('/\s+/', trim($fullName));
+        $firstName = $parts[0] ?? '';
+        $lastName = count($parts) > 1 ? implode(' ', array_slice($parts, 1)) : '';
+        return [$firstName, $lastName];
+    }
+
+    /**
      * Generate unique staff ID
      * @return string Staff ID in format STF-YYYY-NNNN
      */
@@ -48,15 +60,18 @@ class Staff {
             return false;
         }
 
-        $sql = "INSERT INTO staff (staff_id, full_name, username, password, email, contact_number, address, role, profile_image, status) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        list($firstName, $lastName) = $this->splitFullName($data['full_name']);
+        $sql = "INSERT INTO staff (staff_id, first_name, last_name, username, password, email, phone, address, role, profile_photo, hire_date, status) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         
         $hashedPassword = password_hash($data['password'], PASSWORD_BCRYPT, ['cost' => PASSWORD_COST]);
+        $hireDate = $data['hire_date'] ?? date('Y-m-d');
         
         try {
             $this->db->query($sql, [
                 $this->generateStaffId(),
-                $data['full_name'],
+                $firstName,
+                $lastName,
                 $data['username'],
                 $hashedPassword,
                 $data['email'],
@@ -64,6 +79,7 @@ class Staff {
                 $data['address'] ?? null,
                 $data['role'] ?? 'Staff',
                 $data['profile_image'] ?? null,
+                $hireDate,
                 $data['status'] ?? 'active'
             ]);
             
@@ -80,7 +96,7 @@ class Staff {
      * @return array|false Staff data
      */
     public function findById($id) {
-        $sql = "SELECT * FROM staff WHERE id = ?";
+        $sql = "SELECT staff.*, phone AS contact_number, profile_photo AS profile_image FROM staff WHERE id = ?";
         return $this->db->fetch($sql, [$id]);
     }
 
@@ -90,7 +106,7 @@ class Staff {
      * @return array|false Staff data
      */
     public function findByStaffId($staffId) {
-        $sql = "SELECT * FROM staff WHERE staff_id = ?";
+        $sql = "SELECT staff.*, phone AS contact_number, profile_photo AS profile_image FROM staff WHERE staff_id = ?";
         return $this->db->fetch($sql, [$staffId]);
     }
 
@@ -120,7 +136,7 @@ class Staff {
      * @return array List of staff
      */
     public function getAll($filters = []) {
-        $sql = "SELECT * FROM staff WHERE 1=1";
+        $sql = "SELECT staff.*, phone AS contact_number, profile_photo AS profile_image FROM staff WHERE 1=1";
         $params = [];
 
         if (!empty($filters['role'])) {
@@ -134,8 +150,10 @@ class Staff {
         }
 
         if (!empty($filters['search'])) {
-            $sql .= " AND (full_name LIKE ? OR username LIKE ? OR email LIKE ? OR staff_id LIKE ? OR contact_number LIKE ?)";
+            $sql .= " AND (CONCAT(first_name, ' ', last_name) LIKE ? OR first_name LIKE ? OR last_name LIKE ? OR username LIKE ? OR email LIKE ? OR staff_id LIKE ? OR phone LIKE ?)";
             $searchTerm = '%' . $filters['search'] . '%';
+            $params[] = $searchTerm;
+            $params[] = $searchTerm;
             $params[] = $searchTerm;
             $params[] = $searchTerm;
             $params[] = $searchTerm;
@@ -169,8 +187,11 @@ class Staff {
         $params = [];
 
         if (isset($data['full_name'])) {
-            $fields[] = "full_name = ?";
-            $params[] = $data['full_name'];
+            list($firstName, $lastName) = $this->splitFullName($data['full_name']);
+            $fields[] = "first_name = ?";
+            $params[] = $firstName;
+            $fields[] = "last_name = ?";
+            $params[] = $lastName;
         }
 
         if (isset($data['username'])) {
@@ -192,7 +213,7 @@ class Staff {
         }
 
         if (isset($data['contact_number'])) {
-            $fields[] = "contact_number = ?";
+            $fields[] = "phone = ?";
             $params[] = $data['contact_number'];
         }
 
@@ -207,7 +228,7 @@ class Staff {
         }
 
         if (isset($data['profile_image'])) {
-            $fields[] = "profile_image = ?";
+            $fields[] = "profile_photo = ?";
             $params[] = $data['profile_image'];
         }
 
@@ -289,8 +310,10 @@ class Staff {
         }
 
         if (!empty($filters['search'])) {
-            $sql .= " AND (full_name LIKE ? OR username LIKE ? OR email LIKE ? OR staff_id LIKE ? OR contact_number LIKE ?)";
+            $sql .= " AND (CONCAT(first_name, ' ', last_name) LIKE ? OR first_name LIKE ? OR last_name LIKE ? OR username LIKE ? OR email LIKE ? OR staff_id LIKE ? OR phone LIKE ?)";
             $searchTerm = '%' . $filters['search'] . '%';
+            $params[] = $searchTerm;
+            $params[] = $searchTerm;
             $params[] = $searchTerm;
             $params[] = $searchTerm;
             $params[] = $searchTerm;

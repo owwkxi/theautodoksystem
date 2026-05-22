@@ -18,47 +18,63 @@ class AuthController {
     }
 
     /**
-     * Handle login
+     * Handle login — checks both users table (admin) and staff table (technicians etc.)
      */
     public function login($username, $password) {
-        // Validate inputs
         if (empty($username) || empty($password)) {
-            return [
-                'success' => false,
-                'message' => 'Username and password are required'
-            ];
+            return ['success' => false, 'message' => 'Username and password are required'];
         }
 
-        // Authenticate user
+        // ── 1. Try admin users table first ───────────────────────────────────
         $user = $this->userModel->authenticate($username, $password);
 
-        if (!$user) {
-            // Log failed login attempt
-            logActivity(0, 'failed_login', "Failed login attempt for username: {$username}");
-            
-            return [
-                'success' => false,
-                'message' => 'Invalid username or password'
-            ];
+        if ($user) {
+            $_SESSION['user_id']   = $user['id'];
+            $_SESSION['username']  = $user['username'];
+            $_SESSION['user_role'] = $user['role'];
+            $_SESSION['full_name'] = $user['full_name'] ?? $user['username'];
+            $_SESSION['user_type'] = 'admin';
+
+            session_regenerate_id(true);
+            logActivity($user['id'], 'login', 'Admin logged in successfully');
+
+            return ['success' => true, 'message' => 'Login successful', 'user' => $user];
         }
 
-        // Set session variables
-        $_SESSION['user_id'] = $user['id'];
-        $_SESSION['username'] = $user['username'];
-        $_SESSION['user_role'] = $user['role'];
-        $_SESSION['full_name'] = $user['username']; // Use username as display name
+        // ── 2. Try staff table (technicians, cashiers, etc.) ─────────────────
+        $db   = Database::getInstance();
+        $staff = $db->fetch(
+            "SELECT id, staff_id, first_name, last_name, full_name, username, password, role, status
+             FROM staff WHERE username = ? LIMIT 1",
+            [$username]
+        );
 
-        // Regenerate session ID for security
+        if (!$staff) {
+            logActivity(0, 'failed_login', "Failed login attempt for username: {$username}");
+            return ['success' => false, 'message' => 'Invalid username or password'];
+        }
+
+        if ($staff['status'] !== 'active') {
+            return ['success' => false, 'message' => 'Your account is inactive. Please contact the administrator.'];
+        }
+
+        if (empty($staff['password']) || !password_verify($password, $staff['password'])) {
+            logActivity(0, 'failed_login', "Failed login attempt for staff username: {$username}");
+            return ['success' => false, 'message' => 'Invalid username or password'];
+        }
+
+        // Set session for staff
+        $_SESSION['user_id']   = $staff['id'];
+        $_SESSION['username']  = $staff['username'];
+        $_SESSION['user_role'] = $staff['role'];
+        $_SESSION['full_name'] = $staff['full_name'] ?: trim($staff['first_name'] . ' ' . $staff['last_name']);
+        $_SESSION['staff_id']  = $staff['staff_id'];
+        $_SESSION['user_type'] = 'staff';
+
         session_regenerate_id(true);
+        logActivity($staff['id'], 'login', "Staff ({$staff['role']}) logged in successfully");
 
-        // Log successful login
-        logActivity($user['id'], 'login', 'User logged in successfully');
-
-        return [
-            'success' => true,
-            'message' => 'Login successful',
-            'user' => $user
-        ];
+        return ['success' => true, 'message' => 'Login successful'];
     }
 
     /**

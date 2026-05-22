@@ -63,6 +63,101 @@ class Notification {
     }
 
     /**
+     * Get dynamic notifications based on live business conditions
+     */
+    public function getDynamicNotifications($userId) {
+        $notifications = [];
+
+        $lowStockSql = "SELECT COUNT(*) as count FROM products WHERE status = 'active' AND quantity <= min_stock_level";
+        $lowStockResult = $this->db->fetch($lowStockSql);
+        $lowStockCount = (int)($lowStockResult['count'] ?? 0);
+
+        if ($lowStockCount > 0) {
+            $notifications[] = [
+                'id' => 'dyn_low_stock',
+                'type' => 'system',
+                'title' => 'Low Stock Alert',
+                'message' => $lowStockCount === 1
+                    ? '1 product is low on stock.'
+                    : "{$lowStockCount} products are low on stock.",
+                'link' => '/views/inventory/index.php',
+                'is_read' => 0,
+                'created_at' => date('Y-m-d H:i:s'),
+                'is_dynamic' => 1
+            ];
+        }
+
+        $paidSql = "SELECT COUNT(*) as count FROM job_orders WHERE payment_status = 'paid' AND DATE(created_at) = CURDATE()";
+        $paidResult = $this->db->fetch($paidSql);
+        $paidCount = (int)($paidResult['count'] ?? 0);
+
+        if ($paidCount > 0) {
+            $notifications[] = [
+                'id' => 'dyn_paid_orders',
+                'type' => 'payment',
+                'title' => 'Paid Job Orders',
+                'message' => $paidCount === 1
+                    ? '1 job order was paid today.'
+                    : "{$paidCount} job orders were paid today.",
+                'link' => '/views/job_orders/index.php?status=paid',
+                'is_read' => 0,
+                'created_at' => date('Y-m-d H:i:s'),
+                'is_dynamic' => 1
+            ];
+        }
+
+        $assignedSql = "SELECT COUNT(*) as count FROM job_orders WHERE service_adviser_id = ? AND status NOT IN ('completed', 'cancelled')";
+        $assignedResult = $this->db->fetch($assignedSql, [$userId]);
+        $assignedCount = (int)($assignedResult['count'] ?? 0);
+
+        if ($assignedCount > 0) {
+            $notifications[] = [
+                'id' => 'dyn_assigned_jobs',
+                'type' => 'job_assigned',
+                'title' => 'Assigned Job Orders',
+                'message' => $assignedCount === 1
+                    ? 'You have 1 assigned job order.'
+                    : "You have {$assignedCount} assigned job orders.",
+                'link' => '/views/job_orders/index.php?assigned=me',
+                'is_read' => 0,
+                'created_at' => date('Y-m-d H:i:s'),
+                'is_dynamic' => 1
+            ];
+        }
+
+        return $notifications;
+    }
+
+    /**
+     * Count dynamic notifications
+     */
+    public function countDynamicNotifications($userId) {
+        return count($this->getDynamicNotifications($userId));
+    }
+
+    /**
+     * Get unread notifications including dynamic system alerts
+     */
+    public function getUnreadNotificationsWithDynamic($userId, $limit = 10) {
+        $dynamicNotifications = $this->getDynamicNotifications($userId);
+        $unreadNotifications = $this->getUnreadNotifications($userId, $limit);
+
+        if (count($dynamicNotifications) >= $limit) {
+            return array_slice($dynamicNotifications, 0, $limit);
+        }
+
+        $remaining = $limit - count($dynamicNotifications);
+        return array_merge($dynamicNotifications, array_slice($unreadNotifications, 0, $remaining));
+    }
+
+    /**
+     * Get unread count including dynamic system alerts
+     */
+    public function getUnreadCountWithDynamic($userId) {
+        return $this->getUnreadCount($userId) + $this->countDynamicNotifications($userId);
+    }
+
+    /**
      * Mark notification as read
      */
     public function markAsRead($notificationId, $userId) {

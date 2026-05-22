@@ -133,19 +133,20 @@ class Report {
      */
     public function getServiceTypeStats($dateFrom = null, $dateTo = null) {
         $sql = "SELECT 
-                    service_type,
+                    jos.service_name as service_name,
                     COUNT(*) as count,
-                    SUM(total_amount) as total_revenue
-                FROM job_orders";
+                    SUM(jos.total) as total_revenue
+                FROM job_order_services jos
+                INNER JOIN job_orders jo ON jos.job_order_id = jo.id";
         
         $params = [];
         if ($dateFrom && $dateTo) {
-            $sql .= " WHERE DATE(created_at) BETWEEN ? AND ?";
+            $sql .= " WHERE DATE(jo.created_at) BETWEEN ? AND ?";
             $params[] = $dateFrom;
             $params[] = $dateTo;
         }
 
-        $sql .= " GROUP BY service_type ORDER BY count DESC";
+        $sql .= " GROUP BY jos.service_name ORDER BY total_revenue DESC";
         
         return $this->db->fetchAll($sql, $params);
     }
@@ -178,12 +179,13 @@ class Report {
      */
     public function getTopCustomers($limit = 10) {
         $sql = "SELECT 
-                    customer_name,
-                    customer_phone,
-                    COUNT(*) as total_visits,
-                    SUM(total_amount) as total_spent
-                FROM job_orders
-                GROUP BY customer_name, customer_phone
+                    c.full_name as customer_name,
+                    c.phone as customer_phone,
+                    COUNT(jo.id) as total_visits,
+                    SUM(jo.total_amount) as total_spent
+                FROM job_orders jo
+                INNER JOIN customers c ON jo.customer_id = c.id
+                GROUP BY c.id, c.full_name, c.phone
                 ORDER BY total_spent DESC
                 LIMIT ?";
         

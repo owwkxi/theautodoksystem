@@ -58,14 +58,19 @@ function isLoggedIn() {
 }
 
 function hasRole($role) {
-    return isset($_SESSION['user_role']) && $_SESSION['user_role'] === $role;
+    return isset($_SESSION['user_role']) && strcasecmp($_SESSION['user_role'], $role) === 0;
 }
 
 function hasAnyRole($roles) {
     if (!isset($_SESSION['user_role'])) {
         return false;
     }
-    return in_array($_SESSION['user_role'], $roles);
+    foreach ((array)$roles as $role) {
+        if (strcasecmp($_SESSION['user_role'], $role) === 0) {
+            return true;
+        }
+    }
+    return false;
 }
 
 function requireLogin() {
@@ -154,6 +159,16 @@ function uploadFile($file, $allowedTypes = ALLOWED_FILE_TYPES, $maxSize = MAX_FI
         return ['success' => false, 'message' => 'File type not allowed'];
     }
 
+    if (!is_dir(UPLOAD_PATH)) {
+        if (!mkdir(UPLOAD_PATH, 0755, true) && !is_dir(UPLOAD_PATH)) {
+            return ['success' => false, 'message' => 'Upload directory is not writable'];
+        }
+    }
+
+    if (!is_writable(UPLOAD_PATH)) {
+        return ['success' => false, 'message' => 'Upload directory is not writable'];
+    }
+
     $filename = uniqid() . '_' . time() . '.' . $extension;
     $destination = UPLOAD_PATH . $filename;
 
@@ -162,6 +177,26 @@ function uploadFile($file, $allowedTypes = ALLOWED_FILE_TYPES, $maxSize = MAX_FI
     }
 
     return ['success' => true, 'filename' => $filename, 'url' => UPLOAD_URL . $filename];
+}
+
+function getRoleLabel($role) {
+    $labels = [
+        'cashier' => 'Cashier',
+        'chief_mechanic' => 'Chief Mechanic',
+        'service_adviser' => 'Service Adviser',
+        'lead_man' => 'Lead Man',
+        'technician' => 'Technician'
+    ];
+    return $labels[$role] ?? ucfirst(str_replace('_', ' ', $role));
+}
+
+function getStatusLabel($status) {
+    $labels = [
+        'active' => 'Active',
+        'inactive' => 'Inactive',
+        'on_leave' => 'On Leave'
+    ];
+    return $labels[$status] ?? ucfirst(str_replace('_', ' ', $status));
 }
 
 function deleteFile($filename) {

@@ -120,10 +120,11 @@ include __DIR__ . '/../partials/header.php';
             <div class="col-md-2">
                 <select class="form-select" name="role">
                     <option value="">All Roles</option>
-                    <option value="Admin" <?php echo $filters['role'] === 'Admin' ? 'selected' : ''; ?>>Admin</option>
-                    <option value="Staff" <?php echo $filters['role'] === 'Staff' ? 'selected' : ''; ?>>Staff</option>
-                    <option value="Technician" <?php echo $filters['role'] === 'Technician' ? 'selected' : ''; ?>>Technician</option>
-                    <option value="Manager" <?php echo $filters['role'] === 'Manager' ? 'selected' : ''; ?>>Manager</option>
+                    <option value="cashier" <?php echo $filters['role'] === 'cashier' ? 'selected' : ''; ?>>Cashier</option>
+                    <option value="chief_mechanic" <?php echo $filters['role'] === 'chief_mechanic' ? 'selected' : ''; ?>>Chief Mechanic</option>
+                    <option value="service_adviser" <?php echo $filters['role'] === 'service_adviser' ? 'selected' : ''; ?>>Service Adviser</option>
+                    <option value="lead_man" <?php echo $filters['role'] === 'lead_man' ? 'selected' : ''; ?>>Lead Man</option>
+                    <option value="technician" <?php echo $filters['role'] === 'technician' ? 'selected' : ''; ?>>Technician</option>
                 </select>
             </div>
             <div class="col-md-2">
@@ -131,6 +132,7 @@ include __DIR__ . '/../partials/header.php';
                     <option value="">All Status</option>
                     <option value="active" <?php echo $filters['status'] === 'active' ? 'selected' : ''; ?>>Active</option>
                     <option value="inactive" <?php echo $filters['status'] === 'inactive' ? 'selected' : ''; ?>>Inactive</option>
+                    <option value="on_leave" <?php echo $filters['status'] === 'on_leave' ? 'selected' : ''; ?>>On Leave</option>
                 </select>
             </div>
             <div class="col-md-2">
@@ -197,7 +199,7 @@ include __DIR__ . '/../partials/header.php';
                             </td>
                             <td>
                                 <span class="badge bg-secondary">
-                                    <?php echo escape($staff['role']); ?>
+                                    <?php echo escape(getRoleLabel($staff['role'])); ?>
                                 </span>
                             </td>
                             <td><?php echo escape($staff['username']); ?></td>
@@ -205,7 +207,7 @@ include __DIR__ . '/../partials/header.php';
                             <td><?php echo escape($staff['email']); ?></td>
                             <td>
                                 <span class="badge <?php echo $staff['status'] === 'active' ? 'bg-success' : 'bg-danger'; ?>">
-                                    <?php echo ucfirst($staff['status']); ?>
+                                    <?php echo escape(getStatusLabel($staff['status'])); ?>
                                 </span>
                             </td>
                             <td><?php echo formatDate($staff['created_at']); ?></td>
@@ -319,10 +321,11 @@ include __DIR__ . '/../partials/header.php';
                             <label for="add_role" class="form-label">Role/Position <span class="text-danger">*</span></label>
                             <select class="form-select" id="add_role" name="role" required>
                                 <option value="">Select Role</option>
-                                <option value="Admin">Admin</option>
-                                <option value="Staff">Staff</option>
-                                <option value="Technician">Technician</option>
-                                <option value="Manager">Manager</option>
+                                <option value="cashier">Cashier</option>
+                                <option value="chief_mechanic">Chief Mechanic</option>
+                                <option value="service_adviser">Service Adviser</option>
+                                <option value="lead_man">Lead Man</option>
+                                <option value="technician">Technician</option>
                             </select>
                         </div>
                         <div class="col-md-6">
@@ -397,10 +400,11 @@ include __DIR__ . '/../partials/header.php';
                             <label for="edit_role" class="form-label">Role/Position <span class="text-danger">*</span></label>
                             <select class="form-select" id="edit_role" name="role" required>
                                 <option value="">Select Role</option>
-                                <option value="Admin">Admin</option>
-                                <option value="Staff">Staff</option>
-                                <option value="Technician">Technician</option>
-                                <option value="Manager">Manager</option>
+                                <option value="cashier">Cashier</option>
+                                <option value="chief_mechanic">Chief Mechanic</option>
+                                <option value="service_adviser">Service Adviser</option>
+                                <option value="lead_man">Lead Man</option>
+                                <option value="technician">Technician</option>
                             </select>
                         </div>
                         <div class="col-md-6">

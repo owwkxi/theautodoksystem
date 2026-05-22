@@ -17,10 +17,6 @@ $p = $_SERVER['PHP_SELF'];
     <div class="user-badge">
         <i class="bi bi-person-fill badge-icon"></i>
         <span><?php echo ucfirst($_SESSION['user_role'] ?? 'user'); ?></span>
-        <span class="bell-wrap">
-            <i class="bi bi-bell-fill"></i>
-            <span class="bell-dot"></span>
-        </span>
     </div>
 
     <nav class="sidebar-nav">

@@ -30,11 +30,17 @@ if (!defined('APP_ACCESS')) {
                 <i class="bi bi-list"></i>
             </button>
             <div class="topbar-title"><?php echo isset($pageTitle) ? $pageTitle : 'Dashboard'; ?></div>
-            <div class="topbar-user">
-                <div class="topbar-avatar">
-                    <?php echo strtoupper(substr($_SESSION['full_name'] ?? 'U', 0, 2)); ?>
+            <div class="topbar-actions">
+                <div class="bell-wrap" id="bellWrap" title="Notifications">
+                    <i class="bi bi-bell-fill"></i>
+                    <span class="bell-dot" id="bellDot"></span>
                 </div>
-                <span class="topbar-name"><?php echo escape($_SESSION['full_name'] ?? 'User'); ?></span>
+                <div class="topbar-user">
+                    <div class="topbar-avatar">
+                        <?php echo strtoupper(substr($_SESSION['full_name'] ?? 'U', 0, 2)); ?>
+                    </div>
+                    <span class="topbar-name"><?php echo escape($_SESSION['full_name'] ?? 'User'); ?></span>
+                </div>
             </div>
         </div>
 
