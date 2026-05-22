@@ -7,6 +7,7 @@
 define('APP_ACCESS', true);
 require_once __DIR__ . '/../includes/config.php';
 require_once __DIR__ . '/../includes/Database.php';
+require_once __DIR__ . '/../includes/functions.php';
 require_once __DIR__ . '/../includes/session.php';
 require_once __DIR__ . '/../models/Notification.php';
 
@@ -31,7 +32,7 @@ try {
             if (isset($_GET['action'])) {
                 switch ($_GET['action']) {
                     case 'unread_count':
-                        // Get unread count
+                        // Get unread count for stored notifications only
                         $count = $notification->getUnreadCount($userId);
                         echo json_encode([
                             'success' => true,
@@ -40,9 +41,9 @@ try {
                         break;
 
                     case 'unread':
-                        // Get unread notifications
+                        // Get unread notifications including dynamic alerts
                         $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 10;
-                        $notifications = $notification->getUnreadNotifications($userId, $limit);
+                        $notifications = $notification->getUnreadNotificationsWithDynamic($userId, $limit);
                         echo json_encode([
                             'success' => true,
                             'notifications' => $notifications
@@ -50,9 +51,11 @@ try {
                         break;
 
                     case 'all':
-                        // Get all notifications
+                        // Get all notifications and include current dynamic alerts
                         $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 50;
-                        $notifications = $notification->getUserNotifications($userId, $limit);
+                        $storedNotifications = $notification->getUserNotifications($userId, $limit);
+                        $dynamicNotifications = $notification->getDynamicNotifications($userId);
+                        $notifications = array_merge($dynamicNotifications, $storedNotifications);
                         echo json_encode([
                             'success' => true,
                             'notifications' => $notifications
@@ -64,8 +67,8 @@ try {
                         echo json_encode(['success' => false, 'message' => 'Invalid action']);
                 }
             } else {
-                // Default: get unread notifications
-                $notifications = $notification->getUnreadNotifications($userId);
+                // Default: get unread notifications including dynamic alerts
+                $notifications = $notification->getUnreadNotificationsWithDynamic($userId);
                 echo json_encode([
                     'success' => true,
                     'notifications' => $notifications

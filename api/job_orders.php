@@ -1,173 +1,430 @@
 <?php
 /**
- * Job Orders API
- * RESTful API for job order management
+ * Job Orders API — session-based auth, matches real DB schema
  */
 
 header('Content-Type: application/json');
-header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type, Authorization');
-
-// Handle preflight requests
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    http_response_code(200);
-    exit();
-}
 
 define('APP_ACCESS', true);
-
 require_once __DIR__ . '/../includes/config.php';
 require_once __DIR__ . '/../includes/Database.php';
 require_once __DIR__ . '/../includes/functions.php';
+require_once __DIR__ . '/../includes/session.php';
+require_once __DIR__ . '/../includes/security.php';
 require_once __DIR__ . '/../models/JobOrder.php';
-require_once __DIR__ . '/../models/User.php';
 
-// Verify JWT token
-$token = getBearerToken();
-if (!$token) {
-    jsonResponse(['success' => false, 'message' => 'No token provided'], 401);
+// Session auth
+if (!isset($_SESSION['user_id'])) {
+    http_response_code(401);
+    echo json_encode(['success' => false, 'message' => 'Not authenticated']);
+    exit();
 }
 
-$payload = verifyJWT($token);
-if (!$payload) {
-    jsonResponse(['success' => false, 'message' => 'Invalid or expired token'], 401);
-}
+$currentUserId   = $_SESSION['user_id'];
+$currentUserRole = $_SESSION['user_role'] ?? 'admin';
+$method          = $_SERVER['REQUEST_METHOD'];
+$id              = $_GET['id'] ?? null;
 
-$currentUserId = $payload['user_id'];
-$currentUserRole = $payload['role'];
-
-// Get request method
-$method = $_SERVER['REQUEST_METHOD'];
-$id = $_GET['id'] ?? null;
-
-// Initialize response
-$response = [
-    'success' => false,
-    'message' => '',
-    'data' => null
-];
+$response = ['success' => false, 'message' => '', 'data' => null];
 
 try {
-    $jobOrderModel = new JobOrder();
+    $db = Database::getInstance();
 
     switch ($method) {
+
+        // ── GET ──────────────────────────────────────────────────────────────
         case 'GET':
+            $jobOrderModel = new JobOrder();
             if ($id) {
-                // Get single job order
-                $jobOrder = $jobOrderModel->findById($id);
-                
-                if (!$jobOrder) {
-                    throw new Exception('Job order not found');
-                }
-
+                // Return full data including customer and vehicle details
+                $jo = $db->fetch(
+                    "SELECT jo.*,
+                            c.full_name AS customer_name, c.phone AS customer_phone,
+                            c.email AS customer_email, c.address AS customer_address,
+                            v.brand AS vehicle_make, v.model AS vehicle_model,
+                            v.year_model AS vehicle_year, v.plate_number AS vehicle_license,
+                            v.color AS vehicle_color, v.mileage AS vehicle_mileage
+                     FROM job_orders jo
+                     LEFT JOIN customers c ON jo.customer_id = c.id
+                     LEFT JOIN vehicles  v ON jo.vehicle_id  = v.id
+                     WHERE jo.id = ?",
+                    [$id]
+                );
+                if (!$jo) throw new Exception('Job order not found');
+                // Attach services and products
+                $jo['services'] = $db->fetchAll(
+                    "SELECT service_id, bundle_id, service_name, service_price, labor_cost, quantity, total FROM job_order_services WHERE job_order_id = ?",
+                    [$id]
+                );
+                $jo['products'] = $db->fetchAll(
+                    "SELECT product_name, unit_price, quantity, total FROM job_order_products WHERE job_order_id = ?",
+                    [$id]
+                );
                 $response['success'] = true;
-                $response['data'] = $jobOrder;
+                $response['data']    = $jo;
             } else {
-                // Get all job orders with filters
                 $filters = [
-                    'status' => $_GET['status'] ?? '',
+                    'status'         => $_GET['status']         ?? '',
                     'payment_status' => $_GET['payment_status'] ?? '',
-                    'technician_id' => $_GET['technician_id'] ?? '',
-                    'search' => $_GET['search'] ?? '',
-                    'limit' => $_GET['limit'] ?? 10,
-                    'offset' => $_GET['offset'] ?? 0
+                    'search'         => $_GET['search']         ?? '',
+                    'limit'          => $_GET['limit']          ?? 10,
+                    'offset'         => $_GET['offset']         ?? 0,
                 ];
-
-                $jobOrders = $jobOrderModel->getAll($filters);
-                $total = $jobOrderModel->count($filters);
-
                 $response['success'] = true;
-                $response['data'] = [
-                    'job_orders' => $jobOrders,
-                    'total' => $total,
-                    'limit' => $filters['limit'],
-                    'offset' => $filters['offset']
+                $response['data']    = [
+                    'job_orders' => $jobOrderModel->getAll($filters),
+                    'total'      => $jobOrderModel->count($filters),
                 ];
             }
             break;
 
+        // ── POST (create) ────────────────────────────────────────────────────
         case 'POST':
-            // Create new job order
             $input = json_decode(file_get_contents('php://input'), true);
+            if (!$input) throw new Exception('Invalid JSON payload');
 
-            // Validate required fields
-            $required = ['customer_name', 'customer_phone', 'service_type', 'total_amount'];
-            foreach ($required as $field) {
-                if (empty($input[$field])) {
-                    throw new Exception(ucfirst(str_replace('_', ' ', $field)) . ' is required');
+            // CSRF
+            if (empty($input['csrf_token']) || !verifyCSRFToken($input['csrf_token'])) {
+                throw new Exception('Invalid CSRF token');
+            }
+
+            if (empty($input['customer_name']))  throw new Exception('Customer name is required');
+            if (empty($input['customer_phone'])) throw new Exception('Customer phone is required');
+
+            // ── 1. Create or reuse customer ──────────────────────────────────
+            $custName  = sanitize($input['customer_name']);
+            $custPhone = sanitize($input['customer_phone']);
+            $custEmail = sanitize($input['customer_email']   ?? '');
+            $custAddr  = sanitize($input['customer_address'] ?? '');
+
+            // Try to find existing customer by phone
+            $existing = $db->fetch(
+                "SELECT id FROM customers WHERE phone = ? LIMIT 1",
+                [$custPhone]
+            );
+
+            if ($existing) {
+                $customerId = $existing['id'];
+                // Update name/email/address in case they changed
+                $db->query(
+                    "UPDATE customers SET full_name=?, email=?, address=? WHERE id=?",
+                    [$custName, $custEmail ?: null, $custAddr ?: null, $customerId]
+                );
+            } else {
+                // Generate customer code
+                $year     = date('Y');
+                $lastCust = $db->fetch(
+                    "SELECT customer_code FROM customers WHERE customer_code LIKE ? ORDER BY id DESC LIMIT 1",
+                    ["CUST-{$year}-%"]
+                );
+                $custNum  = $lastCust ? (intval(substr($lastCust['customer_code'], -4)) + 1) : 1;
+                $custCode = sprintf("CUST-%s-%04d", $year, $custNum);
+
+                $db->query(
+                    "INSERT INTO customers (customer_code, full_name, phone, email, address) VALUES (?,?,?,?,?)",
+                    [$custCode, $custName, $custPhone, $custEmail ?: null, $custAddr ?: null]
+                );
+                $customerId = $db->lastInsertId();
+            }
+
+            // ── 2. Create vehicle ────────────────────────────────────────────
+            $db->query(
+                "INSERT INTO vehicles (customer_id, brand, model, year_model, plate_number, color, mileage)
+                 VALUES (?,?,?,?,?,?,?)",
+                [
+                    $customerId,
+                    sanitize($input['vehicle_make']    ?? ''),
+                    sanitize($input['vehicle_model']   ?? ''),
+                    sanitize($input['vehicle_year']    ?? ''),
+                    sanitize($input['vehicle_license'] ?? ''),
+                    sanitize($input['vehicle_color']   ?? ''),
+                    sanitize($input['vehicle_mileage'] ?? ''),
+                ]
+            );
+            $vehicleId = $db->lastInsertId();
+
+            // ── 3. Calculate totals ──────────────────────────────────────────
+            $items    = $input['items']    ?? [];
+            $products = $input['products'] ?? [];
+
+            $subtotal  = array_sum(array_map(fn($i) => $i['price'] * $i['qty'], $items));
+            $partsCost = array_sum(array_map(fn($p) => $p['price'] * $p['qty'], $products));
+            $base      = $subtotal + $partsCost;
+
+            // Map frontend discount types to DB enum values
+            $discTypeFront = $input['discount_type'] ?? 'none';
+            $discVal       = (float)($input['discount_value'] ?? 0);
+            $discountAmt   = 0;
+            $discPct       = 0;
+
+            switch ($discTypeFront) {
+                case 'percentage':
+                    $dbDiscType  = 'custom';
+                    $discountAmt = $base * ($discVal / 100);
+                    $discPct     = $discVal;
+                    break;
+                case 'fixed':
+                    $dbDiscType  = 'custom';
+                    $discountAmt = $discVal;
+                    break;
+                case 'senior':
+                    $dbDiscType  = 'senior_citizen';
+                    $discountAmt = $base * 0.20;
+                    $discPct     = 20;
+                    break;
+                case 'pwd':
+                    $dbDiscType  = 'pwd';
+                    $discountAmt = $base * 0.20;
+                    $discPct     = 20;
+                    break;
+                default:
+                    $dbDiscType  = 'none';
+                    $discountAmt = 0;
+            }
+
+            $discountAmt = min($discountAmt, $base);
+            $total       = max(0, $base - $discountAmt);
+
+            // ── 4. Generate JO number ────────────────────────────────────────
+            $joNumber = generateJobOrderNumber();
+
+            // ── 5. Insert job order ──────────────────────────────────────────
+            $db->query(
+                "INSERT INTO job_orders
+                    (job_order_number, customer_id, vehicle_id,
+                     subtotal, labor_total, parts_total,
+                     discount_type, discount_amount, discount_percentage,
+                     total_amount, payment_method, payment_status,
+                     status, priority, notes, created_by)
+                 VALUES (?,?,?, ?,?,?, ?,?,?, ?,?,?, ?,?,?,?)",
+                [
+                    $joNumber,
+                    $customerId,
+                    $vehicleId,
+                    $subtotal,
+                    0,                // labor_total — handled via services
+                    $partsCost,
+                    $dbDiscType,
+                    $discountAmt,
+                    $discPct,
+                    $total,
+                    sanitize($input['payment_method'] ?? 'cash'),
+                    sanitize($input['payment_status'] ?? 'pending'),
+                    'pending',
+                    'normal',
+                    sanitize($input['notes'] ?? ''),
+                    $currentUserId,
+                ]
+            );
+            $jobOrderId = $db->lastInsertId();
+
+            // ── 6. Insert job_order_services ─────────────────────────────────
+            foreach ($items as $item) {
+                if (($item['type'] ?? '') === 'service' && !empty($item['id'])) {
+                    $db->query(
+                        "INSERT INTO job_order_services (job_order_id, service_id, service_name, service_price, labor_cost, quantity, total) VALUES (?,?,?,?,?,?,?)",
+                        [$jobOrderId, $item['id'], sanitize($item['name']), (float)$item['price'], 0, (int)($item['qty']??1), (float)$item['price'] * (int)($item['qty']??1)]
+                    );
+                } elseif (($item['type'] ?? '') === 'bundle' && !empty($item['id'])) {
+                    $db->query(
+                        "INSERT INTO job_order_services (job_order_id, bundle_id, service_name, service_price, labor_cost, quantity, total) VALUES (?,?,?,?,?,?,?)",
+                        [$jobOrderId, $item['id'], sanitize($item['name']), (float)$item['price'], 0, (int)($item['qty']??1), (float)$item['price'] * (int)($item['qty']??1)]
+                    );
                 }
             }
 
-            // Generate job order number
-            $input['job_order_number'] = generateJobOrderNumber();
-            $input['created_by'] = $currentUserId;
+            // ── 7. Insert job_order_products + deduct inventory ──────────────
+            foreach ($products as $prod) {
+                if (!empty($prod['id'])) {
+                    $prodId  = (int)$prod['id'];
+                    $prodQty = (int)($prod['qty'] ?? 1);
+                    $prodPrice = (float)$prod['price'];
 
-            $jobOrderId = $jobOrderModel->create($input);
+                    // Check stock
+                    $stock = $db->fetch("SELECT quantity, product_name FROM products WHERE id=?", [$prodId]);
+                    if (!$stock) continue;
+                    if ($stock['quantity'] < $prodQty) {
+                        throw new Exception("Insufficient stock for: {$stock['product_name']} (available: {$stock['quantity']})");
+                    }
 
-            if (!$jobOrderId) {
-                throw new Exception('Failed to create job order');
+                    // Insert into job_order_products
+                    $db->query(
+                        "INSERT INTO job_order_products (job_order_id, product_id, product_name, product_type, unit_price, quantity, total) VALUES (?,?,?,?,?,?,?)",
+                        [$jobOrderId, $prodId, sanitize($prod['name']), 'parts', $prodPrice, $prodQty, $prodPrice * $prodQty]
+                    );
+
+                    // Deduct from inventory
+                    $db->query("UPDATE products SET quantity = quantity - ? WHERE id=?", [$prodQty, $prodId]);
+
+                    // Log inventory transaction
+                    $db->query(
+                        "INSERT INTO inventory_transactions (product_id, transaction_type, quantity, reference_type, reference_id, notes, created_by) VALUES (?,?,?,?,?,?,?)",
+                        [$prodId, 'stock_out', $prodQty, 'job_order', $jobOrderId, "Used in JO #{$joNumber}", $currentUserId]
+                    );
+                }
             }
 
-            // Log activity
-            logActivity($currentUserId, 'create_job_order', "Created job order #{$input['job_order_number']}");
+            logActivity($currentUserId, 'create_job_order', "Created job order #{$joNumber}");
 
             $response['success'] = true;
             $response['message'] = 'Job order created successfully';
-            $response['data'] = ['id' => $jobOrderId, 'job_order_number' => $input['job_order_number']];
+            $response['data']    = ['id' => $jobOrderId, 'job_order_number' => $joNumber];
             http_response_code(201);
             break;
 
+        // ── PUT (update) ───────────────────────────────────────────────────────
         case 'PUT':
-            // Update job order
-            if (!$id) {
-                throw new Exception('Job order ID is required');
-            }
-
-            $jobOrder = $jobOrderModel->findById($id);
-            if (!$jobOrder) {
-                throw new Exception('Job order not found');
-            }
-
+            if (!$id) throw new Exception('Job order ID is required');
             $input = json_decode(file_get_contents('php://input'), true);
+            if (!$input) throw new Exception('Invalid JSON payload');
 
-            $updated = $jobOrderModel->update($id, $input);
+            // Get current JO to find customer_id and vehicle_id
+            $jo = $db->fetch("SELECT customer_id, vehicle_id, job_order_number FROM job_orders WHERE id=?", [$id]);
+            if (!$jo) throw new Exception('Job order not found');
 
-            if (!$updated) {
-                throw new Exception('Failed to update job order');
+            // Update customer
+            $db->query(
+                "UPDATE customers SET full_name=?, phone=?, email=?, address=? WHERE id=?",
+                [
+                    sanitize($input['customer_name']    ?? ''),
+                    sanitize($input['customer_phone']   ?? ''),
+                    sanitize($input['customer_email']   ?? '') ?: null,
+                    sanitize($input['customer_address'] ?? '') ?: null,
+                    $jo['customer_id'],
+                ]
+            );
+
+            // Update vehicle
+            $db->query(
+                "UPDATE vehicles SET brand=?, model=?, year_model=?, plate_number=?, color=?, mileage=? WHERE id=?",
+                [
+                    sanitize($input['vehicle_make']    ?? ''),
+                    sanitize($input['vehicle_model']   ?? ''),
+                    sanitize($input['vehicle_year']    ?? ''),
+                    sanitize($input['vehicle_license'] ?? ''),
+                    sanitize($input['vehicle_color']   ?? ''),
+                    sanitize($input['vehicle_mileage'] ?? ''),
+                    $jo['vehicle_id'],
+                ]
+            );
+
+            // Update job order status/payment/notes
+            $db->query(
+                "UPDATE job_orders SET status=?, payment_status=?, payment_method=?, notes=? WHERE id=?",
+                [
+                    sanitize($input['status']         ?? 'pending'),
+                    sanitize($input['payment_status'] ?? 'pending'),
+                    sanitize($input['payment_method'] ?? 'cash'),
+                    sanitize($input['notes']          ?? ''),
+                    $id,
+                ]
+            );
+
+            // Update job_order_services if items provided
+            if (isset($input['items']) && is_array($input['items'])) {
+                $db->query("DELETE FROM job_order_services WHERE job_order_id=?", [$id]);
+                $newSubtotal = 0;
+                foreach ($input['items'] as $item) {
+                    $price = (float)($item['price'] ?? 0);
+                    $qty   = (int)($item['qty']   ?? 1);
+                    $total = $price * $qty;
+                    $newSubtotal += $total;
+                    if (($item['type']??'') === 'bundle') {
+                        $db->query(
+                            "INSERT INTO job_order_services (job_order_id,bundle_id,service_name,service_price,labor_cost,quantity,total) VALUES (?,?,?,?,?,?,?)",
+                            [$id, (int)($item['id']??0), sanitize($item['name']??''), $price, 0, $qty, $total]
+                        );
+                    } else {
+                        $db->query(
+                            "INSERT INTO job_order_services (job_order_id,service_id,service_name,service_price,labor_cost,quantity,total) VALUES (?,?,?,?,?,?,?)",
+                            [$id, !empty($item['id']) ? (int)$item['id'] : null, sanitize($item['name']??''), $price, 0, $qty, $total]
+                        );
+                    }
+                }
+                // Recalculate subtotal
+                $partsTotal = (float)($db->fetch("SELECT parts_total FROM job_orders WHERE id=?",[$id])['parts_total']??0);
+                $newTotal   = max(0, $newSubtotal + $partsTotal - (float)($jo['discount_amount']??0));
+                $db->query("UPDATE job_orders SET subtotal=?, total_amount=? WHERE id=?", [$newSubtotal, $newTotal, $id]);
             }
 
-            // Log activity
-            logActivity($currentUserId, 'update_job_order', "Updated job order #{$jobOrder['job_order_number']}");
+            // Update job_order_products if products provided — restore old stock, deduct new
+            if (isset($input['products']) && is_array($input['products'])) {
+                // Restore old product quantities
+                $oldProds = $db->fetchAll(
+                    "SELECT product_id, quantity FROM job_order_products WHERE job_order_id=? AND product_id IS NOT NULL",
+                    [$id]
+                );
+                foreach ($oldProds as $op) {
+                    $db->query("UPDATE products SET quantity = quantity + ? WHERE id=?", [$op['quantity'], $op['product_id']]);
+                    $db->query(
+                        "INSERT INTO inventory_transactions (product_id,transaction_type,quantity,reference_type,reference_id,notes,created_by) VALUES (?,?,?,?,?,?,?)",
+                        [$op['product_id'], 'return', $op['quantity'], 'job_order', $id, "Edit restore JO #{$jo['job_order_number']}", $currentUserId]
+                    );
+                }
 
+                // Delete old product rows
+                $db->query("DELETE FROM job_order_products WHERE job_order_id=?", [$id]);
+
+                // Insert new products and deduct stock
+                $newPartsCost = 0;
+                foreach ($input['products'] as $prod) {
+                    if (empty($prod['id'])) continue;
+                    $prodId    = (int)$prod['id'];
+                    $prodQty   = (int)($prod['qty'] ?? 1);
+                    $prodPrice = (float)($prod['price'] ?? 0);
+
+                    $stock = $db->fetch("SELECT quantity, product_name FROM products WHERE id=?", [$prodId]);
+                    if (!$stock || $stock['quantity'] < $prodQty) {
+                        throw new Exception("Insufficient stock for: " . ($stock['product_name'] ?? "product #$prodId"));
+                    }
+
+                    $db->query(
+                        "INSERT INTO job_order_products (job_order_id,product_id,product_name,product_type,unit_price,quantity,total) VALUES (?,?,?,?,?,?,?)",
+                        [$id, $prodId, sanitize($prod['name']??''), 'parts', $prodPrice, $prodQty, $prodPrice * $prodQty]
+                    );
+                    $db->query("UPDATE products SET quantity = quantity - ? WHERE id=?", [$prodQty, $prodId]);
+                    $db->query(
+                        "INSERT INTO inventory_transactions (product_id,transaction_type,quantity,reference_type,reference_id,notes,created_by) VALUES (?,?,?,?,?,?,?)",
+                        [$prodId, 'stock_out', $prodQty, 'job_order', $id, "Used in JO #{$jo['job_order_number']}", $currentUserId]
+                    );
+                    $newPartsCost += $prodPrice * $prodQty;
+                }
+
+                // Recalculate parts_total and total_amount
+                $currentSubtotal = (float)($db->fetch("SELECT subtotal FROM job_orders WHERE id=?", [$id])['subtotal'] ?? 0);
+                $discountAmt     = (float)($db->fetch("SELECT discount_amount FROM job_orders WHERE id=?", [$id])['discount_amount'] ?? 0);
+                $newTotal        = max(0, $currentSubtotal + $newPartsCost - $discountAmt);
+                $db->query("UPDATE job_orders SET parts_total=?, total_amount=? WHERE id=?", [$newPartsCost, $newTotal, $id]);
+            }
+
+            logActivity($currentUserId, 'update_job_order', "Updated job order #{$jo['job_order_number']}");
             $response['success'] = true;
             $response['message'] = 'Job order updated successfully';
             break;
 
+        // ── DELETE ───────────────────────────────────────────────────────────
         case 'DELETE':
-            // Delete job order
-            if (!$id) {
-                throw new Exception('Job order ID is required');
+            if (!$id) throw new Exception('Job order ID is required');
+            if ($currentUserRole !== 'admin') throw new Exception('Only admins can delete job orders');
+
+            $jo = $db->fetch("SELECT job_order_number FROM job_orders WHERE id=?", [$id]);
+            if (!$jo) throw new Exception('Job order not found');
+
+            // Restore inventory for all products used in this JO
+            $joProds = $db->fetchAll(
+                "SELECT product_id, quantity FROM job_order_products WHERE job_order_id=? AND product_id IS NOT NULL",
+                [$id]
+            );
+            foreach ($joProds as $p) {
+                $db->query("UPDATE products SET quantity = quantity + ? WHERE id=?", [$p['quantity'], $p['product_id']]);
+                $db->query(
+                    "INSERT INTO inventory_transactions (product_id, transaction_type, quantity, reference_type, reference_id, notes, created_by) VALUES (?,?,?,?,?,?,?)",
+                    [$p['product_id'], 'return', $p['quantity'], 'job_order', $id, "JO #{$jo['job_order_number']} deleted", $currentUserId]
+                );
             }
 
-            // Only admins can delete
-            if ($currentUserRole !== 'admin') {
-                throw new Exception('Unauthorized: Only admins can delete job orders');
-            }
-
-            $jobOrder = $jobOrderModel->findById($id);
-            if (!$jobOrder) {
-                throw new Exception('Job order not found');
-            }
-
-            $deleted = $jobOrderModel->delete($id);
-
-            if (!$deleted) {
-                throw new Exception('Failed to delete job order');
-            }
-
-            // Log activity
-            logActivity($currentUserId, 'delete_job_order', "Deleted job order #{$jobOrder['job_order_number']}");
+            $db->query("DELETE FROM job_orders WHERE id=?", [$id]);
+            logActivity($currentUserId, 'delete_job_order', "Deleted job order #{$jo['job_order_number']}");
 
             $response['success'] = true;
             $response['message'] = 'Job order deleted successfully';
@@ -178,114 +435,9 @@ try {
     }
 
 } catch (Exception $e) {
+    error_log("Job order API error: " . $e->getMessage());
     $response['message'] = $e->getMessage();
     http_response_code(400);
 }
 
 echo json_encode($response);
-
-/*
-Job Estimate Print Template
----------------------------
-This template is for the Job Estimate print view and is typically used in a front-end view file,
-not in an API endpoint. It is provided here for reference.
-
-<div class="modal fade" id="jobEstimateModal" tabindex="-1" aria-labelledby="jobEstimateModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header" style="background: #f8f9fa; border-bottom: 2px solid #e0e0e0;">
-                <h5 class="modal-title" id="jobEstimateModalLabel" style="color: #000;">
-                    <i class="bi bi-calculator"></i> Job Estimate Calculator
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body" style="padding: 30px;">
-                <div class="row g-3">
-                    <div class="col-12">
-                        <h6 style="color: #000; margin-bottom: 15px;">Select Services</h6>
-                        <div style="max-height: 300px; overflow-y: auto; border: 1.5px solid #e0e0e0; border-radius: 8px; padding: 15px; background: #f9f9f9;">
-                            <?php if (!empty($allActiveServices)): ?>
-                                <?php foreach ($allActiveServices as $service): ?>
-                                    <div class="form-check mb-2" style="padding: 10px; background: #fff; border-radius: 6px;">
-                                        <input class="form-check-input estimate-service" type="checkbox"
-                                               data-price="<?php echo $service['service_price'] + $service['labor_cost']; ?>"
-                                               id="est_service_<?php echo $service['id']; ?>">
-                                        <label class="form-check-label" for="est_service_<?php echo $service['id']; ?>" style="color: #000; width: 100%;">
-                                            <div class="d-flex justify-content-between align-items-center">
-                                                <div>
-                                                    <strong><?php echo escape($service['service_name']); ?></strong>
-                                                </div>
-                                                <div>
-                                                    <strong><?php echo formatCurrency($service['service_price'] + $service['labor_cost']); ?></strong>
-                                                </div>
-                                            </div>
-                                        </label>
-                                    </div>
-                                <?php endforeach; ?>
-                            <?php else: ?>
-                                <p style="color: #666; text-align: center;">No services available</p>
-                            <?php endif; ?>
-                        </div>
-                    </div>
-
-                    <div class="col-12">
-                        <div class="card" style="background: #f8f9fa; border: 2px solid #e0e0e0;">
-                            <div class="card-body">
-                                <h6 style="color: #000; margin-bottom: 15px;">Estimate Summary</h6>
-                                <div class="d-flex justify-content-between mb-2">
-                                    <span style="color: #666;">Services Total:</span>
-                                    <strong style="color: #000;" id="estimateTotal">₱0.00</strong>
-                                </div>
-
-                                <div class="mb-2">
-                                    <label class="form-label form-label-sm" style="color:#000;font-weight:500;">
-                                        <i class="bi bi-box-seam"></i> Products
-                                    </label>
-                                    <div class="d-flex gap-1 mb-1">
-                                        <select class="form-select form-select-sm" id="est_product_select" style="flex:1;">
-                                            <option value="">— Select product —</option>
-                                            <?php foreach ($allInventoryProducts as $prod): ?>
-                                            <option value="<?php echo $prod['id']; ?>"
-                                                data-name="<?php echo addslashes(escape($prod['product_name'])); ?>"
-                                                data-price="<?php echo $prod['selling_price']; ?>"
-                                                data-stock="<?php echo $prod['quantity']; ?>">
-                                                <?php echo escape($prod['product_name']); ?> — ₱<?php echo number_format($prod['selling_price'], 2); ?> (<?php echo $prod['quantity']; ?> in stock)
-                                            </option>
-                                            <?php endforeach; ?>
-                                            <?php if (empty($allInventoryProducts)): ?>
-                                            <option disabled>No products in inventory</option>
-                                            <?php endif; ?>
-                                        </select>
-                                        <input type="number" id="est_product_qty" class="form-control form-control-sm text-center" value="1" min="1" style="width:55px;">
-                                        <button type="button" class="btn btn-sm btn-dark px-2" onclick="estAddProduct()"><i class="bi bi-plus"></i></button>
-                                    </div>
-                                    <div id="estProductsList" style="max-height:120px;overflow-y:auto;"></div>
-                                </div>
-
-                                <div class="d-flex justify-content-between mb-2">
-                                    <span style="color: #666;">Products Total:</span>
-                                    <strong style="color: #000;" id="estimateProductsTotal">₱0.00</strong>
-                                </div>
-
-                                <hr style="border-color: #e0e0e0;">
-                                <div class="d-flex justify-content-between">
-                                    <strong style="color: #000;">Grand Total:</strong>
-                                    <h4 style="color: #000; margin: 0;" id="estimateGrandTotal">₱0.00</h4>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer" style="background: #f8f9fa; border-top: 2px solid #e0e0e0;">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                    <i class="bi bi-x-circle"></i> Close
-                </button>
-                <button type="button" class="btn btn-primary" onclick="window.print()">
-                    <i class="bi bi-printer"></i> Print Estimate
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-*/

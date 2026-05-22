@@ -19,12 +19,17 @@ if (!isLoggedIn()) {
     jsonResponse(['success' => false, 'message' => 'Unauthorized access'], 401);
 }
 
-if (!hasRole('admin')) {
+if (!hasRole('Admin')) {
     jsonResponse(['success' => false, 'message' => 'Insufficient permissions'], 403);
 }
 
 $staffModel = new Staff();
 $method = $_SERVER['REQUEST_METHOD'];
+
+// Allow method override for multipart form PUT requests
+if ($method === 'POST' && !empty($_POST['_method'])) {
+    $method = strtoupper($_POST['_method']);
+}
 
 try {
     switch ($method) {
@@ -130,6 +135,12 @@ function handlePost($staffModel) {
     if ($staffModel->emailExists($_POST['email'])) {
         jsonResponse(['success' => false, 'message' => 'Email already exists'], 400);
     }
+
+    // Validate role value
+    $allowedRoles = ['cashier', 'chief_mechanic', 'service_adviser', 'lead_man', 'technician'];
+    if (!in_array($_POST['role'], $allowedRoles, true)) {
+        jsonResponse(['success' => false, 'message' => 'Invalid staff role'], 400);
+    }
     
     // Handle profile image upload
     $profileImage = null;
@@ -177,8 +188,12 @@ function handlePost($staffModel) {
  * Handle PUT requests (Update)
  */
 function handlePut($staffModel) {
-    // Parse PUT data
-    parse_str(file_get_contents("php://input"), $_PUT);
+    // Parse PUT data or method-override POST data
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        $_PUT = $_POST;
+    } else {
+        parse_str(file_get_contents("php://input"), $_PUT);
+    }
     
     // Get staff ID
     if (empty($_PUT['id'])) {
@@ -193,7 +208,20 @@ function handlePut($staffModel) {
         jsonResponse(['success' => false, 'message' => 'Staff not found'], 404);
     }
     
-    // Validate required fields
+    // If this is a status-only update, allow it without full validation
+    if (!empty($_PUT['status']) && empty($_PUT['full_name']) && empty($_PUT['username']) && empty($_PUT['email']) && empty($_PUT['contact_number']) && empty($_PUT['role'])) {
+        $data = ['status' => sanitize($_PUT['status'])];
+        $success = $staffModel->update($staffId, $data);
+        
+        if (!$success) {
+            jsonResponse(['success' => false, 'message' => 'Failed to update staff status'], 500);
+        }
+        
+        logActivity($_SESSION['user_id'], 'update_staff_status', 'Updated staff status: ' . $existingStaff['full_name']);
+        jsonResponse(['success' => true, 'message' => 'Staff status updated successfully']);
+    }
+    
+    // Validate required fields for full update
     $requiredFields = ['full_name', 'username', 'email', 'contact_number', 'role'];
     foreach ($requiredFields as $field) {
         if (empty($_PUT[$field])) {
@@ -226,6 +254,21 @@ function handlePut($staffModel) {
     if ($staffModel->emailExists($_PUT['email'], $staffId)) {
         jsonResponse(['success' => false, 'message' => 'Email already exists'], 400);
     }
+
+    // Validate role value
+    $allowedRoles = ['cashier', 'chief_mechanic', 'service_adviser', 'lead_man', 'technician'];
+    if (!in_array($_PUT['role'], $allowedRoles, true)) {
+        jsonResponse(['success' => false, 'message' => 'Invalid staff role'], 400);
+    }
+    
+    // Handle profile image upload if provided
+    if (isset($_FILES['profile_image']) && $_FILES['profile_image']['error'] === UPLOAD_ERR_OK) {
+        $uploadResult = uploadFile($_FILES['profile_image'], ['jpg', 'jpeg', 'png'], MAX_FILE_SIZE);
+        if (!$uploadResult['success']) {
+            jsonResponse(['success' => false, 'message' => $uploadResult['message']], 400);
+        }
+        $_PUT['profile_image'] = $uploadResult['filename'];
+    }
     
     // Prepare data
     $data = [
@@ -241,6 +284,10 @@ function handlePut($staffModel) {
     // Add password if provided
     if (!empty($_PUT['password'])) {
         $data['password'] = $_PUT['password'];
+    }
+    
+    if (!empty($_PUT['profile_image'])) {
+        $data['profile_image'] = $_PUT['profile_image'];
     }
     
     // Update staff
