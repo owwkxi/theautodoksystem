@@ -129,26 +129,52 @@ class Report {
     }
 
     /**
-     * Get service type statistics
+     * Get service type statistics — groups by actual service name from job_order_services,
+     * falls back to job_orders if no service rows exist
      */
     public function getServiceTypeStats($dateFrom = null, $dateTo = null) {
-        $sql = "SELECT 
-                    jos.service_name as service_name,
-                    COUNT(*) as count,
-                    SUM(jos.total) as total_revenue
-                FROM job_order_services jos
-                INNER JOIN job_orders jo ON jos.job_order_id = jo.id";
-        
         $params = [];
+        $dateWhere = '';
         if ($dateFrom && $dateTo) {
-            $sql .= " WHERE DATE(jo.created_at) BETWEEN ? AND ?";
+            $dateWhere = " AND DATE(jo.created_at) BETWEEN ? AND ?";
             $params[] = $dateFrom;
             $params[] = $dateTo;
         }
 
-        $sql .= " GROUP BY jos.service_name ORDER BY total_revenue DESC";
-        
-        return $this->db->fetchAll($sql, $params);
+        // Try job_order_services first (has actual service names)
+        $sql = "SELECT 
+                    jos.service_name AS service_name,
+                    COUNT(DISTINCT jo.id) AS count,
+                    SUM(jos.total) AS total_revenue
+                FROM job_order_services jos
+                INNER JOIN job_orders jo ON jos.job_order_id = jo.id
+                WHERE 1=1 {$dateWhere}
+                GROUP BY jos.service_name
+                ORDER BY total_revenue DESC";
+
+        $rows = $this->db->fetchAll($sql, $params);
+
+        // If no service rows, fall back to job_orders grouped by payment_method as a proxy
+        if (empty($rows)) {
+            $params2 = [];
+            $dateWhere2 = '';
+            if ($dateFrom && $dateTo) {
+                $dateWhere2 = " WHERE DATE(created_at) BETWEEN ? AND ?";
+                $params2[] = $dateFrom;
+                $params2[] = $dateTo;
+            }
+            $sql2 = "SELECT 
+                        COALESCE(NULLIF(notes,''), 'General Service') AS service_name,
+                        COUNT(*) AS count,
+                        SUM(total_amount) AS total_revenue
+                     FROM job_orders
+                     {$dateWhere2}
+                     GROUP BY service_name
+                     ORDER BY total_revenue DESC";
+            $rows = $this->db->fetchAll($sql2, $params2);
+        }
+
+        return $rows;
     }
 
     /**

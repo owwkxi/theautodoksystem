@@ -148,7 +148,7 @@ class Service {
                 $data['service_name'],
                 $data['service_code'],
                 $data['description'] ?? null,
-                $data['service_price'],
+                $data['service_price'] ?? $data['base_price'] ?? 0,
                 $data['labor_cost'] ?? 0,
                 $data['status'] ?? 'active',
                 $id

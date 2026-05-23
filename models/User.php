@@ -49,33 +49,24 @@ class User {
 
     /**
      * Find user by username (includes password for authentication)
-     * @param string $username Username
-     * @return array|false User data with password
      */
     public function findByUsername($username) {
-        $sql = "SELECT * FROM users WHERE username = ?";
+        $sql = "SELECT id, username, password, full_name, email, role, status FROM users WHERE username = ?";
         return $this->db->fetch($sql, [$username]);
     }
 
     /**
      * Authenticate user with username and password
-     * @param string $username Username
-     * @param string $password Plain text password
-     * @return array|false User data without password on success, false on failure
      */
     public function authenticate($username, $password) {
         $user = $this->findByUsername($username);
-        
-        if (!$user) {
-            return false;
-        }
 
-        // Verify password using password_verify
-        if (!password_verify($password, $user['password'])) {
-            return false;
-        }
+        if (!$user) return false;
 
-        // Remove password from returned data
+        if ($user['status'] !== 'active') return false;
+
+        if (!password_verify($password, $user['password'])) return false;
+
         unset($user['password']);
         return $user;
     }
