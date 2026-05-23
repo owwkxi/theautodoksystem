@@ -7,6 +7,12 @@ require_once __DIR__ . '/../../includes/session.php';
 require_once __DIR__ . '/../../includes/security.php';
 
 requireLogin();
+
+// Technicians cannot access inventory
+if (($_SESSION['user_role'] ?? '') === 'technician') {
+    redirect(APP_URL . '/views/services/manage.php?tab=job_orders');
+}
+
 $pageTitle = 'Inventory';
 
 $db     = Database::getInstance()->getConnection();

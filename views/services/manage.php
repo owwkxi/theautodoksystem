@@ -12,7 +12,14 @@ require_once '../../models/Staff.php';
 // Check authentication
 requireLogin();
 
-$pageTitle = 'Services Management';
+$isTechnician = ($_SESSION['user_role'] ?? '') === 'technician';
+
+// Technicians can only access the job_orders tab
+if ($isTechnician && ($_GET['tab'] ?? 'job_orders') !== 'job_orders') {
+    redirect(APP_URL . '/views/services/manage.php?tab=job_orders');
+}
+
+$pageTitle = $isTechnician ? 'Job Orders' : 'Services Management';
 
 $serviceModel = new Service();
 $bundleModel = new ServiceBundle();
@@ -39,7 +46,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         
         if ($result) {
             setMessage('Service created successfully', 'success');
-            logActivity('create_service', 'Created service: ' . $data['service_name']);
+            logActivity($_SESSION['user_id'] ?? 0, 'create_service', 'Created service: ' . $data['service_name']);
             redirect('manage.php?tab=services');
         } else {
             setMessage('Failed to create service. Service code may already exist.', 'error');
@@ -75,7 +82,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             
             if ($result) {
                 setMessage('Bundle created successfully', 'success');
-                logActivity('create_bundle', 'Created bundle: ' . $data['bundle_name']);
+                logActivity($_SESSION['user_id'] ?? 0, 'create_bundle', 'Created bundle: ' . $data['bundle_name']);
                 redirect('manage.php?tab=bundles');
             } else {
                 setMessage('Failed to create bundle. Please check the error log.', 'error');
@@ -226,6 +233,17 @@ if ($activeTab === 'job_orders') {
         $joStatus = $_GET['jo_status'] ?? '';
         $joWhere  = 'WHERE 1=1';
         $joParams = [];
+
+        // Technicians only see job orders assigned to them
+        if ($isTechnician) {
+            $techStaffId = $_SESSION['user_id'] ?? 0;
+            $joWhere .= " AND EXISTS (
+                SELECT 1 FROM job_order_technicians jot
+                WHERE jot.job_order_id = jo.id AND jot.technician_id = ?
+            )";
+            $joParams[] = $techStaffId;
+        }
+
         if ($joSearch) {
             $joWhere .= " AND (jo.job_order_number LIKE ? OR c.full_name LIKE ? OR v.plate_number LIKE ?)";
             $joParams = array_merge($joParams, ["%$joSearch%", "%$joSearch%", "%$joSearch%"]);
@@ -602,6 +620,13 @@ include_once '../partials/header.php';
                         <button type="submit" class="btn btn-sm btn-dark"><i class="bi bi-search"></i> Search</button>
                         <a href="?tab=job_orders" class="btn btn-sm btn-secondary ms-1"><i class="bi bi-x"></i> Clear</a>
                     </div>
+                    <?php if (!$isTechnician): ?>
+                    <div class="col-auto ms-auto">
+                        <button type="button" class="btn btn-sm btn-dark" data-bs-toggle="modal" data-bs-target="#createJobOrderModal">
+                            <i class="bi bi-plus-circle"></i> Create Job Order
+                        </button>
+                    </div>
+                    <?php endif; ?>
                 </form>
             </div>
         </div>
@@ -611,10 +636,12 @@ include_once '../partials/header.php';
                 <?php if (empty($allJobOrders)): ?>
                     <div class="text-center py-5">
                         <i class="bi bi-file-earmark-text" style="font-size:3rem;color:#ccc;"></i>
-                        <p class="text-muted mt-3">No job orders found</p>
+                        <p class="text-muted mt-3"><?php echo $isTechnician ? 'No job orders assigned to you' : 'No job orders found'; ?></p>
+                        <?php if (!$isTechnician): ?>
                         <button class="btn btn-dark btn-sm" data-bs-toggle="modal" data-bs-target="#createJobOrderModal">
                             <i class="bi bi-plus-circle"></i> Create Job Order
                         </button>
+                        <?php endif; ?>
                     </div>
                 <?php else: ?>
                 <div class="table-responsive">
@@ -663,9 +690,11 @@ include_once '../partials/header.php';
                                 <td><?php echo date('M d, Y', strtotime($jo['created_at'])); ?></td>
                                 <td>
                                     <div class="btn-group btn-group-sm">
+                                        <!-- View — always visible -->
                                         <button class="btn btn-outline-secondary py-0 px-2" onclick="viewJobOrder(<?php echo $jo['id']; ?>)" title="View">
                                             <i class="bi bi-eye"></i>
                                         </button>
+                                        <?php if (!$isTechnician): ?>
                                         <button class="btn btn-outline-dark py-0 px-2" onclick="editJobOrder(<?php echo $jo['id']; ?>)" title="Edit">
                                             <i class="bi bi-pencil"></i>
                                         </button>
@@ -676,6 +705,7 @@ include_once '../partials/header.php';
                                         <button class="btn btn-outline-danger py-0 px-2" onclick="deleteJobOrder(<?php echo $jo['id']; ?>)" title="Delete">
                                             <i class="bi bi-trash"></i>
                                         </button>
+                                        <?php endif; ?>
                                         <?php endif; ?>
                                     </div>
                                 </td>
@@ -1298,13 +1328,23 @@ include_once '../partials/header.php';
                                         <option value="bank_transfer">Bank Transfer</option>
                                     </select>
                                 </div>
-                                <div>
+                                <div class="mb-2">
                                     <label class="form-label form-label-sm">Payment Status</label>
-                                    <select class="form-select form-select-sm" id="jo_payment_status">
+                                    <select class="form-select form-select-sm" id="jo_payment_status" onchange="joTogglePartial()">
                                         <option value="pending">Pending</option>
                                         <option value="partial">Partial</option>
                                         <option value="paid">Paid</option>
                                     </select>
+                                </div>
+                                <!-- Partial payment field — shown only when Partial is selected -->
+                                <div id="joPartialRow" style="display:none;">
+                                    <label class="form-label form-label-sm">Amount Paid (₱) <span class="text-danger">*</span></label>
+                                    <input type="number" class="form-control form-control-sm" id="jo_partial_amount"
+                                           min="0" step="0.01" value="0" oninput="joCalcPartial()" placeholder="0.00">
+                                    <div class="d-flex justify-content-between mt-2">
+                                        <span class="small text-muted">Remaining Balance</span>
+                                        <strong class="text-danger" id="joRemainingBalance">₱0.00</strong>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -1647,7 +1687,6 @@ function joCalc() {
     const discType = document.getElementById('jo_discount_type').value;
     const discVal  = parseFloat(document.getElementById('jo_discount_value').value) || 0;
 
-    // Show/hide discount value row
     const discRow = document.getElementById('joDiscountAmtRow');
     discRow.style.display = (discType === 'none' || discType === 'senior' || discType === 'pwd') ? 'none' : '';
 
@@ -1664,6 +1703,32 @@ function joCalc() {
     document.getElementById('joPartsDisplay').textContent    = '₱' + partsTotal.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
     document.getElementById('joDiscountDisplay').textContent = '-₱' + discountAmt.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
     document.getElementById('joTotal').textContent           = '₱' + total.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+
+    // Recalc partial balance if partial is selected
+    joCalcPartial();
+}
+
+function joTogglePartial() {
+    const status = document.getElementById('jo_payment_status').value;
+    const row    = document.getElementById('joPartialRow');
+    row.style.display = status === 'partial' ? 'block' : 'none';
+    if (status !== 'partial') {
+        document.getElementById('jo_partial_amount').value = '0';
+        document.getElementById('joRemainingBalance').textContent = '₱0.00';
+    } else {
+        joCalcPartial();
+    }
+}
+
+function joCalcPartial() {
+    const status = document.getElementById('jo_payment_status').value;
+    if (status !== 'partial') return;
+    const totalText = document.getElementById('joTotal').textContent.replace(/[₱,]/g, '');
+    const total     = parseFloat(totalText) || 0;
+    const paid      = parseFloat(document.getElementById('jo_partial_amount').value) || 0;
+    const remaining = Math.max(0, total - paid);
+    const fmt = v => '₱' + v.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    document.getElementById('joRemainingBalance').textContent = fmt(remaining);
 }
 
 function joSave() {
@@ -1690,6 +1755,7 @@ function joSave() {
         parts_cost:       joProducts.reduce((s, p) => s + p.price * p.qty, 0),
         payment_method:   document.getElementById('jo_payment_method').value,
         payment_status:   document.getElementById('jo_payment_status').value,
+        partial_amount:   parseFloat(document.getElementById('jo_partial_amount').value) || 0,
         notes:            document.getElementById('jo_notes').value.trim(),
         items:            joItems,
         products:         joProducts
@@ -1721,6 +1787,8 @@ function joReset() {
     joRenderProducts();
     joCalc();
     document.getElementById('joForm').reset();
+    document.getElementById('joPartialRow').style.display = 'none';
+    document.getElementById('joRemainingBalance').textContent = '₱0.00';
 }
 
 function joPrintPreview() {
@@ -2651,11 +2719,21 @@ function saveEditBundle() {
                   </div>
                   <div>
                     <label class="form-label form-label-sm">Payment Status</label>
-                    <select class="form-select form-select-sm" id="editJoPayStatus">
+                    <select class="form-select form-select-sm" id="editJoPayStatus" onchange="editJoTogglePartial()">
                       <option value="pending">Pending</option>
                       <option value="partial">Partial</option>
                       <option value="paid">Paid</option>
                     </select>
+                  </div>
+                  <!-- Partial payment field -->
+                  <div id="editJoPartialRow" style="display:none;margin-top:12px;">
+                    <label class="form-label form-label-sm">Amount Paid (₱) <span class="text-danger">*</span></label>
+                    <input type="number" class="form-control form-control-sm" id="editJoPartialAmount"
+                           min="0" step="0.01" value="0" oninput="editJoCalcPartial()" placeholder="0.00">
+                    <div class="d-flex justify-content-between mt-2">
+                      <span class="small text-muted">Remaining Balance</span>
+                      <strong class="text-danger" id="editJoRemainingBalance">₱0.00</strong>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -2851,6 +2929,7 @@ function viewJobOrder(id) {
                 <div><small class="text-muted d-block">Status</small><span class="badge bg-${statusBadge[d.status]||'secondary'}">${(d.status||'').replace(/_/g,' ')}</span></div>
                 <div><small class="text-muted d-block">Payment</small><span class="badge bg-${payBadge[d.payment_status]||'secondary'}">${d.payment_status||'—'}</span></div>
                 <div><small class="text-muted d-block">Method</small><span class="badge bg-dark">${(d.payment_method||'—').replace(/_/g,' ')}</span></div>
+                ${d.payment_status==='partial' ? `<div><small class="text-muted d-block">Paid</small><strong class="text-success">${fmt(d.partial_amount)}</strong></div><div><small class="text-muted d-block">Balance</small><strong class="text-danger">${fmt(parseFloat(d.total_amount||0)-parseFloat(d.partial_amount||0))}</strong></div>` : ''}
               </div>
               <!-- Services / Items table -->
               <div style="font-size:8.5pt;font-weight:700;letter-spacing:.5px;margin-bottom:4px;">SERVICES / ITEMS</div>
@@ -2931,9 +3010,32 @@ function editJoUpdateBilling() {
     const fmt = v => '₱' + parseFloat(v||0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,',');
     const subtotal = editJoItems.reduce((s,i)=>s+i.price*i.qty,0);
     document.getElementById('editJoSubtotal').textContent = fmt(subtotal);
-    // recalc total (parts_total stays from DB, only services change)
     const parts = parseFloat(document.getElementById('editJoPartsCost').textContent.replace(/[₱,]/g,''))||0;
     document.getElementById('editJoTotal').textContent = fmt(subtotal + parts);
+    editJoCalcPartial();
+}
+
+function editJoTogglePartial() {
+    const status = document.getElementById('editJoPayStatus').value;
+    const row    = document.getElementById('editJoPartialRow');
+    row.style.display = status === 'partial' ? 'block' : 'none';
+    if (status !== 'partial') {
+        document.getElementById('editJoPartialAmount').value = '0';
+        document.getElementById('editJoRemainingBalance').textContent = '₱0.00';
+    } else {
+        editJoCalcPartial();
+    }
+}
+
+function editJoCalcPartial() {
+    const status = document.getElementById('editJoPayStatus').value;
+    if (status !== 'partial') return;
+    const totalText = document.getElementById('editJoTotal').textContent.replace(/[₱,]/g,'');
+    const total     = parseFloat(totalText) || 0;
+    const paid      = parseFloat(document.getElementById('editJoPartialAmount').value) || 0;
+    const remaining = Math.max(0, total - paid);
+    const fmt = v => '₱' + v.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,',');
+    document.getElementById('editJoRemainingBalance').textContent = fmt(remaining);
 }
 
 function editJobOrder(id) {
@@ -2962,6 +3064,16 @@ function editJobOrder(id) {
             document.getElementById('editJoSubtotal').textContent  = fmt(d.subtotal);
             document.getElementById('editJoPartsCost').textContent = fmt(d.parts_total);
             document.getElementById('editJoTotal').textContent     = fmt(d.total_amount);
+            // Show partial row if already partial
+            const partialRow = document.getElementById('editJoPartialRow');
+            if (d.payment_status === 'partial') {
+                partialRow.style.display = 'block';
+                document.getElementById('editJoPartialAmount').value = d.partial_amount || 0;
+                editJoCalcPartial();
+            } else {
+                partialRow.style.display = 'none';
+                document.getElementById('editJoPartialAmount').value = 0;
+            }
             // Pre-load existing services into editJoItems
             editJoItems = (d.services||[]).map(s => ({
                 type: s.bundle_id ? 'bundle' : 'service',
@@ -2998,6 +3110,7 @@ function saveEditJobOrder() {
         status:           document.getElementById('editJoStatus').value,
         payment_method:   document.getElementById('editJoPayMethod').value,
         payment_status:   document.getElementById('editJoPayStatus').value,
+        partial_amount:   parseFloat(document.getElementById('editJoPartialAmount').value) || 0,
         notes:            document.getElementById('editJoNotes').value.trim(),
         items:            editJoItems,
     };
@@ -3033,6 +3146,8 @@ function printJobOrder(id) {
             const partsTotal = parseFloat(d.parts_total || 0);
             const discAmt    = parseFloat(d.discount_amount || 0);
             const total      = parseFloat(d.total_amount || 0);
+            const partialAmt = parseFloat(d.partial_amount || 0);
+            const remaining  = d.payment_status === 'partial' ? Math.max(0, total - partialAmt) : 0;
 
             // Build item rows — same style as joPrintPreview
             let itemRows = '';
@@ -3144,6 +3259,7 @@ function printJobOrder(id) {
                 </td>
                 <td style="padding:6px 8px;border-top:1.5px solid #333;border-bottom:1.5px solid #333;border-left:1px solid #ddd;font-size:8.5pt;color:#555;text-align:right;">
                     TOTAL AMOUNT<br><strong style="font-size:11pt;color:#000;">${fmt(total)}</strong>
+                    ${d.payment_status==='partial' ? `<br><span style="font-size:8pt;color:#555;">Paid: ${fmt(partialAmt)}</span><br><span style="font-size:8pt;color:#c00;font-weight:700;">Balance: ${fmt(remaining)}</span>` : ''}
                 </td>
             </tr>
         </table>

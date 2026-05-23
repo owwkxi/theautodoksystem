@@ -170,11 +170,17 @@ class AuthController {
     }
 
     /**
-     * Get current user
+     * Get current user — checks both users and staff tables
      */
     public function getCurrentUser() {
-        if (!isLoggedIn()) {
-            return null;
+        if (!isLoggedIn()) return null;
+
+        if (($_SESSION['user_type'] ?? '') === 'staff') {
+            $db = Database::getInstance();
+            return $db->fetch(
+                "SELECT id, username, full_name, role, 'staff' AS user_type FROM staff WHERE id = ?",
+                [$_SESSION['user_id']]
+            );
         }
 
         return $this->userModel->findById($_SESSION['user_id']);

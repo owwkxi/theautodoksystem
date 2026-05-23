@@ -129,7 +129,7 @@ include __DIR__ . '/../partials/header.php';
                             <?php else: ?>
                                 <?php foreach ($serviceStats as $row): ?>
                                     <tr>
-                                        <td><?php echo escape($row['service_type'] ?? 'Unknown'); ?></td>
+                                        <td><?php echo escape($row['service_name'] ?? $row['service_type'] ?? 'Unknown'); ?></td>
                                         <td class="text-end"><?php echo number_format($row['count']); ?></td>
                                         <td class="text-end">₱ <?php echo number_format($row['total_revenue'], 2); ?></td>
                                     </tr>

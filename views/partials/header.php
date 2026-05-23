@@ -36,8 +36,29 @@ if (!defined('APP_ACCESS')) {
                     <span class="bell-dot" id="bellDot"></span>
                 </div>
                 <div class="topbar-user">
-                    <div class="topbar-avatar">
-                        <?php echo strtoupper(substr($_SESSION['full_name'] ?? 'U', 0, 2)); ?>
+                    <?php
+                    // Show profile photo if staff user has one
+                    $profilePhoto = null;
+                    if (($_SESSION['user_type'] ?? '') === 'staff' && !empty($_SESSION['user_id'])) {
+                        try {
+                            $staffRow = Database::getInstance()->fetch(
+                                "SELECT profile_photo FROM staff WHERE id = ? LIMIT 1",
+                                [$_SESSION['user_id']]
+                            );
+                            if (!empty($staffRow['profile_photo'])) {
+                                $profilePhoto = UPLOAD_URL . $staffRow['profile_photo'];
+                            }
+                        } catch (Exception $e) {}
+                    }
+                    ?>
+                    <div class="topbar-avatar" <?php if ($profilePhoto): ?>style="padding:0;overflow:hidden;"<?php endif; ?>>
+                        <?php if ($profilePhoto): ?>
+                            <img src="<?php echo escape($profilePhoto); ?>"
+                                 alt="Profile"
+                                 style="width:100%;height:100%;object-fit:cover;border-radius:50%;">
+                        <?php else: ?>
+                            <?php echo strtoupper(substr($_SESSION['full_name'] ?? 'U', 0, 2)); ?>
+                        <?php endif; ?>
                     </div>
                     <span class="topbar-name"><?php echo escape($_SESSION['full_name'] ?? 'User'); ?></span>
                 </div>

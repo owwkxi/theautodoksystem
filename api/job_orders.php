@@ -189,14 +189,19 @@ try {
             $joNumber = generateJobOrderNumber();
 
             // ── 5. Insert job order ──────────────────────────────────────────
+            // ── 5. Insert job order ──────────────────────────────────────────
+            $partialAmount = (float)($input['partial_amount'] ?? 0);
+            if ($partialAmount < 0) $partialAmount = 0;
+            if ($partialAmount > $total) $partialAmount = $total;
+
             $db->query(
                 "INSERT INTO job_orders
                     (job_order_number, customer_id, vehicle_id,
                      subtotal, labor_total, parts_total,
                      discount_type, discount_amount, discount_percentage,
-                     total_amount, payment_method, payment_status,
+                     partial_amount, total_amount, payment_method, payment_status,
                      status, priority, notes, created_by)
-                 VALUES (?,?,?, ?,?,?, ?,?,?, ?,?,?, ?,?,?,?)",
+                 VALUES (?,?,?, ?,?,?, ?,?,?, ?,?,?,?, ?,?,?,?)",
                 [
                     $joNumber,
                     $customerId,
@@ -207,6 +212,7 @@ try {
                     $dbDiscType,
                     $discountAmt,
                     $discPct,
+                    $partialAmount,
                     $total,
                     sanitize($input['payment_method'] ?? 'cash'),
                     sanitize($input['payment_status'] ?? 'pending'),
@@ -309,12 +315,15 @@ try {
             );
 
             // Update job order status/payment/notes
+            $editPartial = (float)($input['partial_amount'] ?? 0);
+            if ($editPartial < 0) $editPartial = 0;
             $db->query(
-                "UPDATE job_orders SET status=?, payment_status=?, payment_method=?, notes=? WHERE id=?",
+                "UPDATE job_orders SET status=?, payment_status=?, payment_method=?, partial_amount=?, notes=? WHERE id=?",
                 [
                     sanitize($input['status']         ?? 'pending'),
                     sanitize($input['payment_status'] ?? 'pending'),
                     sanitize($input['payment_method'] ?? 'cash'),
+                    $editPartial,
                     sanitize($input['notes']          ?? ''),
                     $id,
                 ]

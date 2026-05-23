@@ -10,27 +10,39 @@ require_once __DIR__ . '/../../models/Report.php';
 
 requireLogin();
 
+$isTechnician = ($_SESSION['user_role'] ?? '') === 'technician';
 $pageTitle = 'Dashboard';
 
 $reportModel  = new Report();
-$stats        = $reportModel->getDashboardStats();
 $monthlyIncome = $reportModel->getMonthlyIncomeStats();
 
-$jobOrderModel   = new JobOrder();
-$recentJobOrders = $jobOrderModel->getRecent(5);
+$jobOrderModel = new JobOrder();
 
-$hour = (int)date('H');
-$greeting = $hour < 12 ? 'Good Morning' : ($hour < 18 ? 'Good Afternoon' : 'Good Evening');
+// Technicians only see their assigned job orders
+if ($isTechnician) {
+    $techId = $_SESSION['user_id'] ?? 0;
+    $db = Database::getInstance();
+    $recentJobOrders = $db->fetchAll(
+        "SELECT jo.* FROM job_orders jo
+         INNER JOIN job_order_technicians jot ON jot.job_order_id = jo.id
+         WHERE jot.technician_id = ?
+         ORDER BY jo.created_at DESC LIMIT 5",
+        [$techId]
+    );
+    $stats = ['yesterday_income' => 0, 'last_month_income' => 0];
+} else {
+    $stats           = $reportModel->getDashboardStats();
+    $recentJobOrders = $jobOrderModel->getRecent(5);
+}
+
+$hour      = (int)date('H');
+$greeting  = $hour < 12 ? 'Good Morning' : ($hour < 18 ? 'Good Afternoon' : 'Good Evening');
 $firstName = escape(explode(' ', $_SESSION['full_name'])[0]);
 
-// Income stats - Show yesterday's daily income and last month's monthly income
-// Daily Income: Yesterday's date
-$dailyDate    = date('Y-m-d', strtotime('-1 day'));
-$dailyIncome  = (float)($stats['yesterday_income'] ?? 0);
-
-// Monthly Income: Last month (first day of previous month)
-$monthlyDate  = date('Y-m-01', strtotime('first day of last month'));
-$monthlyVal   = (float)($stats['last_month_income'] ?? 0);
+$dailyDate   = date('Y-m-d', strtotime('-1 day'));
+$dailyIncome = (float)($stats['yesterday_income'] ?? 0);
+$monthlyDate = date('Y-m-01', strtotime('first day of last month'));
+$monthlyVal  = (float)($stats['last_month_income'] ?? 0);
 
 include __DIR__ . '/../partials/header.php';
 ?>
@@ -47,6 +59,7 @@ include __DIR__ . '/../partials/header.php';
         <span class="qnav-label">Job Order</span>
         <i class="bi bi-chevron-right qnav-arrow"></i>
     </a>
+    <?php if (!$isTechnician): ?>
     <a href="<?php echo APP_URL; ?>/views/staff/index.php" class="qnav-card">
         <div class="qnav-icon"><i class="bi bi-people-fill"></i></div>
         <span class="qnav-label">Technician</span>
@@ -62,9 +75,11 @@ include __DIR__ . '/../partials/header.php';
         <span class="qnav-label">Reports</span>
         <i class="bi bi-chevron-right qnav-arrow"></i>
     </a>
+    <?php endif; ?>
 </div>
 
 <!-- Income cards -->
+<?php if (!$isTechnician): ?>
 <div class="income-grid">
 
     <!-- Daily Income -->
@@ -113,6 +128,7 @@ include __DIR__ . '/../partials/header.php';
         <canvas id="incomeChart"></canvas>
     </div>
 </div>
+<?php endif; ?>
 
 <script>
 (function() {
