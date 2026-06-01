@@ -1,0 +1,3553 @@
+<?php
+define('APP_ACCESS', true);
+require_once '../../includes/config.php';
+require_once '../../includes/session.php';
+require_once '../../includes/Database.php';
+require_once '../../includes/functions.php';
+require_once '../../includes/security.php';
+require_once '../../models/Service.php';
+require_once '../../models/ServiceBundle.php';
+require_once '../../models/Staff.php';
+
+// Check authentication
+requireLogin();
+
+$isTechnician = ($_SESSION['user_role'] ?? '') === 'technician';
+
+// Technicians can only access the job_orders tab
+if ($isTechnician && ($_GET['tab'] ?? 'job_orders') !== 'job_orders') {
+    redirect(APP_URL . '/views/services/manage.php?tab=job_orders');
+}
+
+$pageTitle = $isTechnician ? 'Job Orders' : 'Services Management';
+
+$serviceModel = new Service();
+$bundleModel = new ServiceBundle();
+$staffModel = new Staff();
+
+// Handle form submission for creating service
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'create_service') {
+    try {
+        validateCSRF();
+        
+        // Auto-generate service code if empty
+        $serviceCode = !empty($_POST['service_code']) ? sanitize($_POST['service_code']) : $serviceModel->generateServiceCode();
+        
+        $data = [
+            'service_name' => sanitize($_POST['service_name']),
+            'service_code' => $serviceCode,
+            'description' => sanitize($_POST['description']),
+            'service_price' => (float)$_POST['service_price'],
+            'labor_cost' => (float)$_POST['labor_cost'],
+            'status' => sanitize($_POST['status'])
+        ];
+        
+        $result = $serviceModel->create($data);
+        
+        if ($result) {
+            setMessage('Service created successfully', 'success');
+            logActivity($_SESSION['user_id'] ?? 0, 'create_service', 'Created service: ' . $data['service_name']);
+            redirect('manage.php?tab=services');
+        } else {
+            setMessage('Failed to create service. Service code may already exist.', 'error');
+        }
+    } catch (Exception $e) {
+        error_log("Service creation error: " . $e->getMessage());
+        setMessage('Error: ' . $e->getMessage(), 'error');
+    }
+}
+
+// Handle form submission for creating bundle
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'create_bundle') {
+    try {
+        validateCSRF();
+        
+        $data = [
+            'bundle_name' => sanitize($_POST['bundle_name']),
+            'description' => sanitize($_POST['description']),
+            'package_price' => (float)$_POST['package_price'],
+            'status' => sanitize($_POST['status'])
+        ];
+        
+        // Get selected services
+        $serviceIds = isset($_POST['service_ids']) ? array_map('intval', $_POST['service_ids']) : [];
+        
+        if (empty($serviceIds)) {
+            setMessage('Please select at least one service for the bundle', 'error');
+        } else {
+            error_log("Creating bundle with data: " . print_r($data, true));
+            error_log("Service IDs: " . print_r($serviceIds, true));
+            
+            $result = $bundleModel->create($data, $serviceIds);
+            
+            if ($result) {
+                setMessage('Bundle created successfully', 'success');
+                logActivity($_SESSION['user_id'] ?? 0, 'create_bundle', 'Created bundle: ' . $data['bundle_name']);
+                redirect('manage.php?tab=bundles');
+            } else {
+                setMessage('Failed to create bundle. Please check the error log.', 'error');
+                error_log("Bundle creation returned false");
+            }
+        }
+    } catch (Exception $e) {
+        error_log("Bundle creation exception: " . $e->getMessage());
+        error_log("Stack trace: " . $e->getTraceAsString());
+        setMessage('Error: ' . $e->getMessage(), 'error');
+    }
+}
+
+// Handle AJAX requests
+if (isset($_GET['action']) && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    header('Content-Type: application/json');
+    
+    switch ($_GET['action']) {
+        case 'delete_service':
+            validateCSRF();
+            $id = (int)$_POST['id'];
+            $result = $serviceModel->delete($id);
+            echo json_encode(['success' => $result, 'message' => $result ? 'Service deleted successfully' : 'Cannot delete service (in use)']);
+            exit;
+            
+        case 'toggle_service':
+            validateCSRF();
+            $id = (int)$_POST['id'];
+            $result = $serviceModel->toggleStatus($id);
+            echo json_encode(['success' => $result, 'message' => $result ? 'Status updated' : 'Failed to update status']);
+            exit;
+            
+        case 'delete_bundle':
+            validateCSRF();
+            $id = (int)$_POST['id'];
+            $result = $bundleModel->delete($id);
+            echo json_encode(['success' => $result, 'message' => $result ? 'Bundle deleted successfully' : 'Cannot delete bundle (in use)']);
+            exit;
+            
+        case 'toggle_bundle':
+            validateCSRF();
+            $id = (int)$_POST['id'];
+            $result = $bundleModel->toggleStatus($id);
+            echo json_encode(['success' => $result, 'message' => $result ? 'Status updated' : 'Failed to update status']);
+            exit;
+
+        case 'update_service':
+            validateCSRF();
+            $id = (int)$_POST['id'];
+            $data = [
+                'service_name'  => sanitize($_POST['service_name']),
+                'service_code'  => sanitize($_POST['service_code']),
+                'description'   => sanitize($_POST['description'] ?? ''),
+                'service_price' => (float)$_POST['service_price'],
+                'labor_cost'    => (float)$_POST['labor_cost'],
+                'status'        => sanitize($_POST['status']),
+            ];
+            $result = $serviceModel->update($id, $data);
+            echo json_encode(['success' => (bool)$result, 'message' => $result ? 'Service updated successfully' : 'Failed to update service']);
+            exit;
+
+        case 'update_bundle':
+            validateCSRF();
+            $id = (int)$_POST['id'];
+            $data = [
+                'bundle_name'   => sanitize($_POST['bundle_name']),
+                'description'   => sanitize($_POST['description'] ?? ''),
+                'package_price' => (float)$_POST['package_price'],
+                'status'        => sanitize($_POST['status']),
+            ];
+            $serviceIds = isset($_POST['service_ids']) ? array_map('intval', $_POST['service_ids']) : [];
+            $result = $bundleModel->update($id, $data);
+            if ($result && !empty($serviceIds)) {
+                $bundleModel->updateServices($id, $serviceIds);
+            }
+            echo json_encode(['success' => (bool)$result, 'message' => $result ? 'Bundle updated successfully' : 'Failed to update bundle']);
+            exit;
+    }
+}
+
+// Get active tab
+$activeTab = $_GET['tab'] ?? 'services';
+
+// Validate tab
+$validTabs = ['services', 'bundles', 'job_orders', 'estimates'];
+if (!in_array($activeTab, $validTabs)) {
+    $activeTab = 'services';
+}
+
+// Get search and filter parameters
+$search = $_GET['search'] ?? '';
+$statusFilter = $_GET['status'] ?? '';
+
+// Pagination
+$page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+$perPage = 10;
+$offset = ($page - 1) * $perPage;
+
+// Build filters
+$filters = [
+    'limit' => $perPage,
+    'offset' => $offset
+];
+
+if (!empty($search)) {
+    $filters['search'] = $search;
+}
+
+if (!empty($statusFilter)) {
+    $filters['status'] = $statusFilter;
+}
+
+// Get data based on active tab
+if ($activeTab === 'services') {
+    $services = $serviceModel->getAll($filters);
+    $totalRecords = $serviceModel->count($filters);
+    $stats = $serviceModel->getStats();
+} elseif ($activeTab === 'bundles') {
+    $bundles = $bundleModel->getAll($filters);
+    $totalRecords = $bundleModel->count($filters);
+    $stats = $bundleModel->getStats();
+} else {
+    // job_orders and estimates tabs — no bundle/service list needed
+    $totalRecords = 0;
+    $stats = [];
+}
+
+// Get all active services for bundle creation
+$allActiveServices = $serviceModel->getAll(['status' => 'active']);
+// Get all active bundles for job order modal
+$allActiveBundles = $bundleModel->getAll(['status' => 'active']);
+// Get all active technicians for job order modal
+$allTechnicians = $staffModel->getAll(['role' => 'technician', 'status' => 'active']);
+// Get all active inventory products for job order modal (temporary)
+try {
+    $db = Database::getInstance()->getConnection();
+    $stmt = $db->query("SELECT id, product_code, product_name, selling_price, quantity FROM products WHERE status = 'active' ORDER BY product_name ASC");
+    $allInventoryProducts = $stmt->fetchAll(PDO::FETCH_ASSOC);
+} catch (Exception $e) {
+    $allInventoryProducts = [];
+}
+
+// Fetch job orders for the job_orders tab
+if ($activeTab === 'job_orders') {
+    try {
+        $dbConn = Database::getInstance()->getConnection();
+        $joSearch = $_GET['jo_search'] ?? '';
+        $joStatus = $_GET['jo_status'] ?? '';
+        $joWhere  = 'WHERE 1=1';
+        $joParams = [];
+
+        // Technicians only see job orders assigned to them
+        if ($isTechnician) {
+            $techStaffId = $_SESSION['user_id'] ?? 0;
+            $joWhere .= " AND EXISTS (
+                SELECT 1 FROM job_order_technicians jot
+                WHERE jot.job_order_id = jo.id AND jot.technician_id = ?
+            )";
+            $joParams[] = $techStaffId;
+        }
+
+        if ($joSearch) {
+            $joWhere .= " AND (jo.job_order_number LIKE ? OR c.full_name LIKE ? OR v.plate_number LIKE ?)";
+            $joParams = array_merge($joParams, ["%$joSearch%", "%$joSearch%", "%$joSearch%"]);
+        }
+        if ($joStatus) {
+            $joWhere .= " AND jo.status = ?";
+            $joParams[] = $joStatus;
+        }
+        $joStmt = $dbConn->prepare("
+            SELECT jo.id, jo.job_order_number, jo.status, jo.payment_status,
+                   jo.total_amount, jo.created_at,
+                   c.full_name AS customer_name, c.phone AS customer_phone,
+                   v.brand, v.model, v.plate_number
+            FROM job_orders jo
+            LEFT JOIN customers c ON jo.customer_id = c.id
+            LEFT JOIN vehicles  v ON jo.vehicle_id  = v.id
+            $joWhere
+            ORDER BY jo.created_at DESC
+        ");
+        $joStmt->execute($joParams);
+        $allJobOrders = $joStmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (Exception $e) {
+        $allJobOrders = [];
+    }
+}
+
+// Fetch estimates for the estimates tab
+if ($activeTab === 'estimates') {
+    try {
+        $dbConn   = Database::getInstance()->getConnection();
+        $estSearch = $_GET['est_search'] ?? '';
+        $estSql    = "SELECT * FROM job_estimates WHERE 1=1";
+        $estParams = [];
+        if ($estSearch) {
+            $estSql   .= " AND (estimate_number LIKE ? OR vehicle_plate LIKE ? OR vehicle_make LIKE ?)";
+            $estParams = ["%$estSearch%", "%$estSearch%", "%$estSearch%"];
+        }
+        $estSql .= " ORDER BY created_at DESC";
+        $estStmt = $dbConn->prepare($estSql);
+        $estStmt->execute($estParams);
+        $allEstimates = $estStmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (Exception $e) {
+        $allEstimates = [];
+    }
+}
+
+$totalPages = ceil($totalRecords / $perPage);
+
+include_once '../partials/header.php';
+?>
+
+<style>
+/* Override Bootstrap blue colors to black/grayscale */
+.nav-tabs .nav-link {
+    color: #000 !important;
+}
+.nav-tabs .nav-link.active {
+    color: #000 !important;
+    background-color: #fff !important;
+    border-color: #dee2e6 #dee2e6 #fff !important;
+    border-bottom: 2px solid #000 !important;
+}
+.nav-tabs .nav-link:hover {
+    border-color: #e9ecef #e9ecef #dee2e6 !important;
+    color: #000 !important;
+}
+.badge.bg-info {
+    background-color: #6b6b6b !important;
+}
+.table th {
+    color: #000 !important;
+}
+.table td {
+    color: #000 !important;
+}
+.card-body h6, .card-body h3, .card-body p {
+    color: #000 !important;
+}
+.text-muted {
+    color: #666 !important;
+}
+.page-link {
+    color: #000 !important;
+}
+.page-link:hover {
+    color: #000 !important;
+    background-color: #e9ecef !important;
+}
+.page-item.active .page-link {
+    background-color: #2a2a2a !important;
+    border-color: #2a2a2a !important;
+    color: #fff !important;
+}
+</style>
+
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <h4 style="color: #000;">Services Management</h4>
+            <p class="mb-0" style="color: #666;">Manage individual services and PMS bundles</p>
+        </div>
+        <div class="col-md-6 text-end">
+            <?php if ($activeTab === 'services'): ?>
+                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addServiceModal">
+                    <i class="bi bi-plus-circle"></i> Add Service
+                </button>
+            <?php elseif ($activeTab === 'bundles'): ?>
+                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addBundleModal">
+                    <i class="bi bi-plus-circle"></i> Add Bundle
+                </button>
+            <?php elseif ($activeTab === 'job_orders'): ?>
+                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createJobOrderModal">
+                    <i class="bi bi-plus-circle"></i> Create Job Order
+                </button>
+            <?php elseif ($activeTab === 'estimates'): ?>
+                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#jobEstimateModal">
+                    <i class="bi bi-calculator"></i> New Estimate
+                </button>
+            <?php endif; ?>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <?php if ($activeTab === 'services' || $activeTab === 'bundles'): ?>
+    <div class="row mb-3">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h6 class="mb-1" style="color: #666; font-size: 13px;">Total <?php echo $activeTab === 'services' ? 'Services' : 'Bundles'; ?></h6>
+                    <h2 class="mb-0" style="color: #000; font-weight: 700;"><?php echo $activeTab === 'services' ? $stats['total_services'] : $stats['total_bundles']; ?></h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h6 class="mb-1" style="color: #666; font-size: 13px;">Active</h6>
+                    <h2 class="mb-0" style="color: #000; font-weight: 700;"><?php echo $activeTab === 'services' ? $stats['active_services'] : $stats['active_bundles']; ?></h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h6 class="mb-1" style="color: #666; font-size: 13px;">Inactive</h6>
+                    <h2 class="mb-0" style="color: #000; font-weight: 700;"><?php echo $activeTab === 'services' ? $stats['inactive_services'] : $stats['inactive_bundles']; ?></h2>
+                </div>
+            </div>
+        </div>
+    </div>
+    <?php endif; ?>
+
+    <!-- Tabs -->
+    <ul class="nav nav-tabs mb-3">
+        <li class="nav-item">
+            <a class="nav-link <?php echo $activeTab === 'services' ? 'active' : ''; ?>" 
+               href="?tab=services"
+               style="color: #000; <?php echo $activeTab === 'services' ? 'background: #fff; border-bottom: 2px solid #000;' : ''; ?>">
+                <i class="bi bi-wrench"></i> Individual Services
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link <?php echo $activeTab === 'bundles' ? 'active' : ''; ?>" 
+               href="?tab=bundles"
+               style="color: #000; <?php echo $activeTab === 'bundles' ? 'background: #fff; border-bottom: 2px solid #000;' : ''; ?>">
+                <i class="bi bi-box-seam"></i> Service Bundles (PMS)
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link <?php echo $activeTab === 'job_orders' ? 'active' : ''; ?>" 
+               href="?tab=job_orders"
+               style="color: #000; <?php echo $activeTab === 'job_orders' ? 'background: #fff; border-bottom: 2px solid #000;' : ''; ?>">
+                <i class="bi bi-file-earmark-text"></i> Job Orders
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link <?php echo $activeTab === 'estimates' ? 'active' : ''; ?>" 
+               href="?tab=estimates"
+               style="color: #000; <?php echo $activeTab === 'estimates' ? 'background: #fff; border-bottom: 2px solid #000;' : ''; ?>">
+                <i class="bi bi-calculator"></i> Job Estimate
+            </a>
+        </li>
+    </ul>
+
+    <!-- Search and Filter -->
+    <?php if ($activeTab === 'services' || $activeTab === 'bundles'): ?>
+    <div class="card mb-3">
+        <div class="card-body">
+            <form method="GET" class="row g-3">
+                <input type="hidden" name="tab" value="<?php echo escape($activeTab); ?>">
+                <div class="col-md-4">
+                    <input type="text" name="search" class="form-control" 
+                           placeholder="Search..." value="<?php echo escape($search); ?>">
+                </div>
+                <div class="col-md-3">
+                    <select name="status" class="form-select">
+                        <option value="">All Status</option>
+                        <option value="active" <?php echo $statusFilter === 'active' ? 'selected' : ''; ?>>Active</option>
+                        <option value="inactive" <?php echo $statusFilter === 'inactive' ? 'selected' : ''; ?>>Inactive</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-search"></i> Search
+                    </button>
+                </div>
+                <div class="col-md-2">
+                    <a href="?tab=<?php echo escape($activeTab); ?>" class="btn btn-secondary w-100">
+                        <i class="bi bi-x-circle"></i> Clear
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+    <?php endif; ?>
+
+    <!-- Services Table -->
+    <?php if ($activeTab === 'services'): ?>
+        <div class="card">
+            <div class="card-body">
+                <?php if (empty($services)): ?>
+                    <div class="text-center py-5">
+                        <i class="bi bi-inbox" style="font-size: 3rem; color: #ccc;"></i>
+                        <p class="text-muted mt-2">No services found</p>
+                        <a href="create_service.php" class="btn btn-primary">Add Your First Service</a>
+                    </div>
+                <?php else: ?>
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Service Code</th>
+                                    <th>Service Name</th>
+                                    <th>Description</th>
+                                    <th>Base Price</th>
+                                    <th>Labor Cost</th>
+                                    <th>Total</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($services as $service): ?>
+                                <tr>
+                                    <td><strong><?php echo escape($service['service_code']); ?></strong></td>
+                                    <td><?php echo escape($service['service_name']); ?></td>
+                                    <td>
+                                        <small class="text-muted">
+                                            <?php echo escape(substr($service['description'] ?? 'N/A', 0, 50)); ?>
+                                            <?php echo strlen($service['description'] ?? '') > 50 ? '...' : ''; ?>
+                                        </small>
+                                    </td>
+                                    <td><?php echo formatCurrency($service['service_price']); ?></td>
+                                    <td><?php echo formatCurrency($service['labor_cost']); ?></td>
+                                    <td><strong><?php echo formatCurrency($service['service_price'] + $service['labor_cost']); ?></strong></td>
+                                    <td>
+                                        <span class="badge bg-<?php echo $service['status'] === 'active' ? 'success' : 'secondary'; ?>">
+                                            <?php echo ucfirst($service['status']); ?>
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <button onclick="editService(<?php echo $service['id']; ?>, '<?php echo addslashes(escape($service['service_name'])); ?>', '<?php echo addslashes(escape($service['service_code'])); ?>', '<?php echo addslashes(escape($service['description'] ?? '')); ?>', <?php echo $service['service_price']; ?>, <?php echo $service['labor_cost']; ?>, '<?php echo $service['status']; ?>')" 
+                                                class="btn btn-sm btn-primary" title="Edit">
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                        <button onclick="toggleStatus('service', <?php echo $service['id']; ?>)" 
+                                                class="btn btn-sm btn-warning" title="Toggle Status">
+                                            <i class="bi bi-arrow-repeat"></i>
+                                        </button>
+                                        <button onclick="deleteItem('service', <?php echo $service['id']; ?>)" 
+                                                class="btn btn-sm btn-danger" title="Delete">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                <?php endif; ?>
+            </div>
+        </div>
+    
+    <!-- Bundles Table -->
+    <?php elseif ($activeTab === 'bundles'): ?>
+        <div class="card">
+            <div class="card-body">
+                <?php if (empty($bundles)): ?>
+                    <div class="text-center py-5">
+                        <i class="bi bi-inbox" style="font-size: 3rem; color: #ccc;"></i>
+                        <p class="text-muted mt-2">No bundles found</p>
+                        <a href="create_bundle.php" class="btn btn-primary">Add Your First Bundle</a>
+                    </div>
+                <?php else: ?>
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Bundle Name</th>
+                                    <th>Description</th>
+                                    <th>Package Price</th>
+                                    <th>Services Included</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($bundles as $bundle): ?>
+                                <tr>
+                                    <td><strong><?php echo escape($bundle['bundle_name']); ?></strong></td>
+                                    <td>
+                                        <small class="text-muted">
+                                            <?php echo escape(substr($bundle['description'] ?? 'N/A', 0, 50)); ?>
+                                            <?php echo strlen($bundle['description'] ?? '') > 50 ? '...' : ''; ?>
+                                        </small>
+                                    </td>
+                                    <td><strong><?php echo formatCurrency($bundle['package_price']); ?></strong></td>
+                                    <td>
+                                        <span class="badge bg-info"><?php echo count($bundle['services']); ?> services</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-<?php echo $bundle['status'] === 'active' ? 'success' : 'secondary'; ?>">
+                                            <?php echo ucfirst($bundle['status']); ?>
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <button onclick="editBundle(<?php echo $bundle['id']; ?>, '<?php echo addslashes(escape($bundle['bundle_name'])); ?>', '<?php echo addslashes(escape($bundle['description'] ?? '')); ?>', <?php echo $bundle['package_price']; ?>, '<?php echo $bundle['status']; ?>', [<?php echo implode(',', array_column($bundle['services'], 'service_id')); ?>])" 
+                                                class="btn btn-sm btn-primary" title="Edit">
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                        <button onclick="toggleStatus('bundle', <?php echo $bundle['id']; ?>)" 
+                                                class="btn btn-sm btn-warning" title="Toggle Status">
+                                            <i class="bi bi-arrow-repeat"></i>
+                                        </button>
+                                        <button onclick="deleteItem('bundle', <?php echo $bundle['id']; ?>)" 
+                                                class="btn btn-sm btn-danger" title="Delete">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                <?php endif; ?>
+            </div>
+        </div>
+    <?php endif; ?>
+    
+    <!-- Job Orders Tab -->
+    <?php if ($activeTab === 'job_orders'): ?>
+        <!-- Search/filter bar -->
+        <div class="card mb-3">
+            <div class="card-body py-2">
+                <form method="GET" class="row g-2 align-items-center">
+                    <input type="hidden" name="tab" value="job_orders">
+                    <div class="col-md-5">
+                        <input type="text" name="jo_search" class="form-control form-control-sm"
+                               placeholder="Search by JO#, customer, plate..."
+                               value="<?php echo escape($_GET['jo_search'] ?? ''); ?>">
+                    </div>
+                    <div class="col-md-3">
+                        <select name="jo_status" class="form-select form-select-sm">
+                            <option value="">All Status</option>
+                            <?php foreach (['pending','ongoing','under_inspection','for_approval','completed','released','cancelled'] as $s): ?>
+                            <option value="<?php echo $s; ?>" <?php echo (($_GET['jo_status'] ?? '') === $s) ? 'selected' : ''; ?>>
+                                <?php echo ucfirst(str_replace('_',' ',$s)); ?>
+                            </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="col-auto">
+                        <button type="submit" class="btn btn-sm btn-dark"><i class="bi bi-search"></i> Search</button>
+                        <a href="?tab=job_orders" class="btn btn-sm btn-secondary ms-1"><i class="bi bi-x"></i> Clear</a>
+                    </div>
+                    <?php if (!$isTechnician): ?>
+                    <div class="col-auto ms-auto">
+                        <button type="button" class="btn btn-sm btn-dark" data-bs-toggle="modal" data-bs-target="#createJobOrderModal">
+                            <i class="bi bi-plus-circle"></i> Create Job Order
+                        </button>
+                    </div>
+                    <?php endif; ?>
+                </form>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-body p-0">
+                <?php if (empty($allJobOrders)): ?>
+                    <div class="text-center py-5">
+                        <i class="bi bi-file-earmark-text" style="font-size:3rem;color:#ccc;"></i>
+                        <p class="text-muted mt-3"><?php echo $isTechnician ? 'No job orders assigned to you' : 'No job orders found'; ?></p>
+                        <?php if (!$isTechnician): ?>
+                        <button class="btn btn-dark btn-sm" data-bs-toggle="modal" data-bs-target="#createJobOrderModal">
+                            <i class="bi bi-plus-circle"></i> Create Job Order
+                        </button>
+                        <?php endif; ?>
+                    </div>
+                <?php else: ?>
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0" style="font-size:13px;">
+                        <thead style="background:#f8f8f8;">
+                            <tr>
+                                <th class="px-3">JO #</th>
+                                <th>Customer</th>
+                                <th>Vehicle</th>
+                                <th>Plate</th>
+                                <th>Amount</th>
+                                <th>Payment</th>
+                                <th>Status</th>
+                                <th>Date</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        <?php foreach ($allJobOrders as $jo): ?>
+                            <?php
+                                $statusColors = [
+                                    'pending'               => 'secondary',
+                                    'ongoing'               => 'primary',
+                                    'under_inspection'      => 'info',
+                                    'for_approval'          => 'warning',
+                                    'completed'             => 'success',
+                                    'released'              => 'success',
+                                    'returned_for_revision' => 'danger',
+                                    'cancelled'             => 'danger',
+                                ];
+                                $payColors = ['pending'=>'secondary','partial'=>'warning','paid'=>'success'];
+                                $sc = $statusColors[$jo['status']] ?? 'secondary';
+                                $pc = $payColors[$jo['payment_status']] ?? 'secondary';
+                            ?>
+                            <tr>
+                                <td class="px-3 fw-bold"><?php echo escape($jo['job_order_number']); ?></td>
+                                <td>
+                                    <div><?php echo escape($jo['customer_name']); ?></div>
+                                    <small class="text-muted"><?php echo escape($jo['customer_phone']); ?></small>
+                                </td>
+                                <td><?php echo escape(trim($jo['brand'].' '.$jo['model'])); ?></td>
+                                <td><?php echo escape($jo['plate_number'] ?? '—'); ?></td>
+                                <td><?php echo formatCurrency($jo['total_amount']); ?></td>
+                                <td><span class="badge bg-<?php echo $pc; ?>"><?php echo ucfirst($jo['payment_status']); ?></span></td>
+                                <td><span class="badge bg-<?php echo $sc; ?>"><?php echo ucfirst(str_replace('_',' ',$jo['status'])); ?></span></td>
+                                <td><?php echo date('M d, Y', strtotime($jo['created_at'])); ?></td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <!-- View — always visible -->
+                                        <button class="btn btn-outline-secondary py-0 px-2" onclick="viewJobOrder(<?php echo $jo['id']; ?>)" title="View">
+                                            <i class="bi bi-eye"></i>
+                                        </button>
+                                        <?php if (!$isTechnician): ?>
+                                        <button class="btn btn-outline-dark py-0 px-2" onclick="editJobOrder(<?php echo $jo['id']; ?>)" title="Edit">
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                        <button class="btn btn-outline-primary py-0 px-2" onclick="printJobOrder(<?php echo $jo['id']; ?>)" title="Print">
+                                            <i class="bi bi-printer"></i>
+                                        </button>
+                                        <?php if (hasRole('admin')): ?>
+                                        <button class="btn btn-outline-danger py-0 px-2" onclick="deleteJobOrder(<?php echo $jo['id']; ?>)" title="Delete">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                        <?php endif; ?>
+                                        <?php endif; ?>
+                                    </div>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+                <?php endif; ?>
+            </div>
+        </div>
+
+        <script>
+        function deleteJobOrder(id) {
+            if (!confirm('Delete this job order? This cannot be undone.')) return;
+            fetch('<?php echo APP_URL; ?>/api/job_orders.php?id=' + id, {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ csrf_token: '<?php echo generateCSRFToken(); ?>' })
+            })
+            .then(r => r.json())
+            .then(d => { if (d.success) location.reload(); else alert('Error: ' + d.message); })
+            .catch(() => alert('Network error'));
+        }
+        </script>
+    <?php endif; ?>
+    
+    <!-- Job Estimate Tab -->
+    <?php if ($activeTab === 'estimates'): ?>
+        <!-- Search bar -->
+        <div class="card mb-3">
+            <div class="card-body py-2">
+                <form method="GET" class="row g-2 align-items-center">
+                    <input type="hidden" name="tab" value="estimates">
+                    <div class="col-md-5">
+                        <input type="text" name="est_search" class="form-control form-control-sm"
+                               placeholder="Search by estimate#, plate, make..."
+                               value="<?php echo escape($_GET['est_search'] ?? ''); ?>">
+                    </div>
+                    <div class="col-auto">
+                        <button type="submit" class="btn btn-sm btn-dark"><i class="bi bi-search"></i> Search</button>
+                        <a href="?tab=estimates" class="btn btn-sm btn-secondary ms-1"><i class="bi bi-x"></i> Clear</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-body p-0">
+                <?php if (empty($allEstimates)): ?>
+                    <div class="text-center py-5">
+                        <i class="bi bi-calculator" style="font-size:3rem;color:#ccc;"></i>
+                        <p class="text-muted mt-3">No estimates found</p>
+                        <button class="btn btn-dark btn-sm" data-bs-toggle="modal" data-bs-target="#jobEstimateModal">
+                            <i class="bi bi-calculator"></i> Create Estimate
+                        </button>
+                    </div>
+                <?php else: ?>
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0" style="font-size:13px;">
+                        <thead style="background:#f8f8f8;">
+                            <tr>
+                                <th class="px-3">Estimate #</th>
+                                <th>Vehicle</th>
+                                <th>Plate</th>
+                                <th>Services</th>
+                                <th>Products</th>
+                                <th>Grand Total</th>
+                                <th>Status</th>
+                                <th>Date</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        <?php foreach ($allEstimates as $est): ?>
+                            <tr>
+                                <td class="px-3 fw-bold"><?php echo escape($est['estimate_number']); ?></td>
+                                <td><?php echo escape(trim($est['vehicle_make'].' '.$est['vehicle_model'])); ?></td>
+                                <td><?php echo escape($est['vehicle_plate'] ?: '—'); ?></td>
+                                <td><?php echo formatCurrency($est['services_total']); ?></td>
+                                <td><?php echo formatCurrency($est['products_total']); ?></td>
+                                <td class="fw-bold"><?php echo formatCurrency($est['grand_total']); ?></td>
+                                <td>
+                                    <span class="badge bg-<?php echo $est['status'] === 'converted' ? 'success' : 'secondary'; ?>">
+                                        <?php echo ucfirst($est['status']); ?>
+                                    </span>
+                                </td>
+                                <td><?php echo date('M d, Y', strtotime($est['created_at'])); ?></td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <button class="btn btn-outline-secondary py-0 px-2" onclick="viewEstimate(<?php echo $est['id']; ?>)" title="View">
+                                            <i class="bi bi-eye"></i>
+                                        </button>
+                                        <button class="btn btn-outline-dark py-0 px-2" onclick="editEstimate(<?php echo $est['id']; ?>)" title="Edit">
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                        <button class="btn btn-outline-primary py-0 px-2" onclick="printEstimate(<?php echo $est['id']; ?>)" title="Print">
+                                            <i class="bi bi-printer"></i>
+                                        </button>
+                                        <button class="btn btn-outline-danger py-0 px-2" onclick="deleteEstimate(<?php echo $est['id']; ?>)" title="Delete">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+                <?php endif; ?>
+            </div>
+        </div>
+
+        <script>
+        function deleteEstimate(id) {
+            if (!confirm('Delete this estimate? This cannot be undone.')) return;
+            fetch('<?php echo APP_URL; ?>/api/estimates.php?id=' + id, {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ csrf_token: '<?php echo generateCSRFToken(); ?>' })
+            })
+            .then(r => r.json())
+            .then(d => { if (d.success) location.reload(); else alert('Error: ' + d.message); })
+            .catch(() => alert('Network error'));
+        }
+        </script>
+    <?php endif; ?>
+
+    <!-- Pagination -->
+    <?php if ($totalPages > 1): ?>
+        <nav class="mt-3">
+            <ul class="pagination justify-content-center">
+                <li class="page-item <?php echo $page <= 1 ? 'disabled' : ''; ?>">
+                    <a class="page-link" href="?tab=<?php echo $activeTab; ?>&page=<?php echo $page - 1; ?>&search=<?php echo urlencode($search); ?>&status=<?php echo urlencode($statusFilter); ?>">Previous</a>
+                </li>
+                
+                <?php for ($i = 1; $i <= $totalPages; $i++): ?>
+                    <li class="page-item <?php echo $i === $page ? 'active' : ''; ?>">
+                        <a class="page-link" href="?tab=<?php echo $activeTab; ?>&page=<?php echo $i; ?>&search=<?php echo urlencode($search); ?>&status=<?php echo urlencode($statusFilter); ?>"><?php echo $i; ?></a>
+                    </li>
+                <?php endfor; ?>
+                
+                <li class="page-item <?php echo $page >= $totalPages ? 'disabled' : ''; ?>">
+                    <a class="page-link" href="?tab=<?php echo $activeTab; ?>&page=<?php echo $page + 1; ?>&search=<?php echo urlencode($search); ?>&status=<?php echo urlencode($statusFilter); ?>">Next</a>
+                </li>
+            </ul>
+        </nav>
+    <?php endif; ?>
+</div>
+
+<!-- Add Service Modal -->
+<div class="modal fade" id="addServiceModal" tabindex="-1" aria-labelledby="addServiceModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <form method="POST" action="">
+                <div class="modal-header" style="background: #f8f9fa; border-bottom: 2px solid #e0e0e0;">
+                    <h5 class="modal-title" id="addServiceModalLabel" style="color: #000;">
+                        <i class="bi bi-plus-circle"></i> Add New Service
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" style="padding: 30px;">
+                    <?php echo csrfField(); ?>
+                    <input type="hidden" name="action" value="create_service">
+                    
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label" style="color: #000; font-weight: 500;">
+                                Service Name <span style="color: #dc3545;">*</span>
+                            </label>
+                            <input type="text" class="form-control" name="service_name" required 
+                                   placeholder="e.g., Oil Change" style="border: 1.5px solid #e0e0e0;">
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label" style="color: #000; font-weight: 500;">
+                                Service Code
+                            </label>
+                            <input type="text" class="form-control" name="service_code" 
+                                   placeholder="Auto-generated if left blank" style="border: 1.5px solid #e0e0e0;">
+                            <small style="color: #666;">Leave blank to auto-generate</small>
+                        </div>
+                        
+                        <div class="col-12">
+                            <label class="form-label" style="color: #000; font-weight: 500;">
+                                Description
+                            </label>
+                            <textarea class="form-control" name="description" rows="3" 
+                                      placeholder="Brief description of the service..." 
+                                      style="border: 1.5px solid #e0e0e0;"></textarea>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <label class="form-label" style="color: #000; font-weight: 500;">
+                                Base Price (₱) <span style="color: #dc3545;">*</span>
+                            </label>
+                            <input type="number" class="form-control" name="service_price" required 
+                                   step="0.01" min="0" value="0" 
+                                   placeholder="0.00" style="border: 1.5px solid #e0e0e0;">
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <label class="form-label" style="color: #000; font-weight: 500;">
+                                Labor Cost (₱) <span style="color: #dc3545;">*</span>
+                            </label>
+                            <input type="number" class="form-control" name="labor_cost" required 
+                                   step="0.01" min="0" value="0" 
+                                   placeholder="0.00" style="border: 1.5px solid #e0e0e0;">
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <label class="form-label" style="color: #000; font-weight: 500;">
+                                Status <span style="color: #dc3545;">*</span>
+                            </label>
+                            <select class="form-select" name="status" required style="border: 1.5px solid #e0e0e0;">
+                                <option value="active">Active</option>
+                                <option value="inactive">Inactive</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-12">
+                            <div class="alert" style="background: #f8f9fa; border: 1px solid #e0e0e0; color: #000;">
+                                <i class="bi bi-info-circle"></i> 
+                                <strong>Total Service Cost:</strong> Base Price + Labor Cost
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer" style="background: #f8f9fa; border-top: 2px solid #e0e0e0;">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle"></i> Cancel
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-save"></i> Save Service
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Add Bundle Modal -->
+<div class="modal fade" id="addBundleModal" tabindex="-1" aria-labelledby="addBundleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <form method="POST" action="">
+                <div class="modal-header" style="background: #f8f9fa; border-bottom: 2px solid #e0e0e0;">
+                    <h5 class="modal-title" id="addBundleModalLabel" style="color: #000;">
+                        <i class="bi bi-plus-circle"></i> Add New Service Bundle
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" style="padding: 30px;">
+                    <?php echo csrfField(); ?>
+                    <input type="hidden" name="action" value="create_bundle">
+                    
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label" style="color: #000; font-weight: 500;">
+                                Bundle Name <span style="color: #dc3545;">*</span>
+                            </label>
+                            <input type="text" class="form-control" name="bundle_name" required 
+                                   placeholder="e.g., Light PMS, Heavy PMS, Regular Maintenance" style="border: 1.5px solid #e0e0e0;">
+                            <small style="color: #666;">Examples: Light PMS, Heavy PMS, Regular PMS, Complete Checkup</small>
+                        </div>
+                        
+                        <div class="col-12">
+                            <label class="form-label" style="color: #000; font-weight: 500;">
+                                Description
+                            </label>
+                            <textarea class="form-control" name="description" rows="2" 
+                                      placeholder="Brief description of what's included in this bundle..." 
+                                      style="border: 1.5px solid #e0e0e0;"></textarea>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label" style="color: #000; font-weight: 500;">
+                                Package Price (₱) <span style="color: #dc3545;">*</span>
+                            </label>
+                            <input type="number" class="form-control" name="package_price" required 
+                                   step="0.01" min="0" value="0" 
+                                   placeholder="0.00" style="border: 1.5px solid #e0e0e0;">
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label" style="color: #000; font-weight: 500;">
+                                Status <span style="color: #dc3545;">*</span>
+                            </label>
+                            <select class="form-select" name="status" required style="border: 1.5px solid #e0e0e0;">
+                                <option value="active">Active</option>
+                                <option value="inactive">Inactive</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-12">
+                            <label class="form-label" style="color: #000; font-weight: 500;">
+                                Select Services <span style="color: #dc3545;">*</span>
+                            </label>
+                            <div style="max-height: 300px; overflow-y: auto; border: 1.5px solid #e0e0e0; border-radius: 8px; padding: 15px; background: #f9f9f9;">
+                                <?php if (empty($allActiveServices)): ?>
+                                    <p style="color: #666; text-align: center; margin: 20px 0;">
+                                        No active services available. Please create services first.
+                                    </p>
+                                <?php else: ?>
+                                    <?php foreach ($allActiveServices as $service): ?>
+                                        <div class="form-check mb-2" style="padding: 10px; background: #fff; border-radius: 6px;">
+                                            <input class="form-check-input" type="checkbox" name="service_ids[]" 
+                                                   value="<?php echo $service['id']; ?>" 
+                                                   id="service_<?php echo $service['id']; ?>">
+                                            <label class="form-check-label" for="service_<?php echo $service['id']; ?>" style="color: #000; width: 100%;">
+                                                <div class="d-flex justify-content-between align-items-center">
+                                                    <div>
+                                                        <strong><?php echo escape($service['service_name']); ?></strong>
+                                                        <br>
+                                                        <small style="color: #666;"><?php echo escape($service['service_code']); ?></small>
+                                                    </div>
+                                                    <div style="text-align: right;">
+                                                        <strong><?php echo formatCurrency($service['service_price'] + $service['labor_cost']); ?></strong>
+                                                    </div>
+                                                </div>
+                                            </label>
+                                        </div>
+                                    <?php endforeach; ?>
+                                <?php endif; ?>
+                            </div>
+                            <small style="color: #666;">Select at least one service to include in this bundle</small>
+                        </div>
+                        
+                        <div class="col-12">
+                            <div class="alert" style="background: #f8f9fa; border: 1px solid #e0e0e0; color: #000;">
+                                <i class="bi bi-info-circle"></i> 
+                                <strong>Note:</strong> Package price is typically lower than the sum of individual services
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer" style="background: #f8f9fa; border-top: 2px solid #e0e0e0;">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle"></i> Cancel
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-save"></i> Save Bundle
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Create Job Order Modal -->
+<div class="modal fade" id="createJobOrderModal" tabindex="-1" aria-labelledby="createJobOrderModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header" style="background: #f8f9fa; border-bottom: 2px solid #e0e0e0; display: flex; justify-content: space-between; align-items: center;">
+                <h5 class="modal-title" id="createJobOrderModalLabel" style="color: #000; font-weight: 600;">
+                    <i class="bi bi-file-earmark-text"></i> Create New Job Order
+                </h5>
+                <button type="button" style="background: none; border: none; font-size: 24px; color: #000; cursor: pointer; padding: 0; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;" data-bs-dismiss="modal" aria-label="Close">
+                    <i class="bi bi-x" style="font-size: 24px;"></i>
+                </button>
+            </div>
+            <div class="modal-body" style="padding: 20px; background: #fafafa;">
+                <form id="joForm">
+                <?php echo csrfField(); ?>
+                <div class="row g-3">
+
+                    <!-- ── LEFT COLUMN ── -->
+                    <div class="col-lg-7">
+
+                        <!-- Customer -->
+                        <div class="card mb-3" style="border:1.5px solid #e0e0e0;">
+                            <div class="card-header" style="background:#fff;border-bottom:1.5px solid #e0e0e0;padding:10px 15px;">
+                                <h6 class="mb-0" style="font-weight:600;"><i class="bi bi-person me-1"></i>Customer Information</h6>
+                            </div>
+                            <div class="card-body" style="padding:15px;">
+                                <div class="row g-2">
+                                    <div class="col-md-6">
+                                        <label class="form-label form-label-sm">Full Name <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control form-control-sm" id="jo_customer_name" required placeholder="Customer name">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label form-label-sm">Contact Number <span class="text-danger">*</span></label>
+                                        <input type="tel" class="form-control form-control-sm" id="jo_customer_phone" required placeholder="09XX XXX XXXX">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label form-label-sm">Email</label>
+                                        <input type="email" class="form-control form-control-sm" id="jo_customer_email" placeholder="email@example.com">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label form-label-sm">Address</label>
+                                        <input type="text" class="form-control form-control-sm" id="jo_customer_address" placeholder="Customer address">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Vehicle -->
+                        <div class="card mb-3" style="border:1.5px solid #e0e0e0;">
+                            <div class="card-header" style="background:#fff;border-bottom:1.5px solid #e0e0e0;padding:10px 15px;">
+                                <h6 class="mb-0" style="font-weight:600;"><i class="bi bi-car-front me-1"></i>Vehicle Information</h6>
+                            </div>
+                            <div class="card-body" style="padding:15px;">
+                                <div class="row g-2">
+                                    <div class="col-4">
+                                        <label class="form-label form-label-sm">Make / Brand</label>
+                                        <input type="text" class="form-control form-control-sm" id="jo_vehicle_make" placeholder="Toyota">
+                                    </div>
+                                    <div class="col-4">
+                                        <label class="form-label form-label-sm">Model</label>
+                                        <input type="text" class="form-control form-control-sm" id="jo_vehicle_model" placeholder="Vios">
+                                    </div>
+                                    <div class="col-4">
+                                        <label class="form-label form-label-sm">Year</label>
+                                        <input type="text" class="form-control form-control-sm" id="jo_vehicle_year" placeholder="2022">
+                                    </div>
+                                    <div class="col-4">
+                                        <label class="form-label form-label-sm">Plate Number</label>
+                                        <input type="text" class="form-control form-control-sm" id="jo_vehicle_plate" placeholder="ABC 1234">
+                                    </div>
+                                    <div class="col-4">
+                                        <label class="form-label form-label-sm">Color</label>
+                                        <input type="text" class="form-control form-control-sm" id="jo_vehicle_color" placeholder="White">
+                                    </div>
+                                    <div class="col-4">
+                                        <label class="form-label form-label-sm">Mileage (km)</label>
+                                        <input type="text" class="form-control form-control-sm" id="jo_vehicle_mileage" placeholder="50000">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Services & Bundles Picker -->
+                        <div class="card mb-3" style="border:1.5px solid #e0e0e0;">
+                            <div class="card-header" style="background:#fff;border-bottom:1.5px solid #e0e0e0;padding:10px 15px;">
+                                <h6 class="mb-0" style="font-weight:600;"><i class="bi bi-list-check me-1"></i>Services &amp; Bundles</h6>
+                            </div>
+                            <div class="card-body" style="padding:15px;">
+                                <!-- Tabs -->
+                                <ul class="nav nav-tabs nav-sm mb-3" id="joServiceTabs">
+                                    <li class="nav-item">
+                                        <a class="nav-link active py-1 px-3" data-bs-toggle="tab" href="#joTabIndividual" style="font-size:13px;">Individual Services</a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a class="nav-link py-1 px-3" data-bs-toggle="tab" href="#joTabBundles" style="font-size:13px;">Bundles (PMS)</a>
+                                    </li>
+                                </ul>
+                                <div class="tab-content">
+                                    <!-- Individual Services -->
+                                    <div class="tab-pane fade show active" id="joTabIndividual">
+                                        <div style="max-height:220px;overflow-y:auto;border:1px solid #e0e0e0;border-radius:6px;padding:10px;background:#f9f9f9;">
+                                            <?php if (empty($allActiveServices)): ?>
+                                                <p class="text-muted text-center small py-3 mb-0">No active services found.</p>
+                                            <?php else: ?>
+                                                <?php foreach ($allActiveServices as $svc): ?>
+                                                <div class="d-flex align-items-center justify-content-between py-1 px-2 mb-1 bg-white rounded" style="border:1px solid #eee;">
+                                                    <div>
+                                                        <strong style="font-size:13px;"><?php echo escape($svc['service_name']); ?></strong>
+                                                        <small class="text-muted d-block"><?php echo escape($svc['service_code']); ?></small>
+                                                    </div>
+                                                    <div class="d-flex align-items-center gap-2">
+                                                        <span style="font-size:13px;font-weight:600;"><?php echo formatCurrency($svc['service_price'] + $svc['labor_cost']); ?></span>
+                                                        <button type="button" class="btn btn-sm btn-dark py-0 px-2"
+                                                            style="font-size:12px;"
+                                                            onclick="joAddItem('service', <?php echo $svc['id']; ?>, '<?php echo addslashes(escape($svc['service_name'])); ?>', <?php echo ($svc['service_price'] + $svc['labor_cost']); ?>)">
+                                                            <i class="bi bi-plus"></i> Add
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                                <?php endforeach; ?>
+                                            <?php endif; ?>
+                                        </div>
+                                    </div>
+                                    <!-- Bundles -->
+                                    <div class="tab-pane fade" id="joTabBundles">
+                                        <div style="max-height:220px;overflow-y:auto;border:1px solid #e0e0e0;border-radius:6px;padding:10px;background:#f9f9f9;">
+                                            <?php if (empty($allActiveBundles)): ?>
+                                                <p class="text-muted text-center small py-3 mb-0">No active bundles found.</p>
+                                            <?php else: ?>
+                                                <?php foreach ($allActiveBundles as $bnd): ?>
+                                                <div class="d-flex align-items-center justify-content-between py-1 px-2 mb-1 bg-white rounded" style="border:1px solid #eee;">
+                                                    <div>
+                                                        <strong style="font-size:13px;"><?php echo escape($bnd['bundle_name']); ?></strong>
+                                                        <small class="text-muted d-block"><?php echo count($bnd['services']); ?> services included</small>
+                                                    </div>
+                                                    <div class="d-flex align-items-center gap-2">
+                                                        <span style="font-size:13px;font-weight:600;"><?php echo formatCurrency($bnd['package_price']); ?></span>
+                                                        <button type="button" class="btn btn-sm btn-dark py-0 px-2"
+                                                            style="font-size:12px;"
+                                                            onclick="joAddItem('bundle', <?php echo $bnd['id']; ?>, '<?php echo addslashes(escape($bnd['bundle_name'])); ?> (Bundle)', <?php echo $bnd['package_price']; ?>)">
+                                                            <i class="bi bi-plus"></i> Add
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                                <?php endforeach; ?>
+                                            <?php endif; ?>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Notes -->
+                        <div class="card" style="border:1.5px solid #e0e0e0;">
+                            <div class="card-header" style="background:#fff;border-bottom:1.5px solid #e0e0e0;padding:10px 15px;">
+                                <h6 class="mb-0" style="font-weight:600;"><i class="bi bi-chat-left-text me-1"></i>Notes</h6>
+                            </div>
+                            <div class="card-body" style="padding:15px;">
+                                <textarea class="form-control form-control-sm" id="jo_notes" rows="2" placeholder="Additional notes or instructions..."></textarea>
+                            </div>
+                        </div>
+
+                    </div><!-- /left -->
+
+                    <!-- ── RIGHT COLUMN ── -->
+                    <div class="col-lg-5">
+
+                        <!-- Selected Items -->
+                        <div class="card mb-3" style="border:1.5px solid #e0e0e0;">
+                            <div class="card-header d-flex justify-content-between align-items-center" style="background:#fff;border-bottom:1.5px solid #e0e0e0;padding:10px 15px;">
+                                <h6 class="mb-0" style="font-weight:600;"><i class="bi bi-cart me-1"></i>Selected Items</h6>
+                                <span class="badge bg-dark" id="joItemCount">0</span>
+                            </div>
+                            <div class="card-body p-0">
+                                <div id="joSelectedItems" style="min-height:80px;max-height:200px;overflow-y:auto;">
+                                    <p class="text-muted text-center small py-4 mb-0" id="joEmptyMsg">No items added yet.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Technician -->
+                        <div class="card mb-3" style="border:1.5px solid #e0e0e0;">
+                            <div class="card-header" style="background:#fff;border-bottom:1.5px solid #e0e0e0;padding:10px 15px;">
+                                <h6 class="mb-0" style="font-weight:600;"><i class="bi bi-tools me-1"></i>Technician</h6>
+                            </div>
+                            <div class="card-body" style="padding:15px;">
+                                <select class="form-select form-select-sm" id="jo_technician">
+                                    <option value="">— Unassigned —</option>
+                                    <?php foreach ($allTechnicians as $tech): ?>
+                                    <option value="<?php echo $tech['id']; ?>" data-name="<?php echo escape($tech['full_name']); ?>">
+                                        <?php echo escape($tech['full_name']); ?>
+                                    </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Billing Summary -->
+                        <div class="card mb-3" style="border:1.5px solid #e0e0e0;">
+                            <div class="card-header" style="background:#fff;border-bottom:1.5px solid #e0e0e0;padding:10px 15px;">
+                                <h6 class="mb-0" style="font-weight:600;"><i class="bi bi-receipt me-1"></i>Billing</h6>
+                            </div>
+                            <div class="card-body" style="padding:15px;">
+                                <!-- Products picker -->
+                                <div class="mb-3">
+                                    <label class="form-label form-label-sm fw-semibold"><i class="bi bi-box-seam me-1"></i>Add Products</label>
+                                    <div class="d-flex gap-1 mb-1">
+                                        <select class="form-select form-select-sm" id="jo_product_select" style="flex:1;">
+                                            <option value="">— Select product —</option>
+                                            <?php foreach ($allInventoryProducts as $prod): ?>
+                                            <option value="<?php echo $prod['id']; ?>"
+                                                data-name="<?php echo addslashes(escape($prod['product_name'])); ?>"
+                                                data-price="<?php echo $prod['selling_price']; ?>"
+                                                data-stock="<?php echo $prod['quantity']; ?>"
+                                                data-code="<?php echo escape($prod['product_code']); ?>">
+                                                <?php echo escape($prod['product_name']); ?> — ₱<?php echo number_format($prod['selling_price'], 2); ?> (<?php echo $prod['quantity']; ?> in stock)
+                                            </option>
+                                            <?php endforeach; ?>
+                                            <?php if (empty($allInventoryProducts)): ?>
+                                            <option disabled>No products in inventory</option>
+                                            <?php endif; ?>
+                                        </select>
+                                        <input type="number" id="jo_product_qty" class="form-control form-control-sm text-center" value="1" min="1" style="width:55px;">
+                                        <button type="button" class="btn btn-sm btn-dark px-2" onclick="joAddProduct()"><i class="bi bi-plus"></i></button>
+                                    </div>
+                                    <div id="joProductsList" style="max-height:130px;overflow-y:auto;"></div>
+                                </div>
+                                <hr class="my-2">
+                                <!-- Subtotals -->
+                                <div class="d-flex justify-content-between mb-1">
+                                    <span class="small text-muted">Services Subtotal</span>
+                                    <strong id="joSubtotal">₱0.00</strong>
+                                </div>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span class="small text-muted">Products Subtotal</span>
+                                    <strong id="joPartsDisplay">₱0.00</strong>
+                                </div>
+                                <hr class="my-2">
+                                <!-- Discount -->
+                                <div class="mb-2">
+                                    <label class="form-label form-label-sm">Discount Type</label>
+                                    <select class="form-select form-select-sm" id="jo_discount_type" onchange="joCalc()">
+                                        <option value="none">None</option>
+                                        <option value="percentage">Percentage (%)</option>
+                                        <option value="fixed">Fixed Amount (₱)</option>
+                                        <option value="senior">Senior Citizen (20%)</option>
+                                        <option value="pwd">PWD (20%)</option>
+                                    </select>
+                                </div>
+                                <div class="mb-2" id="joDiscountAmtRow">
+                                    <label class="form-label form-label-sm">Discount Value</label>
+                                    <input type="number" class="form-control form-control-sm" id="jo_discount_value" value="0" min="0" step="0.01" oninput="joCalc()">
+                                </div>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span class="small text-muted">Discount</span>
+                                    <span class="text-danger" id="joDiscountDisplay">-₱0.00</span>
+                                </div>
+                                <hr class="my-2">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <strong>Total Amount</strong>
+                                    <h5 class="mb-0" id="joTotal" style="font-weight:700;">₱0.00</h5>
+                                </div>
+                                <hr class="my-2">
+                                <div class="mb-2">
+                                    <label class="form-label form-label-sm">Payment Method</label>
+                                    <select class="form-select form-select-sm" id="jo_payment_method">
+                                        <option value="cash">Cash</option>
+                                        <option value="card">Card</option>
+                                        <option value="gcash">GCash</option>
+                                        <option value="paymaya">PayMaya</option>
+                                        <option value="bank_transfer">Bank Transfer</option>
+                                    </select>
+                                </div>
+                                <div class="mb-2">
+                                    <label class="form-label form-label-sm">Payment Status</label>
+                                    <select class="form-select form-select-sm" id="jo_payment_status" onchange="joTogglePartial()">
+                                        <option value="pending">Pending</option>
+                                        <option value="partial">Partial</option>
+                                        <option value="paid">Paid</option>
+                                    </select>
+                                </div>
+                                <!-- Partial payment field — shown only when Partial is selected -->
+                                <div id="joPartialRow" style="display:none;">
+                                    <label class="form-label form-label-sm">Amount Paid (₱) <span class="text-danger">*</span></label>
+                                    <input type="number" class="form-control form-control-sm" id="jo_partial_amount"
+                                           min="0" step="0.01" value="0" oninput="joCalcPartial()" placeholder="0.00">
+                                    <div class="d-flex justify-content-between mt-2">
+                                        <span class="small text-muted">Remaining Balance</span>
+                                        <strong class="text-danger" id="joRemainingBalance">₱0.00</strong>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div><!-- /right -->
+                </div><!-- /row -->
+                </form>
+            </div>
+            <div class="modal-footer" style="background:#f8f9fa;border-top:2px solid #e0e0e0;padding:12px 20px;">
+                <button type="button" class="btn btn-outline-dark btn-sm" onclick="joPrintPreview()">
+                    <i class="bi bi-printer"></i> Print JO
+                </button>
+                <button type="button" class="btn btn-dark btn-sm" onclick="joSave()">
+                    <i class="bi bi-save"></i> Save Job Order
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ── PRINT TEMPLATE (hidden, A4) ── -->
+<div id="joPrintArea" style="display:none;">
+    <style>
+        @page {
+            size: A4 portrait;
+            margin: 15mm 20mm;
+        }
+        @media print {
+            html, body {
+                margin: 0 !important;
+                padding: 0 !important;
+                background: #fff !important;
+            }
+            body * { visibility: hidden !important; }
+            #joPrintArea, #joPrintArea *,
+            #jePrintArea, #jePrintArea * { visibility: visible !important; }
+            #joPrintArea, #jePrintArea {
+                position: absolute !important;
+                top: 0; left: 0;
+                width: 100%;
+                background: #fff !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                page-break-after: avoid !important;
+            }
+            #joPrintContent, #jePrintContent {
+                width: 100%;
+                font-family: Arial, sans-serif;
+                font-size: 9.5pt;
+                color: #000 !important;
+                line-height: 1.35;
+                page-break-after: avoid !important;
+            }
+        }
+    </style>
+    <div id="joPrintContent"></div>
+</div>
+<div id="jePrintArea" style="display:none;">
+    <div id="jePrintContent"></div>
+</div>
+
+<!-- Job Estimate Modal -->
+<div class="modal fade" id="jobEstimateModal" tabindex="-1" aria-labelledby="jobEstimateModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header" style="background: #f8f9fa; border-bottom: 2px solid #e0e0e0; display: flex; justify-content: space-between; align-items: center;">
+                <h5 class="modal-title" id="jobEstimateModalLabel" style="color: #000;">
+                    <i class="bi bi-calculator"></i> Job Estimate Calculator
+                </h5>
+                <button type="button" style="background: none; border: none; font-size: 24px; color: #000; cursor: pointer; padding: 0; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;" data-bs-dismiss="modal" aria-label="Close">
+                    <i class="bi bi-x" style="font-size: 24px;"></i>
+                </button>
+            </div>
+            <div class="modal-body" style="padding: 30px;">
+                <div class="row g-3">
+                    <div class="col-12">
+                        <h6 style="color: #000; margin-bottom: 15px;">Select Services</h6>
+                        <div style="max-height: 300px; overflow-y: auto; border: 1.5px solid #e0e0e0; border-radius: 8px; padding: 15px; background: #f9f9f9;">
+                            <?php if (!empty($allActiveServices)): ?>
+                                <?php foreach ($allActiveServices as $service): ?>
+                                    <div class="form-check mb-2" style="padding: 10px; background: #fff; border-radius: 6px;">
+                                        <input class="form-check-input estimate-service" type="checkbox" 
+                                               data-price="<?php echo $service['service_price'] + $service['labor_cost']; ?>"
+                                               id="est_service_<?php echo $service['id']; ?>">
+                                        <label class="form-check-label" for="est_service_<?php echo $service['id']; ?>" style="color: #000; width: 100%;">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <div>
+                                                    <strong><?php echo escape($service['service_name']); ?></strong>
+                                                </div>
+                                                <div>
+                                                    <strong><?php echo formatCurrency($service['service_price'] + $service['labor_cost']); ?></strong>
+                                                </div>
+                                            </div>
+                                        </label>
+                                    </div>
+                                <?php endforeach; ?>
+                            <?php else: ?>
+                                <p style="color: #666; text-align: center;">No services available</p>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                    
+                    <div class="col-12">
+                        <div class="card mb-3" style="border:1.5px solid #e0e0e0;">
+                            <div class="card-header" style="background:#fff;border-bottom:1.5px solid #e0e0e0;padding:10px 15px;">
+                                <h6 class="mb-0" style="font-weight:600;"><i class="bi bi-car-front me-1"></i>Vehicle Information</h6>
+                            </div>
+                            <div class="card-body" style="padding:15px;">
+                                <div class="row g-2">
+                                    <div class="col-4">
+                                        <label class="form-label form-label-sm">Make / Brand</label>
+                                        <input type="text" class="form-control form-control-sm" id="je_vehicle_make" placeholder="Toyota">
+                                    </div>
+                                    <div class="col-4">
+                                        <label class="form-label form-label-sm">Model</label>
+                                        <input type="text" class="form-control form-control-sm" id="je_vehicle_model" placeholder="Vios">
+                                    </div>
+                                    <div class="col-4">
+                                        <label class="form-label form-label-sm">Year</label>
+                                        <input type="text" class="form-control form-control-sm" id="je_vehicle_year" placeholder="2022">
+                                    </div>
+                                    <div class="col-4">
+                                        <label class="form-label form-label-sm">Plate Number</label>
+                                        <input type="text" class="form-control form-control-sm" id="je_vehicle_plate" placeholder="ABC 1234">
+                                    </div>
+                                    <div class="col-4">
+                                        <label class="form-label form-label-sm">Color</label>
+                                        <input type="text" class="form-control form-control-sm" id="je_vehicle_color" placeholder="White">
+                                    </div>
+                                    <div class="col-4">
+                                        <label class="form-label form-label-sm">Mileage (km)</label>
+                                        <input type="text" class="form-control form-control-sm" id="je_vehicle_mileage" placeholder="50000">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-12">
+                        <div class="card" style="background: #f8f9fa; border: 2px solid #e0e0e0;">
+                            <div class="card-body">
+                                <h6 style="color: #000; margin-bottom: 15px;">Estimate Summary</h6>
+
+                                <!-- Product picker -->
+                                <div class="mb-3">
+                                    <label class="form-label form-label-sm fw-semibold" style="color:#000;">
+                                        <i class="bi bi-box-seam me-1"></i>Add Products
+                                    </label>
+                                    <div class="d-flex gap-1 mb-1">
+                                        <select class="form-select form-select-sm" id="est_product_select" style="flex:1;">
+                                            <option value="">— Select product —</option>
+                                            <?php foreach ($allInventoryProducts as $prod): ?>
+                                            <option value="<?php echo $prod['id']; ?>"
+                                                data-name="<?php echo addslashes(escape($prod['product_name'])); ?>"
+                                                data-price="<?php echo $prod['selling_price']; ?>"
+                                                data-stock="<?php echo $prod['quantity']; ?>">
+                                                <?php echo escape($prod['product_name']); ?> — ₱<?php echo number_format($prod['selling_price'], 2); ?> (<?php echo $prod['quantity']; ?> in stock)
+                                            </option>
+                                            <?php endforeach; ?>
+                                            <?php if (empty($allInventoryProducts)): ?>
+                                            <option disabled>No products in inventory</option>
+                                            <?php endif; ?>
+                                        </select>
+                                        <input type="number" id="est_product_qty" class="form-control form-control-sm text-center" value="1" min="1" style="width:55px;">
+                                        <button type="button" class="btn btn-sm btn-dark px-2" onclick="estAddProduct()"><i class="bi bi-plus"></i></button>
+                                    </div>
+                                    <div id="estProductsList" style="max-height:120px;overflow-y:auto;"></div>
+                                </div>
+
+                                <hr style="border-color: #e0e0e0;">
+                                <!-- Subtotals -->
+                                <div class="d-flex justify-content-between mb-1">
+                                    <span style="color: #666;">Services Total:</span>
+                                    <strong style="color: #000;" id="estimateTotal">₱0.00</strong>
+                                </div>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span style="color: #666;">Products Total:</span>
+                                    <strong style="color: #000;" id="estimateProductsTotal">₱0.00</strong>
+                                </div>
+
+                                <hr style="border-color: #e0e0e0;">
+                                <div class="d-flex justify-content-between">
+                                    <strong style="color: #000;">Grand Total:</strong>
+                                    <h4 style="color: #000; margin: 0;" id="estimateGrandTotal">₱0.00</h4>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer" style="background: #f8f9fa; border-top: 2px solid #e0e0e0; gap: .5rem;">
+                <button type="button" class="btn btn-outline-dark" onclick="jeSave()">
+                    <i class="bi bi-save"></i> Save Estimate
+                </button>
+                <button type="button" class="btn btn-primary" onclick="jePrintPreview()">
+                    <i class="bi bi-printer"></i> Print Estimate
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const csrfToken = '<?php echo generateCSRFToken(); ?>';
+
+/* ═══════════════════════════════════════════
+   JOB ORDER MODAL LOGIC
+═══════════════════════════════════════════ */
+let joItems    = [];   // { id, type, name, price, qty }
+let joProducts = [];   // { id, name, code, price, qty }
+
+/* ── Product picker ── */
+function joAddProduct() {
+    const sel   = document.getElementById('jo_product_select');
+    const qty   = parseInt(document.getElementById('jo_product_qty').value) || 1;
+    const opt   = sel.options[sel.selectedIndex];
+    if (!sel.value) return;
+
+    const id    = parseInt(sel.value);
+    const name  = opt.dataset.name;
+    const price = parseFloat(opt.dataset.price);
+    const stock = parseInt(opt.dataset.stock);
+    const code  = opt.dataset.code;
+
+    const existing = joProducts.find(p => p.id === id);
+    if (existing) {
+        existing.qty += qty;
+    } else {
+        joProducts.push({ id, name, code, price, qty });
+    }
+    sel.value = '';
+    document.getElementById('jo_product_qty').value = 1;
+    joRenderProducts();
+    joCalc();
+}
+
+function joRemoveProduct(idx) {
+    joProducts.splice(idx, 1);
+    joRenderProducts();
+    joCalc();
+}
+
+function joChangeProductQty(idx, val) {
+    const qty = parseInt(val);
+    if (qty < 1) { joRemoveProduct(idx); return; }
+    joProducts[idx].qty = qty;
+    joCalc();
+}
+
+function joRenderProducts() {
+    const container = document.getElementById('joProductsList');
+    if (joProducts.length === 0) {
+        container.innerHTML = '<p class="text-muted small text-center py-2 mb-0">No products added.</p>';
+        return;
+    }
+    let html = '';
+    joProducts.forEach((p, idx) => {
+        const lineTotal = (p.price * p.qty).toFixed(2);
+        html += `
+        <div class="d-flex align-items-center justify-content-between px-2 py-1 mb-1 bg-white rounded" style="border:1px solid #eee;font-size:12px;">
+            <div style="flex:1;min-width:0;">
+                <div class="text-truncate fw-semibold">${p.name}</div>
+                <small class="text-muted">₱${parseFloat(p.price).toFixed(2)} each</small>
+            </div>
+            <div class="d-flex align-items-center gap-1 ms-1">
+                <input type="number" class="form-control form-control-sm text-center" value="${p.qty}" min="1"
+                    style="width:46px;font-size:12px;" onchange="joChangeProductQty(${idx}, this.value)">
+                <span style="min-width:58px;text-align:right;font-weight:600;">₱${lineTotal}</span>
+                <button type="button" class="btn btn-sm btn-outline-danger py-0 px-1" onclick="joRemoveProduct(${idx})">
+                    <i class="bi bi-x"></i>
+                </button>
+            </div>
+        </div>`;
+    });
+    container.innerHTML = html;
+}
+
+function joAddItem(type, id, name, price) {
+    // Prevent duplicate
+    const existing = joItems.find(i => i.type === type && i.id === id);
+    if (existing) {
+        existing.qty++;
+    } else {
+        joItems.push({ type, id, name, price: parseFloat(price), qty: 1 });
+    }
+    joRenderItems();
+    joCalc();
+}
+
+function joRemoveItem(idx) {
+    joItems.splice(idx, 1);
+    joRenderItems();
+    joCalc();
+}
+
+function joChangeQty(idx, val) {
+    const qty = parseInt(val);
+    if (qty < 1) { joRemoveItem(idx); return; }
+    joItems[idx].qty = qty;
+    joCalc();
+}
+
+function joRenderItems() {
+    const container = document.getElementById('joSelectedItems');
+    const emptyMsg  = document.getElementById('joEmptyMsg');
+    const countBadge = document.getElementById('joItemCount');
+
+    if (joItems.length === 0) {
+        container.innerHTML = '<p class="text-muted text-center small py-4 mb-0" id="joEmptyMsg">No items added yet.</p>';
+        countBadge.textContent = '0';
+        return;
+    }
+
+    countBadge.textContent = joItems.length;
+    let html = '';
+    joItems.forEach((item, idx) => {
+        const lineTotal = (item.price * item.qty).toFixed(2);
+        html += `
+        <div class="d-flex align-items-center justify-content-between px-3 py-2" style="border-bottom:1px solid #f0f0f0;">
+            <div style="flex:1;min-width:0;">
+                <div class="text-truncate" style="font-size:12px;font-weight:600;">${item.name}</div>
+                <small class="text-muted">₱${parseFloat(item.price).toFixed(2)} each</small>
+            </div>
+            <div class="d-flex align-items-center gap-1 ms-2">
+                <input type="number" class="form-control form-control-sm text-center" value="${item.qty}" min="1"
+                    style="width:50px;font-size:12px;" onchange="joChangeQty(${idx}, this.value)">
+                <span style="font-size:12px;font-weight:600;min-width:60px;text-align:right;">₱${lineTotal}</span>
+                <button type="button" class="btn btn-sm btn-outline-danger py-0 px-1" onclick="joRemoveItem(${idx})">
+                    <i class="bi bi-x"></i>
+                </button>
+            </div>
+        </div>`;
+    });
+    container.innerHTML = html;
+}
+
+function joCalc() {
+    let subtotal  = joItems.reduce((sum, i) => sum + i.price * i.qty, 0);
+    let partsTotal = joProducts.reduce((sum, p) => sum + p.price * p.qty, 0);
+    const discType = document.getElementById('jo_discount_type').value;
+    const discVal  = parseFloat(document.getElementById('jo_discount_value').value) || 0;
+
+    const discRow = document.getElementById('joDiscountAmtRow');
+    discRow.style.display = (discType === 'none' || discType === 'senior' || discType === 'pwd') ? 'none' : '';
+
+    let discountAmt = 0;
+    const base = subtotal + partsTotal;
+    if (discType === 'percentage') discountAmt = base * (discVal / 100);
+    else if (discType === 'fixed')  discountAmt = discVal;
+    else if (discType === 'senior' || discType === 'pwd') discountAmt = base * 0.20;
+
+    discountAmt = Math.min(discountAmt, base);
+    const total = Math.max(0, base - discountAmt);
+
+    document.getElementById('joSubtotal').textContent        = '₱' + subtotal.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    document.getElementById('joPartsDisplay').textContent    = '₱' + partsTotal.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    document.getElementById('joDiscountDisplay').textContent = '-₱' + discountAmt.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    document.getElementById('joTotal').textContent           = '₱' + total.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+
+    // Recalc partial balance if partial is selected
+    joCalcPartial();
+}
+
+function joTogglePartial() {
+    const status = document.getElementById('jo_payment_status').value;
+    const row    = document.getElementById('joPartialRow');
+    row.style.display = status === 'partial' ? 'block' : 'none';
+    if (status !== 'partial') {
+        document.getElementById('jo_partial_amount').value = '0';
+        document.getElementById('joRemainingBalance').textContent = '₱0.00';
+    } else {
+        joCalcPartial();
+    }
+}
+
+function joCalcPartial() {
+    const status = document.getElementById('jo_payment_status').value;
+    if (status !== 'partial') return;
+    const totalText = document.getElementById('joTotal').textContent.replace(/[₱,]/g, '');
+    const total     = parseFloat(totalText) || 0;
+    const paid      = parseFloat(document.getElementById('jo_partial_amount').value) || 0;
+    const remaining = Math.max(0, total - paid);
+    const fmt = v => '₱' + v.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    document.getElementById('joRemainingBalance').textContent = fmt(remaining);
+}
+
+function joSave() {
+    const name  = document.getElementById('jo_customer_name').value.trim();
+    const phone = document.getElementById('jo_customer_phone').value.trim();
+    if (!name || !phone) { alert('Customer name and phone are required.'); return; }
+    if (joItems.length === 0) { alert('Please add at least one service or bundle.'); return; }
+
+    const payload = {
+        csrf_token:       csrfToken,
+        customer_name:    name,
+        customer_phone:   phone,
+        customer_email:   document.getElementById('jo_customer_email').value.trim(),
+        customer_address: document.getElementById('jo_customer_address').value.trim(),
+        vehicle_make:     document.getElementById('jo_vehicle_make').value.trim(),
+        vehicle_model:    document.getElementById('jo_vehicle_model').value.trim(),
+        vehicle_year:     document.getElementById('jo_vehicle_year').value.trim(),
+        vehicle_license:  document.getElementById('jo_vehicle_plate').value.trim(),
+        vehicle_color:    document.getElementById('jo_vehicle_color').value.trim(),
+        vehicle_mileage:  document.getElementById('jo_vehicle_mileage').value.trim(),
+        technician_id:    document.getElementById('jo_technician').value,
+        discount_type:    document.getElementById('jo_discount_type').value,
+        discount_value:   document.getElementById('jo_discount_value').value,
+        parts_cost:       joProducts.reduce((s, p) => s + p.price * p.qty, 0),
+        payment_method:   document.getElementById('jo_payment_method').value,
+        payment_status:   document.getElementById('jo_payment_status').value,
+        partial_amount:   parseFloat(document.getElementById('jo_partial_amount').value) || 0,
+        notes:            document.getElementById('jo_notes').value.trim(),
+        items:            joItems,
+        products:         joProducts
+    };
+
+    fetch('<?php echo APP_URL; ?>/api/job_orders.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            alert('Job order created: ' + data.data.job_order_number);
+            bootstrap.Modal.getInstance(document.getElementById('createJobOrderModal')).hide();
+            joReset();
+            location.reload();
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(() => alert('Network error. Please try again.'));
+}
+
+function joReset() {
+    joItems = [];
+    joProducts = [];
+    joRenderItems();
+    joRenderProducts();
+    joCalc();
+    document.getElementById('joForm').reset();
+    document.getElementById('joPartialRow').style.display = 'none';
+    document.getElementById('joRemainingBalance').textContent = '₱0.00';
+}
+
+function joPrintPreview() {
+    const name    = document.getElementById('jo_customer_name').value.trim() || '—';
+    const phone   = document.getElementById('jo_customer_phone').value.trim() || '—';
+    const email   = document.getElementById('jo_customer_email').value.trim() || '—';
+    const address = document.getElementById('jo_customer_address').value.trim() || '—';
+    const make    = document.getElementById('jo_vehicle_make').value.trim() || '—';
+    const model   = document.getElementById('jo_vehicle_model').value.trim() || '—';
+    const year    = document.getElementById('jo_vehicle_year').value.trim() || '—';
+    const plate   = document.getElementById('jo_vehicle_plate').value.trim() || '—';
+    const color   = document.getElementById('jo_vehicle_color').value.trim() || '—';
+    const mileage = document.getElementById('jo_vehicle_mileage').value.trim() || '—';
+    const techSel = document.getElementById('jo_technician');
+    const techName = techSel.options[techSel.selectedIndex]?.dataset.name || 'Unassigned';
+    const notes   = document.getElementById('jo_notes').value.trim() || '—';
+    const payMethod = document.getElementById('jo_payment_method').value;
+    const payStatus = document.getElementById('jo_payment_status').value;
+    const joNumber = 'JO-' + new Date().getFullYear() + '-XXXX';
+    const joDate   = new Date().toLocaleDateString('en-PH', { year:'numeric', month:'long', day:'numeric' });
+
+    let subtotal = joItems.reduce((s, i) => s + i.price * i.qty, 0);
+    const partsTotal = joProducts.reduce((s, p) => s + p.price * p.qty, 0);
+    const discType = document.getElementById('jo_discount_type').value;
+    const discVal  = parseFloat(document.getElementById('jo_discount_value').value) || 0;
+    const base = subtotal + partsTotal;
+    let discountAmt = 0;
+    if (discType === 'percentage') discountAmt = base * (discVal / 100);
+    else if (discType === 'fixed')  discountAmt = discVal;
+    else if (discType === 'senior' || discType === 'pwd') discountAmt = base * 0.20;
+    discountAmt = Math.min(discountAmt, base);
+    const total = Math.max(0, base - discountAmt);
+
+    const fmt = n => '₱' + n.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+
+    let itemRows = '';
+    joItems.forEach((item, i) => {
+        itemRows += `
+        <tr>
+            <td style="padding:4px 8px;border:1px solid #ccc;text-align:center;">${i+1}</td>
+            <td style="padding:4px 8px;border:1px solid #ccc;">${item.name}</td>
+            <td style="padding:4px 8px;border:1px solid #ccc;text-align:center;">${item.qty}</td>
+            <td style="padding:4px 8px;border:1px solid #ccc;text-align:right;">${fmt(item.price)}</td>
+            <td style="padding:4px 8px;border:1px solid #ccc;text-align:right;">${fmt(item.price * item.qty)}</td>
+        </tr>`;
+    });
+    joProducts.forEach((p, i) => {
+        itemRows += `
+        <tr>
+            <td style="padding:4px 8px;border:1px solid #ccc;text-align:center;">${joItems.length + i + 1}</td>
+            <td style="padding:4px 8px;border:1px solid #ccc;">${p.name} <span style="color:#888;font-size:8pt;">(Product)</span></td>
+            <td style="padding:4px 8px;border:1px solid #ccc;text-align:center;">${p.qty}</td>
+            <td style="padding:4px 8px;border:1px solid #ccc;text-align:right;">${fmt(p.price)}</td>
+            <td style="padding:4px 8px;border:1px solid #ccc;text-align:right;">${fmt(p.price * p.qty)}</td>
+        </tr>`;
+    });
+
+    let discLabel = '';
+    if (discType === 'senior') discLabel = 'Senior Citizen (20%)';
+    else if (discType === 'pwd') discLabel = 'PWD (20%)';
+    else if (discType === 'percentage') discLabel = `Percentage (${discVal}%)`;
+    else if (discType === 'fixed') discLabel = 'Fixed Amount';
+
+    document.getElementById('joPrintContent').innerHTML = `
+    <div style="font-family:Arial,sans-serif;font-size:9.5pt;color:#000;line-height:1.4;padding-bottom:40mm;">
+
+        <!-- Header -->
+        <table style="width:100%;border-collapse:collapse;margin-bottom:8px;">
+            <tr>
+                <td style="width:70px;vertical-align:middle;padding-right:12px;">
+                    <img src="<?php echo APP_URL; ?>/assets/images/logo.png" style="width:60px;height:60px;object-fit:contain;" alt="Logo">
+                </td>
+                <td style="vertical-align:middle;">
+                    <div style="font-size:17pt;font-weight:700;letter-spacing:2px;line-height:1.1;">THE AUTODOK</div>
+                    <div style="font-size:9pt;color:#444;">Automotive Care Services</div>
+                    <div style="font-size:8.5pt;color:#666;">Tel: (02) XXX-XXXX &nbsp;|&nbsp; autodok@email.com</div>
+                </td>
+                <td style="text-align:right;vertical-align:middle;font-size:9pt;">
+                    <div style="font-size:12pt;font-weight:700;">JOB ORDER</div>
+                    <div style="color:#555;"># ${joNumber}</div>
+                    <div style="margin-top:4px;"><strong>Date:</strong> ${joDate}</div>
+                </td>
+            </tr>
+        </table>
+        <hr style="border:none;border-top:1.5px solid #333;margin-bottom:10px;">
+
+        <!-- Customer & Vehicle -->
+        <table style="width:100%;border-collapse:collapse;margin-bottom:10px;">
+            <tr>
+                <td style="width:50%;vertical-align:top;padding-right:6px;">
+                    <table style="width:100%;border-collapse:collapse;">
+                        <tr><td colspan="2" style="padding:3px 0;font-weight:700;font-size:8.5pt;letter-spacing:.5px;border-bottom:1px solid #333;">CUSTOMER</td></tr>
+                        <tr><td style="padding:3px 6px 3px 0;color:#555;width:35%;border-bottom:1px solid #ddd;">Name</td><td style="padding:3px 0;font-weight:600;border-bottom:1px solid #ddd;">${name}</td></tr>
+                        <tr><td style="padding:3px 6px 3px 0;color:#555;border-bottom:1px solid #ddd;">Phone</td><td style="padding:3px 0;border-bottom:1px solid #ddd;">${phone}</td></tr>
+                        <tr><td style="padding:3px 6px 3px 0;color:#555;border-bottom:1px solid #ddd;">Email</td><td style="padding:3px 0;border-bottom:1px solid #ddd;">${email}</td></tr>
+                        <tr><td style="padding:3px 6px 3px 0;color:#555;">Address</td><td style="padding:3px 0;">${address}</td></tr>
+                    </table>
+                </td>
+                <td style="width:50%;vertical-align:top;padding-left:6px;border-left:1px solid #ddd;">
+                    <table style="width:100%;border-collapse:collapse;padding-left:6px;">
+                        <tr><td colspan="2" style="padding:3px 0 3px 6px;font-weight:700;font-size:8.5pt;letter-spacing:.5px;border-bottom:1px solid #333;">VEHICLE</td></tr>
+                        <tr><td style="padding:3px 6px;color:#555;width:38%;border-bottom:1px solid #ddd;">Make / Model</td><td style="padding:3px 0;font-weight:600;border-bottom:1px solid #ddd;">${make} ${model}</td></tr>
+                        <tr><td style="padding:3px 6px;color:#555;border-bottom:1px solid #ddd;">Year</td><td style="padding:3px 0;border-bottom:1px solid #ddd;">${year}</td></tr>
+                        <tr><td style="padding:3px 6px;color:#555;border-bottom:1px solid #ddd;">Plate No.</td><td style="padding:3px 0;border-bottom:1px solid #ddd;">${plate}</td></tr>
+                        <tr><td style="padding:3px 6px;color:#555;border-bottom:1px solid #ddd;">Color</td><td style="padding:3px 0;border-bottom:1px solid #ddd;">${color}</td></tr>
+                        <tr><td style="padding:3px 6px;color:#555;">Mileage</td><td style="padding:3px 0;">${mileage} km</td></tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+
+        <!-- Services / Items -->
+        <div style="font-size:8.5pt;font-weight:700;letter-spacing:.5px;padding-bottom:3px;">SERVICES / ITEMS</div>
+        <table style="width:100%;border-collapse:collapse;margin-bottom:0;font-size:9pt;">
+            <colgroup>
+                <col style="width:5%">
+                <col>
+                <col style="width:8%">
+                <col style="width:18%">
+                <col style="width:18%">
+            </colgroup>
+            <thead>
+                <tr>
+                    <th style="padding:5px 8px;border-top:1.5px solid #333;border-bottom:1.5px solid #333;text-align:center;">#</th>
+                    <th style="padding:5px 8px;border-top:1.5px solid #333;border-bottom:1.5px solid #333;text-align:left;">Description</th>
+                    <th style="padding:5px 8px;border-top:1.5px solid #333;border-bottom:1.5px solid #333;text-align:center;">Qty</th>
+                    <th style="padding:5px 8px;border-top:1.5px solid #333;border-bottom:1.5px solid #333;text-align:right;">Unit Price</th>
+                    <th style="padding:5px 8px;border-top:1.5px solid #333;border-bottom:1.5px solid #333;text-align:right;">Total</th>
+                </tr>
+            </thead>
+            <tbody>${itemRows}</tbody>
+        </table>
+
+        <!-- Summary — full-width clean rows -->
+        <table style="width:100%;border-collapse:collapse;font-size:9pt;margin-top:0;">
+            ${discountAmt > 0 ? `<tr>
+                <td style="padding:4px 8px;border-top:1px solid #ccc;border-bottom:1px solid #ddd;color:#b00;">Discount (${discLabel})</td>
+                <td style="padding:4px 8px;border-top:1px solid #ccc;border-bottom:1px solid #ddd;color:#b00;text-align:right;">- ${fmt(discountAmt)}</td>
+            </tr>` : ''}
+            <tr>
+                <td style="padding:6px 8px;border-top:1.5px solid #333;border-bottom:1.5px solid #333;font-size:8.5pt;color:#555;">
+                    Services Subtotal<br><strong style="font-size:9.5pt;color:#000;">${fmt(subtotal)}</strong>
+                </td>
+                <td style="padding:6px 8px;border-top:1.5px solid #333;border-bottom:1.5px solid #333;border-left:1px solid #ddd;font-size:8.5pt;color:#555;">
+                    Products Subtotal<br><strong style="font-size:9.5pt;color:#000;">${fmt(partsTotal)}</strong>
+                </td>
+                <td style="padding:6px 8px;border-top:1.5px solid #333;border-bottom:1.5px solid #333;border-left:1px solid #ddd;font-size:8.5pt;color:#555;text-align:right;">
+                    TOTAL AMOUNT<br><strong style="font-size:11pt;color:#000;">${fmt(total)}</strong>
+                </td>
+            </tr>
+        </table>
+
+        ${notes !== '—' ? `<div style="margin-top:8px;font-size:9pt;"><strong>Notes:</strong> ${notes}</div>` : ''}
+
+        <!-- Signatures + Technician — pinned to bottom -->
+        <div style="position:fixed;bottom:15mm;left:0;right:0;">
+            <div style="font-size:9pt;margin-bottom:10px;border-top:1px solid #ddd;padding-top:6px;">
+                <strong>Assigned Technician:</strong> ${techName}
+            </div>
+            <table style="width:100%;border-collapse:collapse;font-size:9pt;">
+                <tr>
+                    <td style="width:33%;text-align:center;padding:0 10px;">
+                        <div style="border-top:1px solid #555;padding-top:5px;margin-top:36px;">Customer Signature</div>
+                    </td>
+                    <td style="width:33%;text-align:center;padding:0 10px;">
+                        <div style="border-top:1px solid #555;padding-top:5px;margin-top:36px;">Technician Signature</div>
+                    </td>
+                    <td style="width:33%;text-align:center;padding:0 10px;">
+                        <div style="border-top:1px solid #555;padding-top:5px;margin-top:36px;">Authorized Signature</div>
+                    </td>
+                </tr>
+            </table>
+            <div style="text-align:center;font-size:8pt;color:#999;margin-top:10px;border-top:1px solid #ddd;padding-top:5px;">
+                Thank you for choosing The Autodok — Automotive Care Services
+            </div>
+        </div>
+    </div>`;
+
+    document.getElementById('joPrintArea').style.display = 'block';
+    window.print();
+    document.getElementById('joPrintArea').style.display = 'none';
+}
+
+function jeSave() {
+    const services = Array.from(document.querySelectorAll('.estimate-service:checked')).map(checkbox => {
+        const label = document.querySelector(`label[for="${checkbox.id}"]`);
+        const name = label?.querySelector('strong')?.textContent.trim() || label?.textContent.trim() || 'Service';
+        return {
+            id: parseInt(checkbox.id.replace('est_service_', ''), 10),
+            name,
+            price: parseFloat(checkbox.dataset.price) || 0,
+            qty: 1
+        };
+    });
+
+    if (services.length === 0 && estProducts.length === 0) {
+        alert('Please select at least one service or product before saving.');
+        return;
+    }
+
+    const servicesTotal = parseFloat(document.getElementById('estimateTotal').textContent.replace(/[₱,]/g, '')) || 0;
+    const productsTotal = parseFloat(document.getElementById('estimateProductsTotal').textContent.replace(/[₱,]/g, '')) || 0;
+
+    const payload = {
+        csrf_token:      csrfToken,
+        vehicle_make:    document.getElementById('je_vehicle_make').value.trim(),
+        vehicle_model:   document.getElementById('je_vehicle_model').value.trim(),
+        vehicle_year:    document.getElementById('je_vehicle_year').value.trim(),
+        vehicle_plate:   document.getElementById('je_vehicle_plate').value.trim(),
+        vehicle_color:   document.getElementById('je_vehicle_color').value.trim(),
+        vehicle_mileage: document.getElementById('je_vehicle_mileage').value.trim(),
+        services_total:  servicesTotal,
+        products_total:  productsTotal,
+        services,
+        products: estProducts.map(p => ({ ...p }))
+    };
+
+    // Also keep in memory for convert-to-JO
+    savedEstimate = { ...payload };
+
+    fetch('<?php echo APP_URL; ?>/api/estimates.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            alert('Estimate saved: ' + data.data.estimate_number);
+            bootstrap.Modal.getInstance(document.getElementById('jobEstimateModal')).hide();
+            location.reload();
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(() => alert('Network error. Please try again.'));
+}
+
+function jeConvertToJo() {
+    const services = Array.from(document.querySelectorAll('.estimate-service:checked')).map(checkbox => {
+        const label = document.querySelector(`label[for="${checkbox.id}"]`);
+        const name = label?.querySelector('strong')?.textContent.trim() || label?.textContent.trim() || 'Service';
+        return {
+            id: parseInt(checkbox.id.replace('est_service_', ''), 10),
+            type: 'service',
+            name,
+            price: parseFloat(checkbox.dataset.price) || 0,
+            qty: 1
+        };
+    });
+
+    joItems = services;
+    joProducts = estProducts.map(product => ({ ...product }));
+
+    document.getElementById('jo_vehicle_make').value = document.getElementById('je_vehicle_make').value.trim();
+    document.getElementById('jo_vehicle_model').value = document.getElementById('je_vehicle_model').value.trim();
+    document.getElementById('jo_vehicle_year').value = document.getElementById('je_vehicle_year').value.trim();
+    document.getElementById('jo_vehicle_plate').value = document.getElementById('je_vehicle_plate').value.trim();
+    document.getElementById('jo_vehicle_color').value = document.getElementById('je_vehicle_color').value.trim();
+    document.getElementById('jo_vehicle_mileage').value = document.getElementById('je_vehicle_mileage').value.trim();
+
+    joRenderItems();
+    joRenderProducts();
+    joCalc();
+
+    const estimateModal = bootstrap.Modal.getInstance(document.getElementById('jobEstimateModal'));
+    if (estimateModal) {
+        estimateModal.hide();
+    }
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('createJobOrderModal')).show();
+}
+
+function jePrintPreview() {
+    const make    = document.getElementById('je_vehicle_make').value.trim() || '—';
+    const model   = document.getElementById('je_vehicle_model').value.trim() || '—';
+    const year    = document.getElementById('je_vehicle_year').value.trim() || '—';
+    const plate   = document.getElementById('je_vehicle_plate').value.trim() || '—';
+    const color   = document.getElementById('je_vehicle_color').value.trim() || '—';
+    const mileage = document.getElementById('je_vehicle_mileage').value.trim() || '—';
+
+    const selectedServices = Array.from(document.querySelectorAll('.estimate-service:checked'));
+    const serviceRows = selectedServices.map((checkbox, index) => {
+        const label = document.querySelector(`label[for="${checkbox.id}"]`);
+        const fullText = label ? label.textContent.trim() : 'Service';
+        const name = fullText.split('₱')[0].trim() || 'Service';
+        const price = parseFloat(checkbox.dataset.price) || 0;
+        return `
+            <tr>
+                <td style="padding:4px 8px;border:1px solid #ccc;text-align:center;">${index + 1}</td>
+                <td style="padding:4px 8px;border:1px solid #ccc;">${name}</td>
+                <td style="padding:4px 8px;border:1px solid #ccc;text-align:center;">1</td>
+                <td style="padding:4px 8px;border:1px solid #ccc;text-align:right;">₱${price.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}</td>
+            </tr>`;
+    }).join('');
+
+    const productRows = estProducts.map((product, index) => `
+        <tr>
+            <td style="padding:4px 8px;border:1px solid #ccc;text-align:center;">${selectedServices.length + index + 1}</td>
+            <td style="padding:4px 8px;border:1px solid #ccc;">${product.name}</td>
+            <td style="padding:4px 8px;border:1px solid #ccc;text-align:center;">${product.qty}</td>
+            <td style="padding:4px 8px;border:1px solid #ccc;text-align:right;">₱${product.price.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}</td>
+        </tr>`).join('');
+
+    const servicesTotal = parseFloat(document.getElementById('estimateTotal').textContent.replace(/[₱,]/g, '')) || 0;
+    const productsTotal = parseFloat(document.getElementById('estimateProductsTotal').textContent.replace(/[₱,]/g, '')) || 0;
+    const grandTotal = parseFloat(document.getElementById('estimateGrandTotal').textContent.replace(/[₱,]/g, '')) || 0;
+    const estimateDate = new Date().toLocaleDateString('en-PH', { year:'numeric', month:'long', day:'numeric' });
+
+    document.getElementById('jePrintContent').innerHTML = `
+    <div style="font-family:Arial,sans-serif;font-size:9.5pt;color:#000;line-height:1.4;">
+        <table style="width:100%;border-collapse:collapse;margin-bottom:8px;">
+            <tr>
+                <td style="width:70px;vertical-align:middle;padding-right:12px;">
+                    <img src="<?php echo APP_URL; ?>/assets/images/logo.png" style="width:60px;height:60px;object-fit:contain;" alt="Logo">
+                </td>
+                <td style="vertical-align:middle;">
+                    <div style="font-size:17pt;font-weight:700;letter-spacing:2px;line-height:1.1;">THE AUTODOK</div>
+                    <div style="font-size:9pt;color:#444;">Automotive Care Services</div>
+                    <div style="font-size:8.5pt;color:#666;">Tel: (02) XXX-XXXX &nbsp;|&nbsp; autodok@email.com</div>
+                </td>
+                <td style="text-align:right;vertical-align:middle;font-size:9pt;">
+                    <div style="font-size:12pt;font-weight:700;">JOB ESTIMATE</div>
+                    <div style="color:#555;">Date: ${estimateDate}</div>
+                </td>
+            </tr>
+        </table>
+        <hr style="border:none;border-top:1.5px solid #333;margin-bottom:10px;">
+        <table style="width:100%;border-collapse:collapse;margin-bottom:10px;font-size:9pt;">
+            <tr>
+                <td style="width:20%;padding:4px 8px;border:1px solid #ccc;font-weight:700;">Make / Model</td>
+                <td style="padding:4px 8px;border:1px solid #ccc;">${make} ${model}</td>
+                <td style="width:16%;padding:4px 8px;border:1px solid #ccc;font-weight:700;">Year</td>
+                <td style="width:16%;padding:4px 8px;border:1px solid #ccc;">${year}</td>
+            </tr>
+            <tr>
+                <td style="padding:4px 8px;border:1px solid #ccc;font-weight:700;">Plate No.</td>
+                <td style="padding:4px 8px;border:1px solid #ccc;">${plate}</td>
+                <td style="padding:4px 8px;border:1px solid #ccc;font-weight:700;">Color</td>
+                <td style="padding:4px 8px;border:1px solid #ccc;">${color}</td>
+            </tr>
+            <tr>
+                <td style="padding:4px 8px;border:1px solid #ccc;font-weight:700;">Mileage</td>
+                <td colspan="3" style="padding:4px 8px;border:1px solid #ccc;">${mileage} km</td>
+            </tr>
+        </table>
+        <div style="font-size:8.5pt;font-weight:700;letter-spacing:.5px;padding-bottom:3px;">ESTIMATE DETAILS</div>
+        <table style="width:100%;border-collapse:collapse;margin-bottom:0;font-size:9pt;">
+            <colgroup>
+                <col style="width:5%">
+                <col>
+                <col style="width:8%">
+                <col style="width:18%">
+            </colgroup>
+            <thead>
+                <tr>
+                    <th style="padding:5px 8px;border-top:1.5px solid #333;border-bottom:1.5px solid #333;text-align:center;">#</th>
+                    <th style="padding:5px 8px;border-top:1.5px solid #333;border-bottom:1.5px solid #333;text-align:left;">Description</th>
+                    <th style="padding:5px 8px;border-top:1.5px solid #333;border-bottom:1.5px solid #333;text-align:center;">Qty</th>
+                    <th style="padding:5px 8px;border-top:1.5px solid #333;border-bottom:1.5px solid #333;text-align:right;">Unit Price</th>
+                </tr>
+            </thead>
+            <tbody>${serviceRows || `<tr><td colspan="4" style="padding:8px;border:1px solid #ccc;text-align:center;color:#666;">No services selected</td></tr>`}${productRows}</tbody>
+        </table>
+
+        <!-- Summary Table -->
+        <table style="width:100%;border-collapse:collapse;font-size:9pt;margin-top:0;">
+            <tr>
+                <td style="padding:6px 8px;border-top:1.5px solid #333;border-bottom:1.5px solid #333;font-size:8.5pt;color:#555;">
+                    Services Subtotal<br><strong style="font-size:9.5pt;color:#000;">₱${servicesTotal.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}</strong>
+                </td>
+                <td style="padding:6px 8px;border-top:1.5px solid #333;border-bottom:1.5px solid #333;border-left:1px solid #ddd;font-size:8.5pt;color:#555;">
+                    Products Subtotal<br><strong style="font-size:9.5pt;color:#000;">₱${productsTotal.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}</strong>
+                </td>
+                <td style="padding:6px 8px;border-top:1.5px solid #333;border-bottom:1.5px solid #333;border-left:1px solid #ddd;font-size:8.5pt;color:#555;text-align:right;">
+                    GRAND TOTAL<br><strong style="font-size:11pt;color:#000;">₱${grandTotal.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}</strong>
+                </td>
+            </tr>
+        </table>
+    </div>`;
+
+    document.getElementById('jePrintArea').style.display = 'block';
+    window.print();
+    document.getElementById('jePrintArea').style.display = 'none';
+}
+
+// Reset modal on close
+document.getElementById('createJobOrderModal').addEventListener('hidden.bs.modal', joReset);
+
+// Estimate calculator
+let estProducts = []; // { id, name, price, qty }
+let savedEstimate = null;
+
+function estAddProduct() {
+    const sel   = document.getElementById('est_product_select');
+    const qty   = parseInt(document.getElementById('est_product_qty').value) || 1;
+    const opt   = sel.options[sel.selectedIndex];
+    if (!sel.value) return;
+
+    const id    = parseInt(sel.value);
+    const name  = opt.dataset.name;
+    const price = parseFloat(opt.dataset.price);
+
+    const existing = estProducts.find(p => p.id === id);
+    if (existing) {
+        existing.qty += qty;
+    } else {
+        estProducts.push({ id, name, price, qty });
+    }
+    sel.value = '';
+    document.getElementById('est_product_qty').value = 1;
+    estRenderProducts();
+    calculateEstimate();
+}
+
+function estRemoveProduct(idx) {
+    estProducts.splice(idx, 1);
+    estRenderProducts();
+    calculateEstimate();
+}
+
+function estChangeProductQty(idx, val) {
+    const qty = parseInt(val);
+    if (qty < 1) { estRemoveProduct(idx); return; }
+    estProducts[idx].qty = qty;
+    calculateEstimate();
+}
+
+function estRenderProducts() {
+    const container = document.getElementById('estProductsList');
+    if (estProducts.length === 0) {
+        container.innerHTML = '<p class="text-muted small text-center py-2 mb-0">No products added.</p>';
+        return;
+    }
+    let html = '';
+    estProducts.forEach((p, idx) => {
+        const lineTotal = (p.price * p.qty).toFixed(2);
+        html += `
+        <div class="d-flex align-items-center justify-content-between px-2 py-1 mb-1 bg-white rounded" style="border:1px solid #eee;font-size:12px;">
+            <div style="flex:1;min-width:0;">
+                <div class="text-truncate fw-semibold">${p.name}</div>
+                <small class="text-muted">₱${parseFloat(p.price).toFixed(2)} each</small>
+            </div>
+            <div class="d-flex align-items-center gap-1 ms-1">
+                <input type="number" class="form-control form-control-sm text-center" value="${p.qty}" min="1"
+                    style="width:46px;font-size:12px;" onchange="estChangeProductQty(${idx}, this.value)">
+                <span style="min-width:58px;text-align:right;font-weight:600;">₱${lineTotal}</span>
+                <button type="button" class="btn btn-sm btn-outline-danger py-0 px-1" onclick="estRemoveProduct(${idx})">
+                    <i class="bi bi-x"></i>
+                </button>
+            </div>
+        </div>`;
+    });
+    container.innerHTML = html;
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const estimateCheckboxes = document.querySelectorAll('.estimate-service');
+
+    function calculateEstimate() {
+        let servicesTotal = 0;
+        estimateCheckboxes.forEach(checkbox => {
+            if (checkbox.checked) {
+                servicesTotal += parseFloat(checkbox.dataset.price);
+            }
+        });
+
+        const productsTotal = estProducts.reduce((s, p) => s + p.price * p.qty, 0);
+        const grandTotal    = servicesTotal + productsTotal;
+
+        const fmt = n => '₱' + n.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,');
+
+        document.getElementById('estimateTotal').textContent         = fmt(servicesTotal);
+        document.getElementById('estimateProductsTotal').textContent = fmt(productsTotal);
+        document.getElementById('estimateGrandTotal').textContent    = fmt(grandTotal);
+    }
+
+    // expose so product functions can call it
+    window.calculateEstimate = calculateEstimate;
+
+    estimateCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', calculateEstimate);
+    });
+
+    // reset products when modal closes
+    document.getElementById('jobEstimateModal').addEventListener('hidden.bs.modal', function() {
+        estProducts = [];
+        estRenderProducts();
+        estimateCheckboxes.forEach(cb => cb.checked = false);
+        calculateEstimate();
+    });
+
+    // Init JO discount row visibility
+    joCalc();
+    joRenderProducts();
+    estRenderProducts();
+});
+
+function deleteItem(type, id) {
+    if (!confirm(`Are you sure you want to delete this ${type}?`)) {
+        return;
+    }
+    
+    fetch(`?action=delete_${type}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: `id=${id}&csrf_token=${csrfToken}`
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert(data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred. Please try again.');
+    });
+}
+
+function toggleStatus(type, id) {
+    fetch(`?action=toggle_${type}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: `id=${id}&csrf_token=${csrfToken}`
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert(data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred. Please try again.');
+    });
+}
+
+/* ── Edit Service ── */
+function editService(id, name, code, desc, price, labor, status) {
+    document.getElementById('editSvcId').value          = id;
+    document.getElementById('editSvcName').value        = name;
+    document.getElementById('editSvcCode').value        = code;
+    document.getElementById('editSvcDesc').value        = desc;
+    document.getElementById('editSvcPrice').value       = price;
+    document.getElementById('editSvcLabor').value       = labor;
+    document.getElementById('editSvcStatus').value      = status;
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('editServiceModal')).show();
+}
+
+function saveEditService() {
+    const id = document.getElementById('editSvcId').value;
+    const params = new URLSearchParams({
+        id,
+        service_name:  document.getElementById('editSvcName').value.trim(),
+        service_code:  document.getElementById('editSvcCode').value.trim(),
+        description:   document.getElementById('editSvcDesc').value.trim(),
+        service_price: document.getElementById('editSvcPrice').value,
+        labor_cost:    document.getElementById('editSvcLabor').value,
+        status:        document.getElementById('editSvcStatus').value,
+        csrf_token:    csrfToken,
+    });
+    fetch('?action=update_service', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: params })
+        .then(r => r.json())
+        .then(d => {
+            if (d.success) { bootstrap.Modal.getInstance(document.getElementById('editServiceModal')).hide(); location.reload(); }
+            else alert('Error: ' + d.message);
+        })
+        .catch(() => alert('Network error.'));
+}
+
+/* ── Edit Bundle ── */
+let editBundleSelectedIds = [];
+
+function editBundle(id, name, desc, price, status, serviceIds) {
+    document.getElementById('editBndId').value          = id;
+    document.getElementById('editBndName').value        = name;
+    document.getElementById('editBndDesc').value        = desc;
+    document.getElementById('editBndPrice').value       = price;
+    document.getElementById('editBndStatus').value      = status;
+    editBundleSelectedIds = serviceIds || [];
+    // Tick the right checkboxes
+    document.querySelectorAll('.edit-bundle-svc-check').forEach(cb => {
+        cb.checked = editBundleSelectedIds.includes(parseInt(cb.value));
+    });
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('editBundleModal')).show();
+}
+
+function saveEditBundle() {
+    const id = document.getElementById('editBndId').value;
+    const checked = Array.from(document.querySelectorAll('.edit-bundle-svc-check:checked')).map(cb => cb.value);
+    if (checked.length === 0) { alert('Please select at least one service.'); return; }
+    const params = new URLSearchParams({
+        id,
+        bundle_name:   document.getElementById('editBndName').value.trim(),
+        description:   document.getElementById('editBndDesc').value.trim(),
+        package_price: document.getElementById('editBndPrice').value,
+        status:        document.getElementById('editBndStatus').value,
+        csrf_token:    csrfToken,
+    });
+    checked.forEach(v => params.append('service_ids[]', v));
+    fetch('?action=update_bundle', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: params })
+        .then(r => r.json())
+        .then(d => {
+            if (d.success) { bootstrap.Modal.getInstance(document.getElementById('editBundleModal')).hide(); location.reload(); }
+            else alert('Error: ' + d.message);
+        })
+        .catch(() => alert('Network error.'));
+}
+</script>
+
+<!-- ═══════════════════════════════════════════════════════
+     EDIT SERVICE MODAL
+═══════════════════════════════════════════════════════ -->
+<div class="modal fade" id="editServiceModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header" style="background:#f8f9fa;border-bottom:2px solid #e0e0e0;">
+        <h5 class="modal-title" style="font-weight:600;"><i class="bi bi-wrench me-2"></i>Edit Service</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" style="padding:24px;">
+        <input type="hidden" id="editSvcId">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label">Service Name <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" id="editSvcName" required>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Service Code</label>
+            <input type="text" class="form-control" id="editSvcCode">
+          </div>
+          <div class="col-12">
+            <label class="form-label">Description</label>
+            <textarea class="form-control" id="editSvcDesc" rows="2"></textarea>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Base Price (₱) <span class="text-danger">*</span></label>
+            <input type="number" class="form-control" id="editSvcPrice" step="0.01" min="0">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Labor Cost (₱) <span class="text-danger">*</span></label>
+            <input type="number" class="form-control" id="editSvcLabor" step="0.01" min="0">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Status <span class="text-danger">*</span></label>
+            <select class="form-select" id="editSvcStatus">
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer" style="background:#f8f9fa;border-top:2px solid #e0e0e0;">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-dark" onclick="saveEditService()">
+          <i class="bi bi-save"></i> Save Changes
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     EDIT BUNDLE MODAL
+═══════════════════════════════════════════════════════ -->
+<div class="modal fade" id="editBundleModal" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header" style="background:#f8f9fa;border-bottom:2px solid #e0e0e0;">
+        <h5 class="modal-title" style="font-weight:600;"><i class="bi bi-box-seam me-2"></i>Edit Bundle</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" style="padding:24px;">
+        <input type="hidden" id="editBndId">
+        <div class="row g-3">
+          <div class="col-12">
+            <label class="form-label">Bundle Name <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" id="editBndName" required>
+          </div>
+          <div class="col-12">
+            <label class="form-label">Description</label>
+            <textarea class="form-control" id="editBndDesc" rows="2"></textarea>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Package Price (₱) <span class="text-danger">*</span></label>
+            <input type="number" class="form-control" id="editBndPrice" step="0.01" min="0">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Status <span class="text-danger">*</span></label>
+            <select class="form-select" id="editBndStatus">
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+            </select>
+          </div>
+          <div class="col-12">
+            <label class="form-label">Services Included <span class="text-danger">*</span></label>
+            <div style="max-height:260px;overflow-y:auto;border:1.5px solid #e0e0e0;border-radius:8px;padding:12px;background:#f9f9f9;">
+              <?php if (empty($allActiveServices)): ?>
+                <p class="text-muted text-center small mb-0">No active services available.</p>
+              <?php else: ?>
+                <?php foreach ($allActiveServices as $svc): ?>
+                <div class="form-check mb-2 p-2 bg-white rounded" style="border:1px solid #eee;">
+                  <input class="form-check-input edit-bundle-svc-check" type="checkbox"
+                         value="<?php echo $svc['id']; ?>"
+                         id="editBndSvc_<?php echo $svc['id']; ?>">
+                  <label class="form-check-label w-100 d-flex justify-content-between" for="editBndSvc_<?php echo $svc['id']; ?>">
+                    <div>
+                      <strong><?php echo escape($svc['service_name']); ?></strong>
+                      <small class="text-muted d-block"><?php echo escape($svc['service_code']); ?></small>
+                    </div>
+                    <strong><?php echo formatCurrency($svc['service_price'] + $svc['labor_cost']); ?></strong>
+                  </label>
+                </div>
+                <?php endforeach; ?>
+              <?php endif; ?>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer" style="background:#f8f9fa;border-top:2px solid #e0e0e0;">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-dark" onclick="saveEditBundle()">
+          <i class="bi bi-save"></i> Save Changes
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     VIEW JOB ORDER MODAL — uses print layout
+═══════════════════════════════════════════════════════ -->
+<div class="modal fade" id="viewJobOrderModal" tabindex="-1">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-file-earmark-text me-2"></i>Job Order Details</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body bg-light" id="viewJoBody">
+        <div class="text-center py-4"><div class="spinner-border text-secondary"></div></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-primary btn-sm" id="viewJoPrintBtn"><i class="bi bi-printer"></i> Print</button>
+        <button type="button" class="btn btn-dark btn-sm" id="viewJoEditBtn"><i class="bi bi-pencil"></i> Edit</button>
+        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     EDIT JOB ORDER MODAL — same layout as Create JO
+═══════════════════════════════════════════════════════ -->
+<div class="modal fade" id="editJobOrderModal" tabindex="-1">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header" style="background:#f8f9fa;border-bottom:2px solid #e0e0e0;">
+        <h5 class="modal-title" style="font-weight:600;"><i class="bi bi-pencil me-2"></i>Edit Job Order <span id="editJoNumber" class="text-muted fs-6"></span></h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" style="padding:20px;background:#fafafa;">
+        <form id="editJoForm">
+          <input type="hidden" id="editJoId">
+          <div class="row g-3">
+            <!-- LEFT -->
+            <div class="col-lg-7">
+              <!-- Customer -->
+              <div class="card mb-3" style="border:1.5px solid #e0e0e0;">
+                <div class="card-header" style="background:#fff;border-bottom:1.5px solid #e0e0e0;padding:10px 15px;">
+                  <h6 class="mb-0" style="font-weight:600;"><i class="bi bi-person me-1"></i>Customer Information</h6>
+                </div>
+                <div class="card-body" style="padding:15px;">
+                  <div class="row g-2">
+                    <div class="col-md-6">
+                      <label class="form-label form-label-sm">Full Name *</label>
+                      <input type="text" class="form-control form-control-sm" id="editJoCustomerName" required>
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label form-label-sm">Contact Number *</label>
+                      <input type="tel" class="form-control form-control-sm" id="editJoCustomerPhone" required>
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label form-label-sm">Email</label>
+                      <input type="email" class="form-control form-control-sm" id="editJoCustomerEmail">
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label form-label-sm">Address</label>
+                      <input type="text" class="form-control form-control-sm" id="editJoCustomerAddress">
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <!-- Vehicle -->
+              <div class="card mb-3" style="border:1.5px solid #e0e0e0;">
+                <div class="card-header" style="background:#fff;border-bottom:1.5px solid #e0e0e0;padding:10px 15px;">
+                  <h6 class="mb-0" style="font-weight:600;"><i class="bi bi-car-front me-1"></i>Vehicle Information</h6>
+                </div>
+                <div class="card-body" style="padding:15px;">
+                  <div class="row g-2">
+                    <div class="col-4"><label class="form-label form-label-sm">Make / Brand</label><input type="text" class="form-control form-control-sm" id="editJoMake" placeholder="Toyota"></div>
+                    <div class="col-4"><label class="form-label form-label-sm">Model</label><input type="text" class="form-control form-control-sm" id="editJoModel" placeholder="Vios"></div>
+                    <div class="col-4"><label class="form-label form-label-sm">Year</label><input type="text" class="form-control form-control-sm" id="editJoYear" placeholder="2022"></div>
+                    <div class="col-4"><label class="form-label form-label-sm">Plate Number</label><input type="text" class="form-control form-control-sm" id="editJoPlate" placeholder="ABC 1234"></div>
+                    <div class="col-4"><label class="form-label form-label-sm">Color</label><input type="text" class="form-control form-control-sm" id="editJoColor" placeholder="White"></div>
+                    <div class="col-4"><label class="form-label form-label-sm">Mileage (km)</label><input type="text" class="form-control form-control-sm" id="editJoMileage" placeholder="50000"></div>
+                  </div>
+                </div>
+              </div>
+              <!-- Services & Bundles picker -->
+              <div class="card mb-3" style="border:1.5px solid #e0e0e0;">
+                <div class="card-header" style="background:#fff;border-bottom:1.5px solid #e0e0e0;padding:10px 15px;">
+                  <h6 class="mb-0" style="font-weight:600;"><i class="bi bi-list-check me-1"></i>Services &amp; Bundles</h6>
+                </div>
+                <div class="card-body" style="padding:15px;">
+                  <ul class="nav nav-tabs nav-sm mb-2" id="editJoServiceTabs">
+                    <li class="nav-item"><a class="nav-link active py-1 px-3" data-bs-toggle="tab" href="#editJoTabIndividual" style="font-size:12px;">Individual Services</a></li>
+                    <li class="nav-item"><a class="nav-link py-1 px-3" data-bs-toggle="tab" href="#editJoTabBundles" style="font-size:12px;">Bundles (PMS)</a></li>
+                  </ul>
+                  <div class="tab-content">
+                    <div class="tab-pane fade show active" id="editJoTabIndividual">
+                      <div style="max-height:180px;overflow-y:auto;border:1px solid #e0e0e0;border-radius:6px;padding:8px;background:#f9f9f9;">
+                        <?php if (empty($allActiveServices)): ?>
+                          <p class="text-muted text-center small py-2 mb-0">No active services.</p>
+                        <?php else: ?>
+                          <?php foreach ($allActiveServices as $svc): ?>
+                          <div class="d-flex align-items-center justify-content-between py-1 px-2 mb-1 bg-white rounded" style="border:1px solid #eee;">
+                            <div>
+                              <strong style="font-size:12px;"><?php echo escape($svc['service_name']); ?></strong>
+                              <small class="text-muted d-block"><?php echo escape($svc['service_code']); ?></small>
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                              <span style="font-size:12px;font-weight:600;"><?php echo formatCurrency($svc['service_price'] + $svc['labor_cost']); ?></span>
+                              <button type="button" class="btn btn-sm btn-dark py-0 px-2" style="font-size:11px;"
+                                onclick="editJoAddItem('service',<?php echo $svc['id']; ?>,'<?php echo addslashes(escape($svc['service_name'])); ?>',<?php echo ($svc['service_price']+$svc['labor_cost']); ?>)">
+                                <i class="bi bi-plus"></i>
+                              </button>
+                            </div>
+                          </div>
+                          <?php endforeach; ?>
+                        <?php endif; ?>
+                      </div>
+                    </div>
+                    <div class="tab-pane fade" id="editJoTabBundles">
+                      <div style="max-height:180px;overflow-y:auto;border:1px solid #e0e0e0;border-radius:6px;padding:8px;background:#f9f9f9;">
+                        <?php if (empty($allActiveBundles)): ?>
+                          <p class="text-muted text-center small py-2 mb-0">No active bundles.</p>
+                        <?php else: ?>
+                          <?php foreach ($allActiveBundles as $bnd): ?>
+                          <div class="d-flex align-items-center justify-content-between py-1 px-2 mb-1 bg-white rounded" style="border:1px solid #eee;">
+                            <div>
+                              <strong style="font-size:12px;"><?php echo escape($bnd['bundle_name']); ?></strong>
+                              <small class="text-muted d-block"><?php echo count($bnd['services']); ?> services</small>
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                              <span style="font-size:12px;font-weight:600;"><?php echo formatCurrency($bnd['package_price']); ?></span>
+                              <button type="button" class="btn btn-sm btn-dark py-0 px-2" style="font-size:11px;"
+                                onclick="editJoAddItem('bundle',<?php echo $bnd['id']; ?>,'<?php echo addslashes(escape($bnd['bundle_name'])); ?> (Bundle)',<?php echo $bnd['package_price']; ?>)">
+                                <i class="bi bi-plus"></i>
+                              </button>
+                            </div>
+                          </div>
+                          <?php endforeach; ?>
+                        <?php endif; ?>
+                      </div>
+                    </div>
+                  </div>
+                  <!-- Selected items list -->
+                  <div class="mt-2">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                      <small class="fw-semibold text-muted">Selected Items</small>
+                      <span class="badge bg-dark" id="editJoItemCount">0</span>
+                    </div>
+                    <div id="editJoSelectedItems" style="min-height:40px;max-height:150px;overflow-y:auto;border:1px solid #e0e0e0;border-radius:6px;background:#fff;">
+                      <p class="text-muted text-center small py-3 mb-0" id="editJoEmptyMsg">No items added.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <!-- Notes -->
+              <div class="card" style="border:1.5px solid #e0e0e0;">
+                <div class="card-header" style="background:#fff;border-bottom:1.5px solid #e0e0e0;padding:10px 15px;">
+                  <h6 class="mb-0" style="font-weight:600;"><i class="bi bi-chat-left-text me-1"></i>Notes</h6>
+                </div>
+                <div class="card-body" style="padding:15px;">
+                  <textarea class="form-control form-control-sm" id="editJoNotes" rows="2" placeholder="Additional notes..."></textarea>
+                </div>
+              </div>
+            </div>
+            <!-- RIGHT -->
+            <div class="col-lg-5">
+              <!-- Status -->
+              <div class="card mb-3" style="border:1.5px solid #e0e0e0;">
+                <div class="card-header" style="background:#fff;border-bottom:1.5px solid #e0e0e0;padding:10px 15px;">
+                  <h6 class="mb-0" style="font-weight:600;"><i class="bi bi-info-circle me-1"></i>Status & Payment</h6>
+                </div>
+                <div class="card-body" style="padding:15px;">
+                  <div class="mb-3">
+                    <label class="form-label form-label-sm">Job Order Status</label>
+                    <select class="form-select form-select-sm" id="editJoStatus">
+                      <option value="pending">Pending</option>
+                      <option value="ongoing">Ongoing</option>
+                      <option value="under_inspection">Under Inspection</option>
+                      <option value="for_approval">For Approval</option>
+                      <option value="completed">Completed</option>
+                      <option value="released">Released</option>
+                      <option value="returned_for_revision">Returned for Revision</option>
+                      <option value="cancelled">Cancelled</option>
+                    </select>
+                  </div>
+                  <div class="mb-3">
+                    <label class="form-label form-label-sm">Payment Method</label>
+                    <select class="form-select form-select-sm" id="editJoPayMethod">
+                      <option value="cash">Cash</option>
+                      <option value="card">Card</option>
+                      <option value="gcash">GCash</option>
+                      <option value="paymaya">PayMaya</option>
+                      <option value="bank_transfer">Bank Transfer</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="form-label form-label-sm">Payment Status</label>
+                    <select class="form-select form-select-sm" id="editJoPayStatus" onchange="editJoTogglePartial()">
+                      <option value="pending">Pending</option>
+                      <option value="partial">Partial</option>
+                      <option value="paid">Paid</option>
+                    </select>
+                  </div>
+                  <!-- Partial payment field -->
+                  <div id="editJoPartialRow" style="display:none;margin-top:12px;">
+                    <label class="form-label form-label-sm">Amount Paid (₱) <span class="text-danger">*</span></label>
+                    <input type="number" class="form-control form-control-sm" id="editJoPartialAmount"
+                           min="0" step="0.01" value="0" oninput="editJoCalcPartial()" placeholder="0.00">
+                    <div class="d-flex justify-content-between mt-2">
+                      <span class="small text-muted">Remaining Balance</span>
+                      <strong class="text-danger" id="editJoRemainingBalance">₱0.00</strong>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <!-- Billing summary (read-only) -->
+              <div class="card" style="border:1.5px solid #e0e0e0;">
+                <div class="card-header" style="background:#fff;border-bottom:1.5px solid #e0e0e0;padding:10px 15px;">
+                  <h6 class="mb-0" style="font-weight:600;"><i class="bi bi-receipt me-1"></i>Billing Summary</h6>
+                </div>
+                <div class="card-body" style="padding:15px;">
+                  <div class="d-flex justify-content-between mb-2">
+                    <span class="small text-muted">Services Subtotal</span>
+                    <strong id="editJoSubtotal">₱0.00</strong>
+                  </div>
+                  <div class="d-flex justify-content-between mb-2">
+                    <span class="small text-muted">Products Subtotal</span>
+                    <strong id="editJoPartsCost">₱0.00</strong>
+                  </div>
+                  <hr class="my-2">
+                  <div class="d-flex justify-content-between align-items-center">
+                    <strong>Total Amount</strong>
+                    <h5 class="mb-0" id="editJoTotal" style="font-weight:700;">₱0.00</h5>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer" style="background:#f8f9fa;border-top:2px solid #e0e0e0;padding:12px 20px;">
+        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-dark btn-sm" onclick="saveEditJobOrder()">
+          <i class="bi bi-save"></i> Save Changes
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     VIEW ESTIMATE MODAL
+═══════════════════════════════════════════════════════ -->
+<div class="modal fade" id="viewEstimateModal" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-calculator me-2"></i>Estimate Details</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" id="viewEstBody">
+        <div class="text-center py-4"><div class="spinner-border text-secondary"></div></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-primary btn-sm" id="viewEstPrintBtn">
+          <i class="bi bi-printer"></i> Print
+        </button>
+        <button type="button" class="btn btn-success btn-sm" id="viewEstConvertBtn">
+          <i class="bi bi-arrow-right-circle"></i> Convert to Job Order
+        </button>
+        <button type="button" class="btn btn-dark btn-sm" id="viewEstEditBtn">
+          <i class="bi bi-pencil"></i> Edit
+        </button>
+        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     EDIT ESTIMATE MODAL
+═══════════════════════════════════════════════════════ -->
+<div class="modal fade" id="editEstimateModal" tabindex="-1">
+  <div class="modal-dialog modal-md">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-pencil me-2"></i>Edit Estimate</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form id="editEstForm">
+          <input type="hidden" id="editEstId">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label form-label-sm">Make / Brand</label>
+              <input type="text" class="form-control form-control-sm" id="editEstMake">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label form-label-sm">Model</label>
+              <input type="text" class="form-control form-control-sm" id="editEstModel">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label form-label-sm">Year</label>
+              <input type="text" class="form-control form-control-sm" id="editEstYear">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label form-label-sm">Plate No.</label>
+              <input type="text" class="form-control form-control-sm" id="editEstPlate">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label form-label-sm">Color</label>
+              <input type="text" class="form-control form-control-sm" id="editEstColor">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label form-label-sm">Mileage (km)</label>
+              <input type="text" class="form-control form-control-sm" id="editEstMileage">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label form-label-sm">Status</label>
+              <select class="form-select form-select-sm" id="editEstStatus">
+                <option value="draft">Draft</option>
+                <option value="converted">Converted</option>
+              </select>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-dark btn-sm" onclick="saveEditEstimate()">
+          <i class="bi bi-save"></i> Save Changes
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════
+   JOB ORDER — VIEW / EDIT / PRINT
+═══════════════════════════════════════════ */
+const APP_URL = '<?php echo APP_URL; ?>';
+
+function viewJobOrder(id) {
+    document.getElementById('viewJoBody').innerHTML =
+        '<div class="text-center py-4"><div class="spinner-border text-secondary"></div></div>';
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('viewJobOrderModal')).show();
+
+    fetch(APP_URL + '/api/job_orders.php?id=' + id)
+        .then(r => r.json())
+        .then(res => {
+            if (!res.success) { document.getElementById('viewJoBody').innerHTML = '<p class="text-danger p-3">'+res.message+'</p>'; return; }
+            const d   = res.data;
+            const fmt = v => '₱' + parseFloat(v||0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,',');
+            const statusBadge = {pending:'secondary',ongoing:'primary',under_inspection:'info',for_approval:'warning',completed:'success',released:'success',returned_for_revision:'danger',cancelled:'danger'};
+            const payBadge    = {pending:'secondary',partial:'warning',paid:'success'};
+            const date = d.created_at ? new Date(d.created_at).toLocaleDateString('en-PH',{year:'numeric',month:'long',day:'numeric'}) : '—';
+
+            document.getElementById('viewJoBody').innerHTML = `
+            <div style="font-family:Arial,sans-serif;font-size:10pt;color:#000;padding:10px;">
+              <!-- Header -->
+              <table style="width:100%;border-collapse:collapse;margin-bottom:10px;">
+                <tr>
+                  <td style="width:60px;vertical-align:middle;padding-right:10px;">
+                    <img src="${APP_URL}/assets/images/logo.png" style="width:50px;height:50px;object-fit:contain;">
+                  </td>
+                  <td style="vertical-align:middle;">
+                    <div style="font-size:15pt;font-weight:700;letter-spacing:2px;">THE AUTODOK</div>
+                    <div style="font-size:9pt;color:#555;">Automotive Care Services</div>
+                  </td>
+                  <td style="text-align:right;vertical-align:middle;">
+                    <div style="font-size:11pt;font-weight:700;">JOB ORDER</div>
+                    <div style="font-size:9pt;color:#555;"># ${d.job_order_number||'—'}</div>
+                    <div style="font-size:9pt;"><strong>Date:</strong> ${date}</div>
+                  </td>
+                </tr>
+              </table>
+              <hr style="border:none;border-top:1.5px solid #333;margin-bottom:10px;">
+              <!-- Customer & Vehicle -->
+              <table style="width:100%;border-collapse:collapse;margin-bottom:10px;">
+                <tr>
+                  <td style="width:50%;vertical-align:top;padding-right:8px;">
+                    <table style="width:100%;border-collapse:collapse;">
+                      <tr><td colspan="2" style="padding:3px 0;font-weight:700;font-size:8.5pt;border-bottom:1px solid #333;letter-spacing:.5px;">CUSTOMER</td></tr>
+                      <tr><td style="padding:3px 6px 3px 0;color:#555;width:35%;border-bottom:1px solid #eee;">Name</td><td style="padding:3px 0;font-weight:600;border-bottom:1px solid #eee;">${d.customer_name||'—'}</td></tr>
+                      <tr><td style="padding:3px 6px 3px 0;color:#555;border-bottom:1px solid #eee;">Phone</td><td style="padding:3px 0;border-bottom:1px solid #eee;">${d.customer_phone||'—'}</td></tr>
+                      <tr><td style="padding:3px 6px 3px 0;color:#555;border-bottom:1px solid #eee;">Email</td><td style="padding:3px 0;border-bottom:1px solid #eee;">${d.customer_email||'—'}</td></tr>
+                      <tr><td style="padding:3px 6px 3px 0;color:#555;">Address</td><td style="padding:3px 0;">${d.customer_address||'—'}</td></tr>
+                    </table>
+                  </td>
+                  <td style="width:50%;vertical-align:top;padding-left:8px;border-left:1px solid #ddd;">
+                    <table style="width:100%;border-collapse:collapse;">
+                      <tr><td colspan="2" style="padding:3px 0 3px 6px;font-weight:700;font-size:8.5pt;border-bottom:1px solid #333;letter-spacing:.5px;">VEHICLE</td></tr>
+                      <tr><td style="padding:3px 6px;color:#555;width:38%;border-bottom:1px solid #eee;">Make/Model</td><td style="padding:3px 0;font-weight:600;border-bottom:1px solid #eee;">${(d.vehicle_make||'')+' '+(d.vehicle_model||'')}</td></tr>
+                      <tr><td style="padding:3px 6px;color:#555;border-bottom:1px solid #eee;">Year</td><td style="padding:3px 0;border-bottom:1px solid #eee;">${d.vehicle_year||'—'}</td></tr>
+                      <tr><td style="padding:3px 6px;color:#555;border-bottom:1px solid #eee;">Plate No.</td><td style="padding:3px 0;border-bottom:1px solid #eee;">${d.vehicle_license||'—'}</td></tr>
+                      <tr><td style="padding:3px 6px;color:#555;border-bottom:1px solid #eee;">Color</td><td style="padding:3px 0;border-bottom:1px solid #eee;">${d.vehicle_color||'—'}</td></tr>
+                      <tr><td style="padding:3px 6px;color:#555;">Mileage</td><td style="padding:3px 0;">${d.vehicle_mileage||'—'} km</td></tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+              <!-- Status badges -->
+              <div class="d-flex gap-3 mb-3">
+                <div><small class="text-muted d-block">Status</small><span class="badge bg-${statusBadge[d.status]||'secondary'}">${(d.status||'').replace(/_/g,' ')}</span></div>
+                <div><small class="text-muted d-block">Payment</small><span class="badge bg-${payBadge[d.payment_status]||'secondary'}">${d.payment_status||'—'}</span></div>
+                <div><small class="text-muted d-block">Method</small><span class="badge bg-dark">${(d.payment_method||'—').replace(/_/g,' ')}</span></div>
+                ${d.payment_status==='partial' ? `<div><small class="text-muted d-block">Paid</small><strong class="text-success">${fmt(d.partial_amount)}</strong></div><div><small class="text-muted d-block">Balance</small><strong class="text-danger">${fmt(parseFloat(d.total_amount||0)-parseFloat(d.partial_amount||0))}</strong></div>` : ''}
+              </div>
+              <!-- Services / Items table -->
+              <div style="font-size:8.5pt;font-weight:700;letter-spacing:.5px;margin-bottom:4px;">SERVICES / ITEMS</div>
+              <table style="width:100%;border-collapse:collapse;margin-bottom:0;font-size:9pt;">
+                <colgroup><col style="width:5%"><col><col style="width:8%"><col style="width:18%"><col style="width:18%"></colgroup>
+                <thead>
+                  <tr>
+                    <th style="padding:5px 8px;border-top:1.5px solid #333;border-bottom:1.5px solid #333;text-align:center;">#</th>
+                    <th style="padding:5px 8px;border-top:1.5px solid #333;border-bottom:1.5px solid #333;text-align:left;">Description</th>
+                    <th style="padding:5px 8px;border-top:1.5px solid #333;border-bottom:1.5px solid #333;text-align:center;">Qty</th>
+                    <th style="padding:5px 8px;border-top:1.5px solid #333;border-bottom:1.5px solid #333;text-align:right;">Unit Price</th>
+                    <th style="padding:5px 8px;border-top:1.5px solid #333;border-bottom:1.5px solid #333;text-align:right;">Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${(d.services||[]).map((s,i)=>`<tr><td style="padding:4px 8px;border-bottom:1px solid #eee;text-align:center;">${i+1}</td><td style="padding:4px 8px;border-bottom:1px solid #eee;">${s.service_name}</td><td style="padding:4px 8px;border-bottom:1px solid #eee;text-align:center;">${s.quantity}</td><td style="padding:4px 8px;border-bottom:1px solid #eee;text-align:right;">${fmt(s.service_price)}</td><td style="padding:4px 8px;border-bottom:1px solid #eee;text-align:right;">${fmt(s.total)}</td></tr>`).join('')}
+                  ${(d.products||[]).map((p,i)=>`<tr><td style="padding:4px 8px;border-bottom:1px solid #eee;text-align:center;">${(d.services||[]).length+i+1}</td><td style="padding:4px 8px;border-bottom:1px solid #eee;">${p.product_name} <span style="color:#888;font-size:8pt;">(Product)</span></td><td style="padding:4px 8px;border-bottom:1px solid #eee;text-align:center;">${p.quantity}</td><td style="padding:4px 8px;border-bottom:1px solid #eee;text-align:right;">${fmt(p.unit_price)}</td><td style="padding:4px 8px;border-bottom:1px solid #eee;text-align:right;">${fmt(p.total)}</td></tr>`).join('')}
+                  ${(d.services||[]).length===0&&(d.products||[]).length===0?'<tr><td colspan="5" style="padding:10px;text-align:center;color:#999;">No items recorded</td></tr>':''}
+                </tbody>
+              </table>
+              <!-- Summary -->
+              <table style="width:100%;border-collapse:collapse;font-size:9pt;margin-top:0;">
+                <tr>
+                  <td style="padding:6px 8px;border-top:1.5px solid #333;border-bottom:1.5px solid #333;font-size:8.5pt;color:#555;">
+                    Services Subtotal<br><strong style="font-size:10pt;">${fmt(d.subtotal)}</strong>
+                  </td>
+                  <td style="padding:6px 8px;border-top:1.5px solid #333;border-bottom:1.5px solid #333;border-left:1px solid #ddd;font-size:8.5pt;color:#555;">
+                    Products Subtotal<br><strong style="font-size:10pt;">${fmt(d.parts_total)}</strong>
+                  </td>
+                  <td style="padding:6px 8px;border-top:1.5px solid #333;border-bottom:1.5px solid #333;border-left:1px solid #ddd;font-size:8.5pt;color:#555;text-align:right;">
+                    TOTAL AMOUNT<br><strong style="font-size:12pt;">${fmt(d.total_amount)}</strong>
+                  </td>
+                </tr>
+              </table>
+              ${d.notes ? '<div style="margin-top:8px;font-size:9pt;"><strong>Notes:</strong> '+d.notes+'</div>' : ''}
+            </div>`;
+
+            document.getElementById('viewJoPrintBtn').onclick = () => { bootstrap.Modal.getInstance(document.getElementById('viewJobOrderModal')).hide(); printJobOrder(id); };
+            document.getElementById('viewJoEditBtn').onclick  = () => { bootstrap.Modal.getInstance(document.getElementById('viewJobOrderModal')).hide(); editJobOrder(id); };
+        })
+        .catch(() => { document.getElementById('viewJoBody').innerHTML = '<p class="text-danger p-3">Failed to load job order.</p>'; });
+}
+</script>
+
+<script>
+/* ── Edit JO item picker ── */
+let editJoItems = [];
+
+function editJoAddItem(type, id, name, price) {
+    const existing = editJoItems.find(i => i.type===type && i.id===id);
+    if (existing) { existing.qty++; } else { editJoItems.push({type,id,name,price:parseFloat(price),qty:1}); }
+    editJoRenderItems();
+    editJoUpdateBilling();
+}
+function editJoRemoveItem(idx) { editJoItems.splice(idx,1); editJoRenderItems(); editJoUpdateBilling(); }
+function editJoChangeQty(idx,val) { const q=parseInt(val); if(q<1){editJoRemoveItem(idx);return;} editJoItems[idx].qty=q; editJoUpdateBilling(); }
+
+function editJoRenderItems() {
+    const c = document.getElementById('editJoSelectedItems');
+    const badge = document.getElementById('editJoItemCount');
+    if (!editJoItems.length) {
+        c.innerHTML = '<p class="text-muted text-center small py-3 mb-0" id="editJoEmptyMsg">No items added.</p>';
+        badge.textContent = '0'; return;
+    }
+    badge.textContent = editJoItems.length;
+    c.innerHTML = editJoItems.map((item,idx) => `
+    <div class="d-flex align-items-center justify-content-between px-2 py-1" style="border-bottom:1px solid #f0f0f0;font-size:12px;">
+      <div style="flex:1;min-width:0;"><div class="text-truncate fw-semibold">${item.name}</div><small class="text-muted">₱${item.price.toFixed(2)} each</small></div>
+      <div class="d-flex align-items-center gap-1 ms-2">
+        <input type="number" class="form-control form-control-sm text-center" value="${item.qty}" min="1" style="width:46px;font-size:11px;" onchange="editJoChangeQty(${idx},this.value)">
+        <span style="min-width:55px;text-align:right;font-weight:600;">₱${(item.price*item.qty).toFixed(2)}</span>
+        <button type="button" class="btn btn-sm btn-outline-danger py-0 px-1" onclick="editJoRemoveItem(${idx})"><i class="bi bi-x"></i></button>
+      </div>
+    </div>`).join('');
+}
+
+function editJoUpdateBilling() {
+    const fmt = v => '₱' + parseFloat(v||0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,',');
+    const subtotal = editJoItems.reduce((s,i)=>s+i.price*i.qty,0);
+    document.getElementById('editJoSubtotal').textContent = fmt(subtotal);
+    const parts = parseFloat(document.getElementById('editJoPartsCost').textContent.replace(/[₱,]/g,''))||0;
+    document.getElementById('editJoTotal').textContent = fmt(subtotal + parts);
+    editJoCalcPartial();
+}
+
+function editJoTogglePartial() {
+    const status = document.getElementById('editJoPayStatus').value;
+    const row    = document.getElementById('editJoPartialRow');
+    row.style.display = status === 'partial' ? 'block' : 'none';
+    if (status !== 'partial') {
+        document.getElementById('editJoPartialAmount').value = '0';
+        document.getElementById('editJoRemainingBalance').textContent = '₱0.00';
+    } else {
+        editJoCalcPartial();
+    }
+}
+
+function editJoCalcPartial() {
+    const status = document.getElementById('editJoPayStatus').value;
+    if (status !== 'partial') return;
+    const totalText = document.getElementById('editJoTotal').textContent.replace(/[₱,]/g,'');
+    const total     = parseFloat(totalText) || 0;
+    const paid      = parseFloat(document.getElementById('editJoPartialAmount').value) || 0;
+    const remaining = Math.max(0, total - paid);
+    const fmt = v => '₱' + v.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,',');
+    document.getElementById('editJoRemainingBalance').textContent = fmt(remaining);
+}
+
+function editJobOrder(id) {
+    fetch(APP_URL + '/api/job_orders.php?id=' + id)
+        .then(r => r.json())
+        .then(res => {
+            if (!res.success) { alert(res.message); return; }
+            const d   = res.data;
+            const fmt = v => '₱' + parseFloat(v||0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,',');
+            document.getElementById('editJoId').value              = d.id;
+            document.getElementById('editJoNumber').textContent    = '— ' + (d.job_order_number||'');
+            document.getElementById('editJoCustomerName').value    = d.customer_name     || '';
+            document.getElementById('editJoCustomerPhone').value   = d.customer_phone    || '';
+            document.getElementById('editJoCustomerEmail').value   = d.customer_email    || '';
+            document.getElementById('editJoCustomerAddress').value = d.customer_address  || '';
+            document.getElementById('editJoMake').value            = d.vehicle_make      || '';
+            document.getElementById('editJoModel').value           = d.vehicle_model     || '';
+            document.getElementById('editJoYear').value            = d.vehicle_year      || '';
+            document.getElementById('editJoPlate').value           = d.vehicle_license   || '';
+            document.getElementById('editJoColor').value           = d.vehicle_color     || '';
+            document.getElementById('editJoMileage').value         = d.vehicle_mileage   || '';
+            document.getElementById('editJoStatus').value          = d.status            || 'pending';
+            document.getElementById('editJoPayMethod').value       = d.payment_method    || 'cash';
+            document.getElementById('editJoPayStatus').value       = d.payment_status    || 'pending';
+            document.getElementById('editJoNotes').value           = d.notes             || '';
+            document.getElementById('editJoSubtotal').textContent  = fmt(d.subtotal);
+            document.getElementById('editJoPartsCost').textContent = fmt(d.parts_total);
+            document.getElementById('editJoTotal').textContent     = fmt(d.total_amount);
+            // Show partial row if already partial
+            const partialRow = document.getElementById('editJoPartialRow');
+            if (d.payment_status === 'partial') {
+                partialRow.style.display = 'block';
+                document.getElementById('editJoPartialAmount').value = d.partial_amount || 0;
+                editJoCalcPartial();
+            } else {
+                partialRow.style.display = 'none';
+                document.getElementById('editJoPartialAmount').value = 0;
+            }
+            // Pre-load existing services into editJoItems
+            editJoItems = (d.services||[]).map(s => ({
+                type: s.bundle_id ? 'bundle' : 'service',
+                id: s.bundle_id ? s.bundle_id : (s.service_id || null),
+                name: s.service_name,
+                price: parseFloat(s.service_price),
+                qty: parseInt(s.quantity)
+            }));
+            editJoRenderItems();
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('editJobOrderModal')).show();
+        })
+        .catch(() => alert('Failed to load job order.'));
+}
+</script>
+
+<script>
+function saveEditJobOrder() {
+    const id = document.getElementById('editJoId').value;
+    if (!document.getElementById('editJoCustomerName').value.trim())  { alert('Customer name is required.'); return; }
+    if (!document.getElementById('editJoCustomerPhone').value.trim()) { alert('Customer phone is required.'); return; }
+
+    const payload = {
+        csrf_token:       csrfToken,
+        customer_name:    document.getElementById('editJoCustomerName').value.trim(),
+        customer_phone:   document.getElementById('editJoCustomerPhone').value.trim(),
+        customer_email:   document.getElementById('editJoCustomerEmail').value.trim(),
+        customer_address: document.getElementById('editJoCustomerAddress').value.trim(),
+        vehicle_make:     document.getElementById('editJoMake').value.trim(),
+        vehicle_model:    document.getElementById('editJoModel').value.trim(),
+        vehicle_year:     document.getElementById('editJoYear').value.trim(),
+        vehicle_license:  document.getElementById('editJoPlate').value.trim(),
+        vehicle_color:    document.getElementById('editJoColor').value.trim(),
+        vehicle_mileage:  document.getElementById('editJoMileage').value.trim(),
+        status:           document.getElementById('editJoStatus').value,
+        payment_method:   document.getElementById('editJoPayMethod').value,
+        payment_status:   document.getElementById('editJoPayStatus').value,
+        partial_amount:   parseFloat(document.getElementById('editJoPartialAmount').value) || 0,
+        notes:            document.getElementById('editJoNotes').value.trim(),
+        items:            editJoItems,
+    };
+    fetch(APP_URL + '/api/job_orders.php?id=' + id, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            bootstrap.Modal.getInstance(document.getElementById('editJobOrderModal')).hide();
+            location.reload();
+        } else { alert('Error: ' + data.message); }
+    })
+    .catch(() => alert('Network error.'));
+}
+</script>
+
+<script>
+function printJobOrder(id) {
+    fetch(APP_URL + '/api/job_orders.php?id=' + id)
+        .then(r => r.json())
+        .then(res => {
+            if (!res.success) { alert(res.message); return; }
+            const d    = res.data;
+            const fmt  = n => '₱' + parseFloat(n||0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+            const joDate = d.created_at
+                ? new Date(d.created_at).toLocaleDateString('en-PH', {year:'numeric',month:'long',day:'numeric'})
+                : new Date().toLocaleDateString('en-PH', {year:'numeric',month:'long',day:'numeric'});
+
+            const subtotal   = parseFloat(d.subtotal   || 0);
+            const partsTotal = parseFloat(d.parts_total || 0);
+            const discAmt    = parseFloat(d.discount_amount || 0);
+            const total      = parseFloat(d.total_amount || 0);
+            const partialAmt = parseFloat(d.partial_amount || 0);
+            const remaining  = d.payment_status === 'partial' ? Math.max(0, total - partialAmt) : 0;
+
+            // Build item rows — same style as joPrintPreview
+            let itemRows = '';
+            (d.services||[]).forEach((s, i) => {
+                itemRows += `
+                <tr>
+                    <td style="padding:4px 8px;border:1px solid #ccc;text-align:center;">${i+1}</td>
+                    <td style="padding:4px 8px;border:1px solid #ccc;">${s.service_name}</td>
+                    <td style="padding:4px 8px;border:1px solid #ccc;text-align:center;">${s.quantity}</td>
+                    <td style="padding:4px 8px;border:1px solid #ccc;text-align:right;">${fmt(s.service_price)}</td>
+                    <td style="padding:4px 8px;border:1px solid #ccc;text-align:right;">${fmt(s.total)}</td>
+                </tr>`;
+            });
+            (d.products||[]).forEach((p, i) => {
+                itemRows += `
+                <tr>
+                    <td style="padding:4px 8px;border:1px solid #ccc;text-align:center;">${(d.services||[]).length+i+1}</td>
+                    <td style="padding:4px 8px;border:1px solid #ccc;">${p.product_name} <span style="color:#888;font-size:8pt;">(Product)</span></td>
+                    <td style="padding:4px 8px;border:1px solid #ccc;text-align:center;">${p.quantity}</td>
+                    <td style="padding:4px 8px;border:1px solid #ccc;text-align:right;">${fmt(p.unit_price)}</td>
+                    <td style="padding:4px 8px;border:1px solid #ccc;text-align:right;">${fmt(p.total)}</td>
+                </tr>`;
+            });
+            if (!itemRows) itemRows = '<tr><td colspan="5" style="padding:10px;text-align:center;color:#999;">No items recorded</td></tr>';
+
+            const discLabel = d.discount_type === 'senior_citizen' ? 'Senior Citizen (20%)'
+                            : d.discount_type === 'pwd'            ? 'PWD (20%)'
+                            : d.discount_type === 'custom'         ? 'Discount'
+                            : '';
+
+            document.getElementById('joPrintContent').innerHTML = `
+    <div style="font-family:Arial,sans-serif;font-size:9.5pt;color:#000;line-height:1.4;padding-bottom:40mm;">
+
+        <!-- Header -->
+        <table style="width:100%;border-collapse:collapse;margin-bottom:8px;">
+            <tr>
+                <td style="width:70px;vertical-align:middle;padding-right:12px;">
+                    <img src="${APP_URL}/assets/images/logo.png" style="width:60px;height:60px;object-fit:contain;" alt="Logo">
+                </td>
+                <td style="vertical-align:middle;">
+                    <div style="font-size:17pt;font-weight:700;letter-spacing:2px;line-height:1.1;">THE AUTODOK</div>
+                    <div style="font-size:9pt;color:#444;">Automotive Care Services</div>
+                    <div style="font-size:8.5pt;color:#666;">Tel: (02) XXX-XXXX &nbsp;|&nbsp; autodok@email.com</div>
+                </td>
+                <td style="text-align:right;vertical-align:middle;font-size:9pt;">
+                    <div style="font-size:12pt;font-weight:700;">JOB ORDER</div>
+                    <div style="color:#555;"># ${d.job_order_number||'—'}</div>
+                    <div style="margin-top:4px;"><strong>Date:</strong> ${joDate}</div>
+                </td>
+            </tr>
+        </table>
+        <hr style="border:none;border-top:1.5px solid #333;margin-bottom:10px;">
+
+        <!-- Customer & Vehicle -->
+        <table style="width:100%;border-collapse:collapse;margin-bottom:10px;">
+            <tr>
+                <td style="width:50%;vertical-align:top;padding-right:6px;">
+                    <table style="width:100%;border-collapse:collapse;">
+                        <tr><td colspan="2" style="padding:3px 0;font-weight:700;font-size:8.5pt;letter-spacing:.5px;border-bottom:1px solid #333;">CUSTOMER</td></tr>
+                        <tr><td style="padding:3px 6px 3px 0;color:#555;width:35%;border-bottom:1px solid #ddd;">Name</td><td style="padding:3px 0;font-weight:600;border-bottom:1px solid #ddd;">${d.customer_name||'—'}</td></tr>
+                        <tr><td style="padding:3px 6px 3px 0;color:#555;border-bottom:1px solid #ddd;">Phone</td><td style="padding:3px 0;border-bottom:1px solid #ddd;">${d.customer_phone||'—'}</td></tr>
+                        <tr><td style="padding:3px 6px 3px 0;color:#555;border-bottom:1px solid #ddd;">Email</td><td style="padding:3px 0;border-bottom:1px solid #ddd;">${d.customer_email||'—'}</td></tr>
+                        <tr><td style="padding:3px 6px 3px 0;color:#555;">Address</td><td style="padding:3px 0;">${d.customer_address||'—'}</td></tr>
+                    </table>
+                </td>
+                <td style="width:50%;vertical-align:top;padding-left:6px;border-left:1px solid #ddd;">
+                    <table style="width:100%;border-collapse:collapse;padding-left:6px;">
+                        <tr><td colspan="2" style="padding:3px 0 3px 6px;font-weight:700;font-size:8.5pt;letter-spacing:.5px;border-bottom:1px solid #333;">VEHICLE</td></tr>
+                        <tr><td style="padding:3px 6px;color:#555;width:38%;border-bottom:1px solid #ddd;">Make / Model</td><td style="padding:3px 0;font-weight:600;border-bottom:1px solid #ddd;">${(d.vehicle_make||'')+' '+(d.vehicle_model||'')}</td></tr>
+                        <tr><td style="padding:3px 6px;color:#555;border-bottom:1px solid #ddd;">Year</td><td style="padding:3px 0;border-bottom:1px solid #ddd;">${d.vehicle_year||'—'}</td></tr>
+                        <tr><td style="padding:3px 6px;color:#555;border-bottom:1px solid #ddd;">Plate No.</td><td style="padding:3px 0;border-bottom:1px solid #ddd;">${d.vehicle_license||'—'}</td></tr>
+                        <tr><td style="padding:3px 6px;color:#555;border-bottom:1px solid #ddd;">Color</td><td style="padding:3px 0;border-bottom:1px solid #ddd;">${d.vehicle_color||'—'}</td></tr>
+                        <tr><td style="padding:3px 6px;color:#555;">Mileage</td><td style="padding:3px 0;">${d.vehicle_mileage||'—'} km</td></tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+
+        <!-- Services / Items -->
+        <div style="font-size:8.5pt;font-weight:700;letter-spacing:.5px;padding-bottom:3px;">SERVICES / ITEMS</div>
+        <table style="width:100%;border-collapse:collapse;margin-bottom:0;font-size:9pt;">
+            <colgroup>
+                <col style="width:5%"><col><col style="width:8%"><col style="width:18%"><col style="width:18%">
+            </colgroup>
+            <thead>
+                <tr>
+                    <th style="padding:5px 8px;border-top:1.5px solid #333;border-bottom:1.5px solid #333;text-align:center;">#</th>
+                    <th style="padding:5px 8px;border-top:1.5px solid #333;border-bottom:1.5px solid #333;text-align:left;">Description</th>
+                    <th style="padding:5px 8px;border-top:1.5px solid #333;border-bottom:1.5px solid #333;text-align:center;">Qty</th>
+                    <th style="padding:5px 8px;border-top:1.5px solid #333;border-bottom:1.5px solid #333;text-align:right;">Unit Price</th>
+                    <th style="padding:5px 8px;border-top:1.5px solid #333;border-bottom:1.5px solid #333;text-align:right;">Total</th>
+                </tr>
+            </thead>
+            <tbody>${itemRows}</tbody>
+        </table>
+
+        <!-- Summary -->
+        <table style="width:100%;border-collapse:collapse;font-size:9pt;margin-top:0;">
+            ${discAmt > 0 ? `<tr>
+                <td style="padding:4px 8px;border-top:1px solid #ccc;border-bottom:1px solid #ddd;color:#b00;">Discount (${discLabel})</td>
+                <td style="padding:4px 8px;border-top:1px solid #ccc;border-bottom:1px solid #ddd;color:#b00;text-align:right;">- ${fmt(discAmt)}</td>
+            </tr>` : ''}
+            <tr>
+                <td style="padding:6px 8px;border-top:1.5px solid #333;border-bottom:1.5px solid #333;font-size:8.5pt;color:#555;">
+                    Services Subtotal<br><strong style="font-size:9.5pt;color:#000;">${fmt(subtotal)}</strong>
+                </td>
+                <td style="padding:6px 8px;border-top:1.5px solid #333;border-bottom:1.5px solid #333;border-left:1px solid #ddd;font-size:8.5pt;color:#555;">
+                    Products Subtotal<br><strong style="font-size:9.5pt;color:#000;">${fmt(partsTotal)}</strong>
+                </td>
+                <td style="padding:6px 8px;border-top:1.5px solid #333;border-bottom:1.5px solid #333;border-left:1px solid #ddd;font-size:8.5pt;color:#555;text-align:right;">
+                    TOTAL AMOUNT<br><strong style="font-size:11pt;color:#000;">${fmt(total)}</strong>
+                    ${d.payment_status==='partial' ? `<br><span style="font-size:8pt;color:#555;">Paid: ${fmt(partialAmt)}</span><br><span style="font-size:8pt;color:#c00;font-weight:700;">Balance: ${fmt(remaining)}</span>` : ''}
+                </td>
+            </tr>
+        </table>
+
+        ${d.notes ? `<div style="margin-top:8px;font-size:9pt;"><strong>Notes:</strong> ${d.notes}</div>` : ''}
+
+        <!-- Technician + Signatures pinned to bottom -->
+        <div style="position:fixed;bottom:15mm;left:0;right:0;">
+            <div style="font-size:9pt;margin-bottom:10px;border-top:1px solid #ddd;padding-top:6px;">
+                <strong>Assigned Technician:</strong> Unassigned
+            </div>
+            <table style="width:100%;border-collapse:collapse;font-size:9pt;">
+                <tr>
+                    <td style="width:33%;text-align:center;padding:0 10px;">
+                        <div style="border-top:1px solid #555;padding-top:5px;margin-top:36px;">Customer Signature</div>
+                    </td>
+                    <td style="width:33%;text-align:center;padding:0 10px;">
+                        <div style="border-top:1px solid #555;padding-top:5px;margin-top:36px;">Technician Signature</div>
+                    </td>
+                    <td style="width:33%;text-align:center;padding:0 10px;">
+                        <div style="border-top:1px solid #555;padding-top:5px;margin-top:36px;">Authorized Signature</div>
+                    </td>
+                </tr>
+            </table>
+            <div style="text-align:center;font-size:8pt;color:#999;margin-top:10px;border-top:1px solid #ddd;padding-top:5px;">
+                Thank you for choosing The Autodok — Automotive Care Services
+            </div>
+        </div>
+    </div>`;
+
+            document.getElementById('joPrintArea').style.display = 'block';
+            window.print();
+            document.getElementById('joPrintArea').style.display = 'none';
+        })
+        .catch(() => alert('Failed to load job order for printing.'));
+}
+</script>
+
+<script>
+/* ═══════════════════════════════════════════
+   ESTIMATE — VIEW / EDIT / PRINT
+═══════════════════════════════════════════ */
+function viewEstimate(id) {
+    document.getElementById('viewEstBody').innerHTML =
+        '<div class="text-center py-4"><div class="spinner-border text-secondary"></div></div>';
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('viewEstimateModal')).show();
+
+    fetch(APP_URL + '/api/estimates.php?id=' + id)
+        .then(r => r.json())
+        .then(res => {
+            if (!res.success) { document.getElementById('viewEstBody').innerHTML = '<p class="text-danger p-3">'+res.message+'</p>'; return; }
+            const d   = res.data;
+            const fmt = v => '₱' + parseFloat(v||0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,',');
+            let services = [], products = [];
+            try { services = JSON.parse(d.services_json||'[]'); } catch(e){}
+            try { products = JSON.parse(d.products_json||'[]'); } catch(e){}
+
+            let svcRows = services.map((s,i) => `<tr><td>${i+1}</td><td>${s.name}</td><td class="text-center">${s.qty||1}</td><td class="text-end">${fmt(s.price)}</td></tr>`).join('');
+            let prdRows = products.map((p,i) => `<tr><td>${services.length+i+1}</td><td>${p.name} <small class="text-muted">(Product)</small></td><td class="text-center">${p.qty}</td><td class="text-end">${fmt(p.price)}</td></tr>`).join('');
+
+            document.getElementById('viewEstBody').innerHTML = `
+            <div class="row g-2 mb-3">
+              <div class="col-6"><strong>Estimate #:</strong> ${d.estimate_number}</div>
+              <div class="col-6"><strong>Status:</strong> <span class="badge bg-${d.status==='converted'?'success':'secondary'}">${d.status}</span></div>
+              <div class="col-6"><strong>Vehicle:</strong> ${(d.vehicle_make||'')+' '+(d.vehicle_model||'')}</div>
+              <div class="col-6"><strong>Plate:</strong> ${d.vehicle_plate||'—'}</div>
+              <div class="col-4"><strong>Year:</strong> ${d.vehicle_year||'—'}</div>
+              <div class="col-4"><strong>Color:</strong> ${d.vehicle_color||'—'}</div>
+              <div class="col-4"><strong>Mileage:</strong> ${d.vehicle_mileage||'—'} km</div>
+            </div>
+            <table class="table table-sm table-bordered mb-3">
+              <thead class="table-light"><tr><th>#</th><th>Description</th><th class="text-center">Qty</th><th class="text-end">Price</th></tr></thead>
+              <tbody>${svcRows||''}${prdRows||'<tr><td colspan="4" class="text-center text-muted">No items</td></tr>'}</tbody>
+            </table>
+            <div class="d-flex justify-content-end gap-4">
+              <div><small class="text-muted">Services</small><br><strong>${fmt(d.services_total)}</strong></div>
+              <div><small class="text-muted">Products</small><br><strong>${fmt(d.products_total)}</strong></div>
+              <div><small class="text-muted">Grand Total</small><br><strong class="fs-5">${fmt(d.grand_total)}</strong></div>
+            </div>`;
+            document.getElementById('viewEstPrintBtn').onclick   = () => { bootstrap.Modal.getInstance(document.getElementById('viewEstimateModal')).hide(); printEstimate(id); };
+            document.getElementById('viewEstEditBtn').onclick    = () => { bootstrap.Modal.getInstance(document.getElementById('viewEstimateModal')).hide(); editEstimate(id); };
+            document.getElementById('viewEstConvertBtn').onclick = () => { bootstrap.Modal.getInstance(document.getElementById('viewEstimateModal')).hide(); convertEstimateToJo(d); };
+        })
+        .catch(() => { document.getElementById('viewEstBody').innerHTML = '<p class="text-danger p-3">Failed to load estimate.</p>'; });
+}
+
+function editEstimate(id) {
+    fetch(APP_URL + '/api/estimates.php?id=' + id)
+        .then(r => r.json())
+        .then(res => {
+            if (!res.success) { alert(res.message); return; }
+            const d = res.data;
+            document.getElementById('editEstId').value      = d.id;
+            document.getElementById('editEstMake').value    = d.vehicle_make    || '';
+            document.getElementById('editEstModel').value   = d.vehicle_model   || '';
+            document.getElementById('editEstYear').value    = d.vehicle_year    || '';
+            document.getElementById('editEstPlate').value   = d.vehicle_plate   || '';
+            document.getElementById('editEstColor').value   = d.vehicle_color   || '';
+            document.getElementById('editEstMileage').value = d.vehicle_mileage || '';
+            document.getElementById('editEstStatus').value  = d.status          || 'draft';
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('editEstimateModal')).show();
+        })
+        .catch(() => alert('Failed to load estimate.'));
+}
+
+function saveEditEstimate() {
+    const id = document.getElementById('editEstId').value;
+    const payload = {
+        csrf_token:      csrfToken,
+        vehicle_make:    document.getElementById('editEstMake').value.trim(),
+        vehicle_model:   document.getElementById('editEstModel').value.trim(),
+        vehicle_year:    document.getElementById('editEstYear').value.trim(),
+        vehicle_plate:   document.getElementById('editEstPlate').value.trim(),
+        vehicle_color:   document.getElementById('editEstColor').value.trim(),
+        vehicle_mileage: document.getElementById('editEstMileage').value.trim(),
+        status:          document.getElementById('editEstStatus').value,
+    };
+    fetch(APP_URL + '/api/estimates.php?id=' + id, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            bootstrap.Modal.getInstance(document.getElementById('editEstimateModal')).hide();
+            location.reload();
+        } else { alert('Error: ' + data.message); }
+    })
+    .catch(() => alert('Network error.'));
+}
+</script>
+
+<script>
+function printEstimate(id) {
+    fetch(APP_URL + '/api/estimates.php?id=' + id)
+        .then(r => r.json())
+        .then(res => {
+            if (!res.success) { alert(res.message); return; }
+            const d   = res.data;
+            const fmt = v => '₱' + parseFloat(v||0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,',');
+            let services = [], products = [];
+            try { services = JSON.parse(d.services_json||'[]'); } catch(e){}
+            try { products = JSON.parse(d.products_json||'[]'); } catch(e){}
+            const date = d.created_at ? new Date(d.created_at).toLocaleDateString('en-PH',{year:'numeric',month:'long',day:'numeric'}) : '—';
+
+            let svcRows = services.map((s,i) => `
+              <tr>
+                <td style="padding:4px 8px;border:1px solid #ccc;text-align:center;">${i+1}</td>
+                <td style="padding:4px 8px;border:1px solid #ccc;">${s.name}</td>
+                <td style="padding:4px 8px;border:1px solid #ccc;text-align:center;">${s.qty||1}</td>
+                <td style="padding:4px 8px;border:1px solid #ccc;text-align:right;">${fmt(s.price)}</td>
+              </tr>`).join('');
+            let prdRows = products.map((p,i) => `
+              <tr>
+                <td style="padding:4px 8px;border:1px solid #ccc;text-align:center;">${services.length+i+1}</td>
+                <td style="padding:4px 8px;border:1px solid #ccc;">${p.name} <span style="color:#888;font-size:8pt;">(Product)</span></td>
+                <td style="padding:4px 8px;border:1px solid #ccc;text-align:center;">${p.qty}</td>
+                <td style="padding:4px 8px;border:1px solid #ccc;text-align:right;">${fmt(p.price)}</td>
+              </tr>`).join('');
+
+            document.getElementById('jePrintContent').innerHTML = `
+            <div style="font-family:Arial,sans-serif;font-size:9.5pt;color:#000;line-height:1.4;">
+              <table style="width:100%;border-collapse:collapse;margin-bottom:8px;">
+                <tr>
+                  <td style="width:70px;vertical-align:middle;padding-right:12px;">
+                    <img src="${APP_URL}/assets/images/logo.png" style="width:60px;height:60px;object-fit:contain;" alt="Logo">
+                  </td>
+                  <td style="vertical-align:middle;">
+                    <div style="font-size:17pt;font-weight:700;letter-spacing:2px;">THE AUTODOK</div>
+                    <div style="font-size:9pt;color:#444;">Automotive Care Services</div>
+                    <div style="font-size:8.5pt;color:#666;">Tel: (02) XXX-XXXX | autodok@email.com</div>
+                  </td>
+                  <td style="text-align:right;vertical-align:middle;font-size:9pt;">
+                    <div style="font-size:12pt;font-weight:700;">JOB ESTIMATE</div>
+                    <div style="color:#555;"># ${d.estimate_number}</div>
+                    <div><strong>Date:</strong> ${date}</div>
+                  </td>
+                </tr>
+              </table>
+              <hr style="border:none;border-top:1.5px solid #333;margin-bottom:10px;">
+              <table style="width:100%;border-collapse:collapse;margin-bottom:10px;font-size:9pt;">
+                <tr>
+                  <td style="width:20%;padding:4px 8px;border:1px solid #ccc;font-weight:700;">Make / Model</td>
+                  <td style="padding:4px 8px;border:1px solid #ccc;">${(d.vehicle_make||'')+' '+(d.vehicle_model||'')}</td>
+                  <td style="width:16%;padding:4px 8px;border:1px solid #ccc;font-weight:700;">Year</td>
+                  <td style="width:16%;padding:4px 8px;border:1px solid #ccc;">${d.vehicle_year||'—'}</td>
+                </tr>
+                <tr>
+                  <td style="padding:4px 8px;border:1px solid #ccc;font-weight:700;">Plate No.</td>
+                  <td style="padding:4px 8px;border:1px solid #ccc;">${d.vehicle_plate||'—'}</td>
+                  <td style="padding:4px 8px;border:1px solid #ccc;font-weight:700;">Color</td>
+                  <td style="padding:4px 8px;border:1px solid #ccc;">${d.vehicle_color||'—'}</td>
+                </tr>
+                <tr>
+                  <td style="padding:4px 8px;border:1px solid #ccc;font-weight:700;">Mileage</td>
+                  <td colspan="3" style="padding:4px 8px;border:1px solid #ccc;">${d.vehicle_mileage||'—'} km</td>
+                </tr>
+              </table>
+              <div style="font-size:8.5pt;font-weight:700;padding-bottom:3px;">ESTIMATE DETAILS</div>
+              <table style="width:100%;border-collapse:collapse;margin-bottom:0;font-size:9pt;">
+                <colgroup><col style="width:5%"><col><col style="width:8%"><col style="width:18%"></colgroup>
+                <thead>
+                  <tr>
+                    <th style="padding:5px 8px;border-top:1.5px solid #333;border-bottom:1.5px solid #333;text-align:center;">#</th>
+                    <th style="padding:5px 8px;border-top:1.5px solid #333;border-bottom:1.5px solid #333;text-align:left;">Description</th>
+                    <th style="padding:5px 8px;border-top:1.5px solid #333;border-bottom:1.5px solid #333;text-align:center;">Qty</th>
+                    <th style="padding:5px 8px;border-top:1.5px solid #333;border-bottom:1.5px solid #333;text-align:right;">Unit Price</th>
+                  </tr>
+                </thead>
+                <tbody>${svcRows||''}${prdRows||'<tr><td colspan="4" style="padding:8px;text-align:center;color:#666;">No items</td></tr>'}</tbody>
+              </table>
+              <table style="width:100%;border-collapse:collapse;font-size:9pt;margin-top:0;">
+                <tr>
+                  <td style="padding:6px 8px;border-top:1.5px solid #333;border-bottom:1.5px solid #333;font-size:8.5pt;color:#555;">
+                    Services Subtotal<br><strong>${fmt(d.services_total)}</strong>
+                  </td>
+                  <td style="padding:6px 8px;border-top:1.5px solid #333;border-bottom:1.5px solid #333;border-left:1px solid #ddd;font-size:8.5pt;color:#555;">
+                    Products Subtotal<br><strong>${fmt(d.products_total)}</strong>
+                  </td>
+                  <td style="padding:6px 8px;border-top:1.5px solid #333;border-bottom:1.5px solid #333;border-left:1px solid #ddd;font-size:8.5pt;color:#555;text-align:right;">
+                    GRAND TOTAL<br><strong style="font-size:11pt;">${fmt(d.grand_total)}</strong>
+                  </td>
+                </tr>
+              </table>
+            </div>`;
+            document.getElementById('jePrintArea').style.display = 'block';
+            window.print();
+            document.getElementById('jePrintArea').style.display = 'none';
+        })
+        .catch(() => alert('Failed to load estimate for printing.'));
+}
+</script>
+
+<script>
+/* ═══════════════════════════════════════════
+   CONVERT ESTIMATE → JOB ORDER
+═══════════════════════════════════════════ */
+function convertEstimateToJo(d) {
+    // Parse services and products from the saved estimate
+    let services = [], products = [];
+    try { services = JSON.parse(d.services_json || '[]'); } catch(e) {}
+    try { products = JSON.parse(d.products_json || '[]'); } catch(e) {}
+
+    // Load services into joItems
+    joItems = services.map(s => ({
+        type:  'service',
+        id:    s.id    || 0,
+        name:  s.name  || '',
+        price: parseFloat(s.price) || 0,
+        qty:   parseInt(s.qty)     || 1
+    }));
+
+    // Load products into joProducts
+    joProducts = products.map(p => ({
+        id:    p.id    || 0,
+        name:  p.name  || '',
+        code:  p.code  || '',
+        price: parseFloat(p.price) || 0,
+        qty:   parseInt(p.qty)     || 1
+    }));
+
+    // Pre-fill vehicle fields
+    const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
+    setVal('jo_vehicle_make',    d.vehicle_make);
+    setVal('jo_vehicle_model',   d.vehicle_model);
+    setVal('jo_vehicle_year',    d.vehicle_year);
+    setVal('jo_vehicle_plate',   d.vehicle_plate);
+    setVal('jo_vehicle_color',   d.vehicle_color);
+    setVal('jo_vehicle_mileage', d.vehicle_mileage);
+
+    // Render and recalculate
+    joRenderItems();
+    joRenderProducts();
+    joCalc();
+
+    // Mark estimate as converted via API (fire-and-forget)
+    if (d.id && d.status !== 'converted') {
+        fetch(APP_URL + '/api/estimates.php?id=' + d.id, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: 'converted' })
+        }).catch(() => {});
+    }
+
+    // Open the Create Job Order modal
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('createJobOrderModal')).show();
+}
+</script>
+
+<?php include_once '../partials/footer.php'; ?>
