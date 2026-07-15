@@ -82,6 +82,26 @@ class Report {
     }
 
     /**
+     * Get income for a specific date
+     */
+    public function getDailyIncomeByDate($date) {
+        $sql = "SELECT SUM(total_amount) as total FROM job_orders 
+                WHERE DATE(created_at) = ? AND payment_status = 'paid'";
+        $result = $this->db->fetch($sql, [$date]);
+        return (float)($result['total'] ?? 0);
+    }
+
+    /**
+     * Get income for a specific year and month
+     */
+    public function getMonthlyIncomeByYearMonth($year, $month) {
+        $sql = "SELECT SUM(total_amount) as total FROM job_orders 
+                WHERE YEAR(created_at) = ? AND MONTH(created_at) = ? AND payment_status = 'paid'";
+        $result = $this->db->fetch($sql, [(int)$year, (int)$month]);
+        return (float)($result['total'] ?? 0);
+    }
+
+    /**
      * Get income report by date range
      */
     public function getIncomeReport($dateFrom, $dateTo) {

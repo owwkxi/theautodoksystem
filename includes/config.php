@@ -13,7 +13,7 @@ define('DB_CHARSET', 'utf8mb4');
 define('APP_NAME', 'The Autodok');
 define('APP_DESCRIPTION', 'Automotive Care Services');
 define('APP_VERSION', '1.0.0');
-define('APP_URL', 'http://localhost/project/theautodoksystem');
+define('APP_URL', 'http://localhost/theautodoksystem');
 
 // Path Configuration
 define('BASE_PATH', dirname(__DIR__));

@@ -136,7 +136,7 @@ document
       '<span class="spinner-border spinner-border-sm me-2"></span>Saving...';
 
     try {
-      const response = await fetch("/project/theautodoksystem/api/staff.php", {
+      const response = await fetch(`${APP_URL}/api/staff.php`, {
         method: "POST",
         body: formData,
       });
@@ -176,9 +176,7 @@ document
 // Edit Staff Function
 async function editStaff(id) {
   try {
-    const response = await fetch(
-      `/project/theautodoksystem/api/staff.php?id=${id}`,
-    );
+    const response = await fetch(`${APP_URL}/api/staff.php?id=${id}`);
     const data = await response.json();
 
     if (data.success) {
@@ -205,7 +203,7 @@ async function editStaff(id) {
         preview.innerHTML = `
                     <div class="mt-2">
                         <p class="small text-muted mb-1">Current Image:</p>
-                        <img src="/project/theautodoksystem/uploads/${staff.profile_image}" alt="Current Profile" 
+                        <img src="${APP_URL}/uploads/${staff.profile_image}" alt="Current Profile" 
                              class="img-thumbnail" style="max-width: 200px; max-height: 200px;">
                     </div>
                 `;
@@ -262,7 +260,7 @@ document
       '<span class="spinner-border spinner-border-sm me-2"></span>Updating...';
 
     try {
-      const response = await fetch("/project/theautodoksystem/api/staff.php", {
+      const response = await fetch(`${APP_URL}/api/staff.php`, {
         method: "POST",
         body: formData,
       });
@@ -298,9 +296,7 @@ document
 // View Staff Function
 async function viewStaff(id) {
   try {
-    const response = await fetch(
-      `/project/theautodoksystem/api/staff.php?id=${id}`,
-    );
+    const response = await fetch(`${APP_URL}/api/staff.php?id=${id}`);
     const data = await response.json();
 
     if (data.success) {
@@ -310,7 +306,7 @@ async function viewStaff(id) {
       let profileImageHtml = "";
       if (staff.profile_image) {
         profileImageHtml = `
-                    <img src="/project/theautodoksystem/uploads/${staff.profile_image}" alt="Profile" 
+                    <img src="${APP_URL}/uploads/${staff.profile_image}" alt="Profile" 
                          class="img-thumbnail mb-3" style="max-width: 200px; max-height: 200px;">
                 `;
       } else {
@@ -407,7 +403,7 @@ async function toggleStatus(id, currentStatus) {
   const newStatus = currentStatus === "active" ? "inactive" : "active";
 
   try {
-    const response = await fetch("/project/theautodoksystem/api/staff.php", {
+    const response = await fetch(`${APP_URL}/api/staff.php`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
@@ -445,12 +441,9 @@ async function deleteStaff(id) {
   }
 
   try {
-    const response = await fetch(
-      `/project/theautodoksystem/api/staff.php?id=${id}`,
-      {
-        method: "DELETE",
-      },
-    );
+    const response = await fetch(`${APP_URL}/api/staff.php?id=${id}`, {
+      method: "DELETE",
+    });
 
     const data = await response.json();
 

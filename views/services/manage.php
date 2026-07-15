@@ -207,7 +207,14 @@ if ($activeTab === 'services') {
 } else {
     // job_orders and estimates tabs — no bundle/service list needed
     $totalRecords = 0;
-    $stats = [];
+    $stats = [
+        'total_services' => 0,
+        'active_services' => 0,
+        'inactive_services' => 0,
+        'total_bundles' => 0,
+        'active_bundles' => 0,
+        'inactive_bundles' => 0,
+    ];
 }
 
 // Get all active services for bundle creation
@@ -337,6 +344,38 @@ include_once '../partials/header.php';
     border-color: #2a2a2a !important;
     color: #fff !important;
 }
+.stats-card-row {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 1rem;
+}
+.stats-card-col {
+    flex: 1 1 calc(33.333% - 1rem);
+    max-width: calc(33.333% - 1rem);
+    min-width: 180px;
+}
+.stats-card {
+    min-height: 110px;
+}
+.stats-card .card-body {
+    padding: 14px;
+}
+.stats-card .card-body h6 {
+    font-size: 12px;
+}
+.stats-card .card-body h2 {
+    font-size: 32px;
+}
+.jo-record-card {
+    min-height: 48px;
+}
+.empty-card-body {
+    min-height: 360px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
 </style>
 
 <div class="container-fluid">
@@ -369,28 +408,28 @@ include_once '../partials/header.php';
 
     <!-- Statistics Cards -->
     <?php if ($activeTab === 'services' || $activeTab === 'bundles'): ?>
-    <div class="row mb-3">
-        <div class="col-md-4">
-            <div class="card">
+    <div class="stats-card-row mb-3">
+        <div class="stats-card-col">
+            <div class="card h-100 stats-card">
                 <div class="card-body text-center">
                     <h6 class="mb-1" style="color: #666; font-size: 13px;">Total <?php echo $activeTab === 'services' ? 'Services' : 'Bundles'; ?></h6>
-                    <h2 class="mb-0" style="color: #000; font-weight: 700;"><?php echo $activeTab === 'services' ? $stats['total_services'] : $stats['total_bundles']; ?></h2>
+                    <h2 class="mb-0" style="color: #000; font-weight: 700;"><?php echo intval($activeTab === 'services' ? ($stats['total_services'] ?? 0) : ($stats['total_bundles'] ?? 0)); ?></h2>
                 </div>
             </div>
         </div>
-        <div class="col-md-4">
-            <div class="card">
+        <div class="stats-card-col">
+            <div class="card h-100 stats-card">
                 <div class="card-body text-center">
                     <h6 class="mb-1" style="color: #666; font-size: 13px;">Active</h6>
-                    <h2 class="mb-0" style="color: #000; font-weight: 700;"><?php echo $activeTab === 'services' ? $stats['active_services'] : $stats['active_bundles']; ?></h2>
+                    <h2 class="mb-0" style="color: #000; font-weight: 700;"><?php echo intval($activeTab === 'services' ? ($stats['active_services'] ?? 0) : ($stats['active_bundles'] ?? 0)); ?></h2>
                 </div>
             </div>
         </div>
-        <div class="col-md-4">
-            <div class="card">
+        <div class="stats-card-col">
+            <div class="card h-100 stats-card">
                 <div class="card-body text-center">
                     <h6 class="mb-1" style="color: #666; font-size: 13px;">Inactive</h6>
-                    <h2 class="mb-0" style="color: #000; font-weight: 700;"><?php echo $activeTab === 'services' ? $stats['inactive_services'] : $stats['inactive_bundles']; ?></h2>
+                    <h2 class="mb-0" style="color: #000; font-weight: 700;"><?php echo intval($activeTab === 'services' ? ($stats['inactive_services'] ?? 0) : ($stats['inactive_bundles'] ?? 0)); ?></h2>
                 </div>
             </div>
         </div>
@@ -399,20 +438,6 @@ include_once '../partials/header.php';
 
     <!-- Tabs -->
     <ul class="nav nav-tabs mb-3">
-        <li class="nav-item">
-            <a class="nav-link <?php echo $activeTab === 'services' ? 'active' : ''; ?>" 
-               href="?tab=services"
-               style="color: #000; <?php echo $activeTab === 'services' ? 'background: #fff; border-bottom: 2px solid #000;' : ''; ?>">
-                <i class="bi bi-wrench"></i> Individual Services
-            </a>
-        </li>
-        <li class="nav-item">
-            <a class="nav-link <?php echo $activeTab === 'bundles' ? 'active' : ''; ?>" 
-               href="?tab=bundles"
-               style="color: #000; <?php echo $activeTab === 'bundles' ? 'background: #fff; border-bottom: 2px solid #000;' : ''; ?>">
-                <i class="bi bi-box-seam"></i> Service Bundles (PMS)
-            </a>
-        </li>
         <li class="nav-item">
             <a class="nav-link <?php echo $activeTab === 'job_orders' ? 'active' : ''; ?>" 
                href="?tab=job_orders"
@@ -425,6 +450,20 @@ include_once '../partials/header.php';
                href="?tab=estimates"
                style="color: #000; <?php echo $activeTab === 'estimates' ? 'background: #fff; border-bottom: 2px solid #000;' : ''; ?>">
                 <i class="bi bi-calculator"></i> Job Estimate
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link <?php echo $activeTab === 'services' ? 'active' : ''; ?>" 
+               href="?tab=services"
+               style="color: #000; <?php echo $activeTab === 'services' ? 'background: #fff; border-bottom: 2px solid #000;' : ''; ?>">
+                <i class="bi bi-wrench"></i> Individual Services
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link <?php echo $activeTab === 'bundles' ? 'active' : ''; ?>" 
+               href="?tab=bundles"
+               style="color: #000; <?php echo $activeTab === 'bundles' ? 'background: #fff; border-bottom: 2px solid #000;' : ''; ?>">
+                <i class="bi bi-box-seam"></i> Service Bundles
             </a>
         </li>
     </ul>
@@ -466,11 +505,7 @@ include_once '../partials/header.php';
         <div class="card">
             <div class="card-body">
                 <?php if (empty($services)): ?>
-                    <div class="text-center py-5">
-                        <i class="bi bi-inbox" style="font-size: 3rem; color: #ccc;"></i>
-                        <p class="text-muted mt-2">No services found</p>
-                        <a href="create_service.php" class="btn btn-primary">Add Your First Service</a>
-                    </div>
+                    <div class="text-center py-2 empty-card-body"></div>
                 <?php else: ?>
                     <div class="table-responsive">
                         <table class="table table-hover">
@@ -506,18 +541,26 @@ include_once '../partials/header.php';
                                         </span>
                                     </td>
                                     <td>
-                                        <button onclick="editService(<?php echo $service['id']; ?>, '<?php echo addslashes(escape($service['service_name'])); ?>', '<?php echo addslashes(escape($service['service_code'])); ?>', '<?php echo addslashes(escape($service['description'] ?? '')); ?>', <?php echo $service['service_price']; ?>, <?php echo $service['labor_cost']; ?>, '<?php echo $service['status']; ?>')" 
-                                                class="btn btn-sm btn-primary" title="Edit">
-                                            <i class="bi bi-pencil"></i>
-                                        </button>
-                                        <button onclick="toggleStatus('service', <?php echo $service['id']; ?>)" 
-                                                class="btn btn-sm btn-warning" title="Toggle Status">
-                                            <i class="bi bi-arrow-repeat"></i>
-                                        </button>
-                                        <button onclick="deleteItem('service', <?php echo $service['id']; ?>)" 
-                                                class="btn btn-sm btn-danger" title="Delete">
-                                            <i class="bi bi-trash"></i>
-                                        </button>
+                                        <div class="dropdown action-dropdown">
+                                            <button class="btn btn-sm btn-secondary dropdown-toggle" type="button" id="actionDropdownService<?php echo $service['id']; ?>" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Service actions"></button>
+                                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="actionDropdownService<?php echo $service['id']; ?>">
+                                                <li>
+                                                    <button type="button" class="dropdown-item" onclick="editService(<?php echo $service['id']; ?>, '<?php echo addslashes(escape($service['service_name'])); ?>', '<?php echo addslashes(escape($service['service_code'])); ?>', '<?php echo addslashes(escape($service['description'] ?? '')); ?>', <?php echo $service['service_price']; ?>, <?php echo $service['labor_cost']; ?>, '<?php echo $service['status']; ?>')">
+                                                        <i class="bi bi-pencil"></i>Edit
+                                                    </button>
+                                                </li>
+                                                <li>
+                                                    <button type="button" class="dropdown-item" onclick="toggleStatus('service', <?php echo $service['id']; ?>)">
+                                                        <i class="bi bi-arrow-repeat"></i><?php echo $service['status'] === 'active' ? 'Deactivate' : 'Activate'; ?>
+                                                    </button>
+                                                </li>
+                                                <li>
+                                                    <button type="button" class="dropdown-item text-danger" onclick="deleteItem('service', <?php echo $service['id']; ?>)">
+                                                        <i class="bi bi-trash"></i>Delete
+                                                    </button>
+                                                </li>
+                                            </ul>
+                                        </div>
                                     </td>
                                 </tr>
                                 <?php endforeach; ?>
@@ -533,11 +576,7 @@ include_once '../partials/header.php';
         <div class="card">
             <div class="card-body">
                 <?php if (empty($bundles)): ?>
-                    <div class="text-center py-5">
-                        <i class="bi bi-inbox" style="font-size: 3rem; color: #ccc;"></i>
-                        <p class="text-muted mt-2">No bundles found</p>
-                        <a href="create_bundle.php" class="btn btn-primary">Add Your First Bundle</a>
-                    </div>
+                    <div class="text-center py-2 empty-card-body"></div>
                 <?php else: ?>
                     <div class="table-responsive">
                         <table class="table table-hover">
@@ -572,15 +611,15 @@ include_once '../partials/header.php';
                                     </td>
                                     <td>
                                         <button onclick="editBundle(<?php echo $bundle['id']; ?>, '<?php echo addslashes(escape($bundle['bundle_name'])); ?>', '<?php echo addslashes(escape($bundle['description'] ?? '')); ?>', <?php echo $bundle['package_price']; ?>, '<?php echo $bundle['status']; ?>', [<?php echo implode(',', array_column($bundle['services'], 'service_id')); ?>])" 
-                                                class="btn btn-sm btn-primary" title="Edit">
+                                                class="btn btn-sm btn-primary btn-icon" title="Edit">
                                             <i class="bi bi-pencil"></i>
                                         </button>
                                         <button onclick="toggleStatus('bundle', <?php echo $bundle['id']; ?>)" 
-                                                class="btn btn-sm btn-warning" title="Toggle Status">
+                                                class="btn btn-sm btn-warning btn-icon" title="Toggle Status">
                                             <i class="bi bi-arrow-repeat"></i>
                                         </button>
                                         <button onclick="deleteItem('bundle', <?php echo $bundle['id']; ?>)" 
-                                                class="btn btn-sm btn-danger" title="Delete">
+                                                class="btn btn-sm btn-danger btn-icon" title="Delete">
                                             <i class="bi bi-trash"></i>
                                         </button>
                                     </td>
@@ -1160,7 +1199,7 @@ include_once '../partials/header.php';
                                                 <p class="text-muted text-center small py-3 mb-0">No active services found.</p>
                                             <?php else: ?>
                                                 <?php foreach ($allActiveServices as $svc): ?>
-                                                <div class="d-flex align-items-center justify-content-between py-1 px-2 mb-1 bg-white rounded" style="border:1px solid #eee;">
+                                                <div class="d-flex align-items-center justify-content-between py-1 px-2 mb-1 bg-white rounded jo-record-card">
                                                     <div>
                                                         <strong style="font-size:13px;"><?php echo escape($svc['service_name']); ?></strong>
                                                         <small class="text-muted d-block"><?php echo escape($svc['service_code']); ?></small>
@@ -1185,7 +1224,7 @@ include_once '../partials/header.php';
                                                 <p class="text-muted text-center small py-3 mb-0">No active bundles found.</p>
                                             <?php else: ?>
                                                 <?php foreach ($allActiveBundles as $bnd): ?>
-                                                <div class="d-flex align-items-center justify-content-between py-1 px-2 mb-1 bg-white rounded" style="border:1px solid #eee;">
+                                                <div class="d-flex align-items-center justify-content-between py-1 px-2 mb-1 bg-white rounded jo-record-card">
                                                     <div>
                                                         <strong style="font-size:13px;"><?php echo escape($bnd['bundle_name']); ?></strong>
                                                         <small class="text-muted d-block"><?php echo count($bnd['services']); ?> services included</small>

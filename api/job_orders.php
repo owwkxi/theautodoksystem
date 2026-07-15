@@ -194,18 +194,21 @@ try {
             if ($partialAmount < 0) $partialAmount = 0;
             if ($partialAmount > $total) $partialAmount = $total;
 
+            $serviceAdviserId = !empty($input['technician_id']) ? (int)$input['technician_id'] : null;
+
             $db->query(
                 "INSERT INTO job_orders
-                    (job_order_number, customer_id, vehicle_id,
+                    (job_order_number, customer_id, vehicle_id, service_adviser_id,
                      subtotal, labor_total, parts_total,
                      discount_type, discount_amount, discount_percentage,
                      partial_amount, total_amount, payment_method, payment_status,
                      status, priority, notes, created_by)
-                 VALUES (?,?,?, ?,?,?, ?,?,?, ?,?,?,?, ?,?,?,?)",
+                 VALUES (?,?,?,?, ?,?,?, ?,?,?, ?,?,?,?, ?,?,?,?)",
                 [
                     $joNumber,
                     $customerId,
                     $vehicleId,
+                    $serviceAdviserId,
                     $subtotal,
                     0,                // labor_total — handled via services
                     $partsCost,

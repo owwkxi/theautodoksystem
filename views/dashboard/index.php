@@ -40,9 +40,15 @@ $greeting  = $hour < 12 ? 'Good Morning' : ($hour < 18 ? 'Good Afternoon' : 'Goo
 $firstName = escape(explode(' ', $_SESSION['full_name'])[0]);
 
 $dailyDate   = date('Y-m-d', strtotime('-1 day'));
-$dailyIncome = (float)($stats['yesterday_income'] ?? 0);
+$dailyIncome = $reportModel->getDailyIncomeByDate($dailyDate);
+$previousDailyIncome = $reportModel->getDailyIncomeByDate(date('Y-m-d', strtotime('-2 days')));
+$dailyTrend = $dailyIncome > $previousDailyIncome ? 'High' : 'Low';
+
 $monthlyDate = date('Y-m-01', strtotime('first day of last month'));
-$monthlyVal  = (float)($stats['last_month_income'] ?? 0);
+$monthlyVal  = $reportModel->getMonthlyIncomeByYearMonth(date('Y', strtotime($monthlyDate)), date('n', strtotime($monthlyDate)));
+$previousMonthlyDate = date('Y-m-01', strtotime('first day of -2 months'));
+$previousMonthlyVal = $reportModel->getMonthlyIncomeByYearMonth(date('Y', strtotime($previousMonthlyDate)), date('n', strtotime($previousMonthlyDate)));
+$monthlyTrend = $monthlyVal > $previousMonthlyVal ? 'High' : 'Low';
 
 include __DIR__ . '/../partials/header.php';
 ?>
@@ -96,7 +102,7 @@ include __DIR__ . '/../partials/header.php';
                 <span class="db-bot"><?php echo date('M', strtotime($dailyDate)); ?></span>
             </div>
             <span class="income-value">&#8369; <?php echo number_format($dailyIncome, 0); ?></span>
-            <span class="income-tag">High</span>
+            <span class="income-tag"><?php echo $dailyTrend; ?></span>
         </div>
     </div>
 
@@ -114,7 +120,7 @@ include __DIR__ . '/../partials/header.php';
                 <span class="db-bot"><?php echo date('M', strtotime($monthlyDate)); ?></span>
             </div>
             <span class="income-value">&#8369;<?php echo number_format($monthlyVal, 0); ?></span>
-            <span class="income-tag">Low</span>
+            <span class="income-tag"><?php echo $monthlyTrend; ?></span>
         </div>
     </div>
 

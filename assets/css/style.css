@@ -1067,6 +1067,46 @@ body.login-body {
   font-size: 12px;
 }
 
+.btn-icon {
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+}
+
+.btn-icon i {
+  font-size: 13px;
+}
+
+.staff-action-group .btn {
+  padding: 4px 8px;
+  min-width: 34px;
+}
+
+.staff-action-group .btn:not(:last-child) {
+  margin-right: 4px;
+}
+
+.action-dropdown .btn {
+  min-width: 40px;
+  padding: 6px 8px;
+  border-radius: 10px;
+}
+
+.action-dropdown .dropdown-menu {
+  min-width: 190px;
+}
+
+.action-dropdown .dropdown-item i {
+  width: 18px;
+  text-align: center;
+  margin-right: 8px;
+  font-size: 14px;
+}
+
 /* ── Forms ─────────────────────────────────────────────── */
 .form-control,
 .form-select {

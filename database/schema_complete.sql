@@ -395,6 +395,30 @@ CREATE TABLE `job_order_products` (
   CONSTRAINT `fk_jop_product` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Job Estimates
+CREATE TABLE IF NOT EXISTS `job_estimates` (
+  `id` INT(11) NOT NULL AUTO_INCREMENT,
+  `estimate_number` VARCHAR(20) NOT NULL,
+  `vehicle_make` VARCHAR(100) DEFAULT NULL,
+  `vehicle_model` VARCHAR(100) DEFAULT NULL,
+  `vehicle_year` VARCHAR(20) DEFAULT NULL,
+  `vehicle_plate` VARCHAR(50) DEFAULT NULL,
+  `vehicle_color` VARCHAR(50) DEFAULT NULL,
+  `vehicle_mileage` VARCHAR(50) DEFAULT NULL,
+  `services_total` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+  `products_total` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+  `grand_total` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+  `services_json` TEXT NOT NULL,
+  `products_json` TEXT NOT NULL,
+  `status` ENUM('draft','sent','approved','rejected') NOT NULL DEFAULT 'draft',
+  `created_by` INT(11) NOT NULL,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `estimate_number` (`estimate_number`),
+  KEY `idx_created_by` (`created_by`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- Job Order Technician Assignments
 CREATE TABLE `job_order_technicians` (
   `id` INT(11) NOT NULL AUTO_INCREMENT,

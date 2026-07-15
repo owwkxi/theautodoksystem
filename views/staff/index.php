@@ -156,14 +156,14 @@ include __DIR__ . '/../partials/header.php';
             <table class="table table-hover mb-0">
                 <thead>
                     <tr>
-                        <th>Staff ID</th>
-                        <th>Full Name</th>
-                        <th>Role/Position</th>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Role</th>
                         <th>Username</th>
-                        <th>Contact Number</th>
+                        <th>Contact</th>
                         <th>Email</th>
                         <th>Status</th>
-                        <th>Date Created</th>
+                        <th>Created</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
@@ -212,21 +212,21 @@ include __DIR__ . '/../partials/header.php';
                             </td>
                             <td><?php echo formatDate($staff['created_at']); ?></td>
                             <td>
-                                <div class="btn-group btn-group-sm">
-                                    <button type="button" class="btn btn-outline-primary" 
+                                <div class="btn-group btn-group-sm staff-action-group">
+                                    <button type="button" class="btn btn-outline-primary btn-icon" 
                                             onclick="viewStaff(<?php echo $staff['id']; ?>)" title="View">
                                         <i class="bi bi-eye"></i>
                                     </button>
-                                    <button type="button" class="btn btn-outline-warning" 
+                                    <button type="button" class="btn btn-outline-warning btn-icon" 
                                             onclick="editStaff(<?php echo $staff['id']; ?>)" title="Edit">
                                         <i class="bi bi-pencil"></i>
                                     </button>
-                                    <button type="button" class="btn btn-outline-<?php echo $staff['status'] === 'active' ? 'danger' : 'success'; ?>" 
+                                    <button type="button" class="btn btn-outline-<?php echo $staff['status'] === 'active' ? 'danger' : 'success'; ?> btn-icon" 
                                             onclick="toggleStatus(<?php echo $staff['id']; ?>, '<?php echo $staff['status']; ?>')" 
                                             title="<?php echo $staff['status'] === 'active' ? 'Deactivate' : 'Activate'; ?>">
                                         <i class="bi bi-<?php echo $staff['status'] === 'active' ? 'x-circle' : 'check-circle'; ?>"></i>
                                     </button>
-                                    <button type="button" class="btn btn-outline-danger" 
+                                    <button type="button" class="btn btn-outline-danger btn-icon" 
                                             onclick="deleteStaff(<?php echo $staff['id']; ?>)" title="Delete">
                                         <i class="bi bi-trash"></i>
                                     </button>
@@ -453,6 +453,9 @@ include __DIR__ . '/../partials/header.php';
     </div>
 </div>
 
+<script>
+    const APP_URL = '<?php echo APP_URL; ?>';
+</script>
 <script src="<?php echo APP_URL; ?>/assets/js/staff.js?v=<?php echo time(); ?>"></script>
 
 <?php include __DIR__ . '/../partials/footer.php'; ?>
