@@ -106,6 +106,30 @@ $csrfToken = generateCSRFToken();
 
         .input-wrap input::placeholder { color: #bbb; }
 
+        .password-wrap {
+            padding-right: 44px;
+            position: relative;
+        }
+
+        .password-toggle {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            border: none;
+            background: transparent;
+            color: #777;
+            cursor: pointer;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .password-toggle:hover {
+            color: #333;
+        }
+
         .error-alert {
             background: #fff0f0;
             border: 1px solid #ffcccc;
@@ -162,9 +186,12 @@ $csrfToken = generateCSRFToken();
             </div>
 
             <label class="field-label" for="password">Password</label>
-            <div class="input-wrap">
+            <div class="input-wrap password-wrap">
                 <i class="bi bi-lock"></i>
                 <input type="password" id="password" name="password" placeholder="••••••••" required>
+                <button type="button" class="password-toggle" aria-label="Show password" aria-pressed="false">
+                    <i class="bi bi-eye"></i>
+                </button>
             </div>
 
             <button type="submit" class="btn-signin">Sign In</button>
@@ -172,6 +199,27 @@ $csrfToken = generateCSRFToken();
 
     </div>
 
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const passwordInput = document.getElementById('password');
+            const toggleButton = document.querySelector('.password-toggle');
+
+            if (!passwordInput || !toggleButton) {
+                return;
+            }
+
+            toggleButton.addEventListener('click', function () {
+                const isPassword = passwordInput.type === 'password';
+                passwordInput.type = isPassword ? 'text' : 'password';
+
+                const icon = this.querySelector('i');
+                icon.className = isPassword ? 'bi bi-eye-slash' : 'bi bi-eye';
+
+                this.setAttribute('aria-label', isPassword ? 'Hide password' : 'Show password');
+                this.setAttribute('aria-pressed', String(isPassword));
+            });
+        });
+    </script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

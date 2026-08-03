@@ -376,6 +376,16 @@ include_once '../partials/header.php';
     align-items: center;
     justify-content: center;
 }
+#joSelectedItems input[type="number"] {
+    -webkit-appearance: none;
+    -moz-appearance: textfield;
+    appearance: textfield;
+}
+#joSelectedItems input[type="number"]::-webkit-inner-spin-button,
+#joSelectedItems input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
 </style>
 
 <div class="container-fluid">
@@ -937,22 +947,40 @@ include_once '../partials/header.php';
                                       style="border: 1.5px solid #e0e0e0;"></textarea>
                         </div>
                         
-                        <div class="col-md-4">
-                            <label class="form-label" style="color: #000; font-weight: 500;">
-                                Base Price (₱) <span style="color: #dc3545;">*</span>
-                            </label>
-                            <input type="number" class="form-control" name="service_price" required 
-                                   step="0.01" min="0" value="0" 
-                                   placeholder="0.00" style="border: 1.5px solid #e0e0e0;">
-                        </div>
-                        
-                        <div class="col-md-4">
-                            <label class="form-label" style="color: #000; font-weight: 500;">
-                                Labor Cost (₱) <span style="color: #dc3545;">*</span>
-                            </label>
-                            <input type="number" class="form-control" name="labor_cost" required 
-                                   step="0.01" min="0" value="0" 
-                                   placeholder="0.00" style="border: 1.5px solid #e0e0e0;">
+                        <div class="col-12">
+                            <div class="border rounded-3 p-3" style="background: #f8f9fa; border-color: #e0e0e0 !important;">
+                                <div class="row g-3 align-items-end">
+                                    <div class="col-md-4">
+                                        <label class="form-label" style="color: #000; font-weight: 500;">
+                                            Base Price (₱) <span style="color: #dc3545;">*</span>
+                                        </label>
+                                        <input type="number" class="form-control" id="addSvcPrice" name="service_price" required 
+                                               step="0.01" min="0" value="0" 
+                                               placeholder="0.00" style="border: 1.5px solid #e0e0e0;">
+                                    </div>
+                                    
+                                    <div class="col-md-4">
+                                        <label class="form-label" style="color: #000; font-weight: 500;">
+                                            Labor Cost (₱) <span style="color: #dc3545;">*</span>
+                                        </label>
+                                        <input type="number" class="form-control" id="addSvcLabor" name="labor_cost" required 
+                                               step="0.01" min="0" value="0" 
+                                               placeholder="0.00" style="border: 1.5px solid #e0e0e0;">
+                                    </div>
+                                    
+                                    <div class="col-md-4">
+                                        <label class="form-label" style="color: #000; font-weight: 500;">
+                                            Total
+                                        </label>
+                                        <div class="form-control fw-bold" id="addSvcTotal" style="background: #fff; border: 1.5px solid #e0e0e0;">
+                                            ₱0.00
+                                        </div>
+                                    </div>
+                                </div>
+                                <small class="text-muted d-block mt-2">
+                                    Edit labor cost directly and the total updates instantly.
+                                </small>
+                            </div>
                         </div>
                         
                         <div class="col-md-4">
@@ -963,13 +991,6 @@ include_once '../partials/header.php';
                                 <option value="active">Active</option>
                                 <option value="inactive">Inactive</option>
                             </select>
-                        </div>
-                        
-                        <div class="col-12">
-                            <div class="alert" style="background: #f8f9fa; border: 1px solid #e0e0e0; color: #000;">
-                                <i class="bi bi-info-circle"></i> 
-                                <strong>Total Service Cost:</strong> Base Price + Labor Cost
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -1205,10 +1226,10 @@ include_once '../partials/header.php';
                                                         <small class="text-muted d-block"><?php echo escape($svc['service_code']); ?></small>
                                                     </div>
                                                     <div class="d-flex align-items-center gap-2">
-                                                        <span style="font-size:13px;font-weight:600;"><?php echo formatCurrency($svc['service_price'] + $svc['labor_cost']); ?></span>
+                                                        <span style="font-size:13px;font-weight:600;min-width:72px;text-align:right;"><?php echo formatCurrency($svc['service_price'] + $svc['labor_cost']); ?></span>
                                                         <button type="button" class="btn btn-sm btn-dark py-0 px-2"
                                                             style="font-size:12px;"
-                                                            onclick="joAddItem('service', <?php echo $svc['id']; ?>, '<?php echo addslashes(escape($svc['service_name'])); ?>', <?php echo ($svc['service_price'] + $svc['labor_cost']); ?>)">
+                                                            onclick="joAddItem('service', <?php echo $svc['id']; ?>, '<?php echo addslashes(escape($svc['service_name'])); ?>', <?php echo $svc['service_price']; ?>, <?php echo (float)$svc['labor_cost']; ?>)">
                                                             <i class="bi bi-plus"></i> Add
                                                         </button>
                                                     </div>
@@ -1230,10 +1251,10 @@ include_once '../partials/header.php';
                                                         <small class="text-muted d-block"><?php echo count($bnd['services']); ?> services included</small>
                                                     </div>
                                                     <div class="d-flex align-items-center gap-2">
-                                                        <span style="font-size:13px;font-weight:600;"><?php echo formatCurrency($bnd['package_price']); ?></span>
+                                                        <span style="font-size:13px;font-weight:600;min-width:72px;text-align:right;"><?php echo formatCurrency($bnd['package_price']); ?></span>
                                                         <button type="button" class="btn btn-sm btn-dark py-0 px-2"
                                                             style="font-size:12px;"
-                                                            onclick="joAddItem('bundle', <?php echo $bnd['id']; ?>, '<?php echo addslashes(escape($bnd['bundle_name'])); ?> (Bundle)', <?php echo $bnd['package_price']; ?>)">
+                                                            onclick="joAddItem('bundle', <?php echo $bnd['id']; ?>, '<?php echo addslashes(escape($bnd['bundle_name'])); ?> (Bundle)', <?php echo $bnd['package_price']; ?>, <?php echo isset($bnd['labor_cost']) ? (float)$bnd['labor_cost'] : 0; ?>)">
                                                             <i class="bi bi-plus"></i> Add
                                                         </button>
                                                     </div>
@@ -1246,13 +1267,32 @@ include_once '../partials/header.php';
                             </div>
                         </div>
 
-                        <!-- Notes -->
-                        <div class="card" style="border:1.5px solid #e0e0e0;">
+                        <!-- Products -->
+                        <div class="card mb-3" style="border:1.5px solid #e0e0e0;">
                             <div class="card-header" style="background:#fff;border-bottom:1.5px solid #e0e0e0;padding:10px 15px;">
-                                <h6 class="mb-0" style="font-weight:600;"><i class="bi bi-chat-left-text me-1"></i>Notes</h6>
+                                <h6 class="mb-0" style="font-weight:600;"><i class="bi bi-box-seam me-1"></i>Products</h6>
                             </div>
                             <div class="card-body" style="padding:15px;">
-                                <textarea class="form-control form-control-sm" id="jo_notes" rows="2" placeholder="Additional notes or instructions..."></textarea>
+                                <div class="d-flex gap-1 mb-1">
+                                    <select class="form-select form-select-sm" id="jo_product_select" style="flex:1;">
+                                        <option value="">— Select product —</option>
+                                        <?php foreach ($allInventoryProducts as $prod): ?>
+                                        <option value="<?php echo $prod['id']; ?>"
+                                            data-name="<?php echo addslashes(escape($prod['product_name'])); ?>"
+                                            data-price="<?php echo $prod['selling_price']; ?>"
+                                            data-stock="<?php echo $prod['quantity']; ?>"
+                                            data-code="<?php echo escape($prod['product_code']); ?>">
+                                            <?php echo escape($prod['product_name']); ?> — ₱<?php echo number_format($prod['selling_price'], 2); ?> (<?php echo $prod['quantity']; ?> in stock)
+                                        </option>
+                                        <?php endforeach; ?>
+                                        <?php if (empty($allInventoryProducts)): ?>
+                                        <option disabled>No products in inventory</option>
+                                        <?php endif; ?>
+                                    </select>
+                                    <input type="number" id="jo_product_qty" class="form-control form-control-sm text-center" value="1" min="1" style="width:55px;">
+                                    <button type="button" class="btn btn-sm btn-dark px-2" onclick="joAddProduct()"><i class="bi bi-plus"></i></button>
+                                </div>
+                                <div id="joProductsList" style="max-height:130px;overflow-y:auto;"></div>
                             </div>
                         </div>
 
@@ -1274,53 +1314,12 @@ include_once '../partials/header.php';
                             </div>
                         </div>
 
-                        <!-- Technician -->
-                        <div class="card mb-3" style="border:1.5px solid #e0e0e0;">
-                            <div class="card-header" style="background:#fff;border-bottom:1.5px solid #e0e0e0;padding:10px 15px;">
-                                <h6 class="mb-0" style="font-weight:600;"><i class="bi bi-tools me-1"></i>Technician</h6>
-                            </div>
-                            <div class="card-body" style="padding:15px;">
-                                <select class="form-select form-select-sm" id="jo_technician">
-                                    <option value="">— Unassigned —</option>
-                                    <?php foreach ($allTechnicians as $tech): ?>
-                                    <option value="<?php echo $tech['id']; ?>" data-name="<?php echo escape($tech['full_name']); ?>">
-                                        <?php echo escape($tech['full_name']); ?>
-                                    </option>
-                                    <?php endforeach; ?>
-                                </select>
-                            </div>
-                        </div>
-
                         <!-- Billing Summary -->
                         <div class="card mb-3" style="border:1.5px solid #e0e0e0;">
                             <div class="card-header" style="background:#fff;border-bottom:1.5px solid #e0e0e0;padding:10px 15px;">
                                 <h6 class="mb-0" style="font-weight:600;"><i class="bi bi-receipt me-1"></i>Billing</h6>
                             </div>
                             <div class="card-body" style="padding:15px;">
-                                <!-- Products picker -->
-                                <div class="mb-3">
-                                    <label class="form-label form-label-sm fw-semibold"><i class="bi bi-box-seam me-1"></i>Add Products</label>
-                                    <div class="d-flex gap-1 mb-1">
-                                        <select class="form-select form-select-sm" id="jo_product_select" style="flex:1;">
-                                            <option value="">— Select product —</option>
-                                            <?php foreach ($allInventoryProducts as $prod): ?>
-                                            <option value="<?php echo $prod['id']; ?>"
-                                                data-name="<?php echo addslashes(escape($prod['product_name'])); ?>"
-                                                data-price="<?php echo $prod['selling_price']; ?>"
-                                                data-stock="<?php echo $prod['quantity']; ?>"
-                                                data-code="<?php echo escape($prod['product_code']); ?>">
-                                                <?php echo escape($prod['product_name']); ?> — ₱<?php echo number_format($prod['selling_price'], 2); ?> (<?php echo $prod['quantity']; ?> in stock)
-                                            </option>
-                                            <?php endforeach; ?>
-                                            <?php if (empty($allInventoryProducts)): ?>
-                                            <option disabled>No products in inventory</option>
-                                            <?php endif; ?>
-                                        </select>
-                                        <input type="number" id="jo_product_qty" class="form-control form-control-sm text-center" value="1" min="1" style="width:55px;">
-                                        <button type="button" class="btn btn-sm btn-dark px-2" onclick="joAddProduct()"><i class="bi bi-plus"></i></button>
-                                    </div>
-                                    <div id="joProductsList" style="max-height:130px;overflow-y:auto;"></div>
-                                </div>
                                 <hr class="my-2">
                                 <!-- Subtotals -->
                                 <div class="d-flex justify-content-between mb-1">
@@ -1385,6 +1384,33 @@ include_once '../partials/header.php';
                                         <strong class="text-danger" id="joRemainingBalance">₱0.00</strong>
                                     </div>
                                 </div>
+                            </div>
+                        </div>
+
+                        <!-- Technician -->
+                        <div class="card mb-3" style="border:1.5px solid #e0e0e0;">
+                            <div class="card-header" style="background:#fff;border-bottom:1.5px solid #e0e0e0;padding:10px 15px;">
+                                <h6 class="mb-0" style="font-weight:600;"><i class="bi bi-tools me-1"></i>Technician</h6>
+                            </div>
+                            <div class="card-body" style="padding:15px;">
+                                <select class="form-select form-select-sm" id="jo_technician">
+                                    <option value="">— Unassigned —</option>
+                                    <?php foreach ($allTechnicians as $tech): ?>
+                                    <option value="<?php echo $tech['id']; ?>" data-name="<?php echo escape($tech['full_name']); ?>">
+                                        <?php echo escape($tech['full_name']); ?>
+                                    </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Notes -->
+                        <div class="card mb-3" style="border:1.5px solid #e0e0e0;">
+                            <div class="card-header" style="background:#fff;border-bottom:1.5px solid #e0e0e0;padding:10px 15px;">
+                                <h6 class="mb-0" style="font-weight:600;"><i class="bi bi-chat-left-text me-1"></i>Notes</h6>
+                            </div>
+                            <div class="card-body" style="padding:15px;">
+                                <textarea class="form-control form-control-sm" id="jo_notes" rows="2" placeholder="Additional notes or instructions..."></textarea>
                             </div>
                         </div>
 
@@ -1592,7 +1618,7 @@ const csrfToken = '<?php echo generateCSRFToken(); ?>';
 /* ═══════════════════════════════════════════
    JOB ORDER MODAL LOGIC
 ═══════════════════════════════════════════ */
-let joItems    = [];   // { id, type, name, price, qty }
+let joItems    = [];   // { id, type, name, basePrice, labor, price, qty }
 let joProducts = [];   // { id, name, code, price, qty }
 
 /* ── Product picker ── */
@@ -1661,13 +1687,15 @@ function joRenderProducts() {
     container.innerHTML = html;
 }
 
-function joAddItem(type, id, name, price) {
-    // Prevent duplicate
+function joAddItem(type, id, name, basePrice, laborCost = 0) {
+    const effectivePrice = parseFloat(basePrice || 0) + parseFloat(laborCost || 0);
     const existing = joItems.find(i => i.type === type && i.id === id);
     if (existing) {
         existing.qty++;
+        existing.labor = parseFloat(laborCost || existing.labor || 0);
+        existing.price = parseFloat(basePrice || existing.basePrice || 0) + existing.labor;
     } else {
-        joItems.push({ type, id, name, price: parseFloat(price), qty: 1 });
+        joItems.push({ type, id, name, basePrice: parseFloat(basePrice || 0), labor: parseFloat(laborCost || 0), price: effectivePrice, qty: 1 });
     }
     joRenderItems();
     joCalc();
@@ -1679,10 +1707,30 @@ function joRemoveItem(idx) {
     joCalc();
 }
 
+function joChangeBasePrice(idx, val) {
+    const basePrice = parseFloat(val) || 0;
+    joItems[idx].basePrice = basePrice;
+    joItems[idx].price = basePrice + (joItems[idx].labor || 0);
+    joRenderItems();
+    joCalc();
+}
+
+function joChangeLabor(idx, val) {
+    const labor = parseFloat(val) || 0;
+    joItems[idx].labor = labor;
+    joItems[idx].price = (joItems[idx].basePrice || 0) + labor;
+    joRenderItems();
+    joCalc();
+}
+
 function joChangeQty(idx, val) {
     const qty = parseInt(val);
-    if (qty < 1) { joRemoveItem(idx); return; }
+    if (qty < 1) {
+        joRemoveItem(idx);
+        return;
+    }
     joItems[idx].qty = qty;
+    joRenderItems();
     joCalc();
 }
 
@@ -1700,20 +1748,38 @@ function joRenderItems() {
     countBadge.textContent = joItems.length;
     let html = '';
     joItems.forEach((item, idx) => {
-        const lineTotal = (item.price * item.qty).toFixed(2);
+        const unitPrice = (item.basePrice || 0) + (item.labor || 0);
+        const lineTotal = (unitPrice * item.qty).toFixed(2);
+        const baseValue = item.basePrice !== undefined && item.basePrice !== null ? parseFloat(item.basePrice).toFixed(2) : '';
+        const laborValue = item.labor !== undefined && item.labor !== null ? parseFloat(item.labor).toFixed(2) : '';
         html += `
-        <div class="d-flex align-items-center justify-content-between px-3 py-2" style="border-bottom:1px solid #f0f0f0;">
-            <div style="flex:1;min-width:0;">
-                <div class="text-truncate" style="font-size:12px;font-weight:600;">${item.name}</div>
-                <small class="text-muted">₱${parseFloat(item.price).toFixed(2)} each</small>
-            </div>
-            <div class="d-flex align-items-center gap-1 ms-2">
-                <input type="number" class="form-control form-control-sm text-center" value="${item.qty}" min="1"
-                    style="width:50px;font-size:12px;" onchange="joChangeQty(${idx}, this.value)">
-                <span style="font-size:12px;font-weight:600;min-width:60px;text-align:right;">₱${lineTotal}</span>
-                <button type="button" class="btn btn-sm btn-outline-danger py-0 px-1" onclick="joRemoveItem(${idx})">
-                    <i class="bi bi-x"></i>
-                </button>
+        <div class="px-3 py-2" style="border-bottom:1px solid #f0f0f0;">
+            <div class="d-flex align-items-start justify-content-between gap-2">
+                <div style="flex:1;min-width:0;">
+                    <div class="text-truncate" style="font-size:12px;font-weight:600;">${item.name}</div>
+                    <div class="d-flex align-items-center gap-1 mt-1 flex-wrap" style="row-gap:4px;">
+                        <div class="d-flex align-items-center gap-1" style="min-width:0;">
+                            <small class="text-muted">Base</small>
+                            <input type="number" class="form-control form-control-sm text-center" value="" min="0" step="0.01" placeholder="${baseValue || '0.00'}"
+                                style="width:70px;min-width:70px;font-size:11px;padding:0.2rem 0.3rem;-moz-appearance:textfield;appearance:textfield;" onchange="joChangeBasePrice(${idx}, this.value)">
+                        </div>
+                        <div class="d-flex align-items-center gap-1" style="min-width:0;">
+                            <small class="text-muted">Labor</small>
+                            <input type="number" class="form-control form-control-sm text-center" value="" min="0" step="0.01" placeholder="${laborValue || '0.00'}"
+                                style="width:70px;min-width:70px;font-size:11px;padding:0.2rem 0.3rem;-moz-appearance:textfield;appearance:textfield;" onchange="joChangeLabor(${idx}, this.value)">
+                        </div>
+                        <div class="d-flex align-items-center gap-1" style="min-width:0;">
+                            <small class="text-muted">Qty</small>
+                            <input type="number" class="form-control form-control-sm text-center" value="${item.qty}" min="1" style="width:42px;min-width:42px;font-size:11px;padding:0.2rem 0.3rem;" onchange="joChangeQty(${idx}, this.value)">
+                        </div>
+                    </div>
+                </div>
+                <div class="d-flex align-items-center gap-2 ms-2">
+                    <span style="font-size:13px;font-weight:700;min-width:74px;text-align:center;">₱${lineTotal}</span>
+                    <button type="button" class="btn btn-sm btn-outline-danger p-1" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;" onclick="joRemoveItem(${idx})">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                </div>
             </div>
         </div>`;
     });
@@ -1721,7 +1787,7 @@ function joRenderItems() {
 }
 
 function joCalc() {
-    let subtotal  = joItems.reduce((sum, i) => sum + i.price * i.qty, 0);
+    let subtotal  = joItems.reduce((sum, i) => sum + ((i.basePrice || i.price || 0) + (i.labor || 0)) * i.qty, 0);
     let partsTotal = joProducts.reduce((sum, p) => sum + p.price * p.qty, 0);
     const discType = document.getElementById('jo_discount_type').value;
     const discVal  = parseFloat(document.getElementById('jo_discount_value').value) || 0;
@@ -1796,7 +1862,15 @@ function joSave() {
         payment_status:   document.getElementById('jo_payment_status').value,
         partial_amount:   parseFloat(document.getElementById('jo_partial_amount').value) || 0,
         notes:            document.getElementById('jo_notes').value.trim(),
-        items:            joItems,
+        items:            joItems.map(item => ({
+            type: item.type,
+            id: item.id,
+            name: item.name,
+            base_price: parseFloat(item.basePrice || item.price || 0),
+            labor_cost: parseFloat(item.labor || 0),
+            price: parseFloat((item.basePrice || item.price || 0) + (item.labor || 0)),
+            qty: parseInt(item.qty || 1)
+        })),
         products:         joProducts
     };
 
@@ -1984,16 +2058,16 @@ function joPrintPreview() {
 
         <!-- Signatures + Technician — pinned to bottom -->
         <div style="position:fixed;bottom:15mm;left:0;right:0;">
-            <div style="font-size:9pt;margin-bottom:10px;border-top:1px solid #ddd;padding-top:6px;">
+            <div style="font-size:9pt;margin-bottom:10px;padding-top:6px;">
                 <strong>Assigned Technician:</strong> ${techName}
             </div>
             <table style="width:100%;border-collapse:collapse;font-size:9pt;">
                 <tr>
                     <td style="width:33%;text-align:center;padding:0 10px;">
-                        <div style="border-top:1px solid #555;padding-top:5px;margin-top:36px;">Customer Signature</div>
+                        <div style="border-top:1px solid #555;padding-top:5px;margin-top:36px;">Technician Signature</div>
                     </td>
                     <td style="width:33%;text-align:center;padding:0 10px;">
-                        <div style="border-top:1px solid #555;padding-top:5px;margin-top:36px;">Technician Signature</div>
+                        <div style="border-top:1px solid #555;padding-top:5px;margin-top:36px;">Customer Signature</div>
                     </td>
                     <td style="width:33%;text-align:center;padding:0 10px;">
                         <div style="border-top:1px solid #555;padding-top:5px;margin-top:36px;">Authorized Signature</div>
@@ -2382,8 +2456,43 @@ function editService(id, name, code, desc, price, labor, status) {
     document.getElementById('editSvcPrice').value       = price;
     document.getElementById('editSvcLabor').value       = labor;
     document.getElementById('editSvcStatus').value      = status;
+    updateServicePriceTotal('editSvc');
     bootstrap.Modal.getOrCreateInstance(document.getElementById('editServiceModal')).show();
 }
+
+function updateServicePriceTotal(prefix) {
+    const baseInput = document.getElementById(prefix + 'Price');
+    const laborInput = document.getElementById(prefix + 'Labor');
+    const totalField = document.getElementById(prefix + 'Total');
+
+    if (!baseInput || !laborInput || !totalField) {
+        return;
+    }
+
+    const base = parseFloat(baseInput.value) || 0;
+    const labor = parseFloat(laborInput.value) || 0;
+    totalField.textContent = '₱' + (base + labor).toFixed(2);
+}
+
+function bindServicePriceSummary(prefix) {
+    const baseInput = document.getElementById(prefix + 'Price');
+    const laborInput = document.getElementById(prefix + 'Labor');
+
+    if (!baseInput || !laborInput) {
+        return;
+    }
+
+    [baseInput, laborInput].forEach(input => {
+        input.addEventListener('input', () => updateServicePriceTotal(prefix));
+    });
+
+    updateServicePriceTotal(prefix);
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    bindServicePriceSummary('addSvc');
+    bindServicePriceSummary('editSvc');
+});
 
 function saveEditService() {
     const id = document.getElementById('editSvcId').value;
@@ -2471,13 +2580,24 @@ function saveEditBundle() {
             <label class="form-label">Description</label>
             <textarea class="form-control" id="editSvcDesc" rows="2"></textarea>
           </div>
-          <div class="col-md-4">
-            <label class="form-label">Base Price (₱) <span class="text-danger">*</span></label>
-            <input type="number" class="form-control" id="editSvcPrice" step="0.01" min="0">
-          </div>
-          <div class="col-md-4">
-            <label class="form-label">Labor Cost (₱) <span class="text-danger">*</span></label>
-            <input type="number" class="form-control" id="editSvcLabor" step="0.01" min="0">
+          <div class="col-12">
+            <div class="border rounded-3 p-3" style="background:#f8f9fa;border-color:#e0e0e0!important;">
+              <div class="row g-3 align-items-end">
+                <div class="col-md-4">
+                  <label class="form-label">Base Price (₱) <span class="text-danger">*</span></label>
+                  <input type="number" class="form-control" id="editSvcPrice" step="0.01" min="0">
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">Labor Cost (₱) <span class="text-danger">*</span></label>
+                  <input type="number" class="form-control" id="editSvcLabor" step="0.01" min="0">
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">Total</label>
+                  <div class="form-control fw-bold" id="editSvcTotal" style="background:#fff;border:1px solid #e0e0e0;">₱0.00</div>
+                </div>
+              </div>
+              <small class="text-muted d-block mt-2">Edit the labor amount directly; the total updates instantly.</small>
+            </div>
           </div>
           <div class="col-md-4">
             <label class="form-label">Status <span class="text-danger">*</span></label>
@@ -3034,20 +3154,41 @@ function editJoRenderItems() {
         badge.textContent = '0'; return;
     }
     badge.textContent = editJoItems.length;
-    c.innerHTML = editJoItems.map((item,idx) => `
-    <div class="d-flex align-items-center justify-content-between px-2 py-1" style="border-bottom:1px solid #f0f0f0;font-size:12px;">
-      <div style="flex:1;min-width:0;"><div class="text-truncate fw-semibold">${item.name}</div><small class="text-muted">₱${item.price.toFixed(2)} each</small></div>
-      <div class="d-flex align-items-center gap-1 ms-2">
-        <input type="number" class="form-control form-control-sm text-center" value="${item.qty}" min="1" style="width:46px;font-size:11px;" onchange="editJoChangeQty(${idx},this.value)">
-        <span style="min-width:55px;text-align:right;font-weight:600;">₱${(item.price*item.qty).toFixed(2)}</span>
-        <button type="button" class="btn btn-sm btn-outline-danger py-0 px-1" onclick="editJoRemoveItem(${idx})"><i class="bi bi-x"></i></button>
-      </div>
-    </div>`).join('');
+    c.innerHTML = editJoItems.map((item,idx) => {
+        const unitPrice = (item.basePrice || 0) + (item.labor || 0);
+        return `
+        <div class="px-2 py-2" style="border-bottom:1px solid #f0f0f0;font-size:12px;">
+          <div class="d-flex align-items-start justify-content-between gap-2">
+            <div style="flex:1;min-width:0;">
+              <div class="text-truncate fw-semibold">${item.name}</div>
+              <div class="d-flex align-items-center gap-2 mt-1">
+                <small class="text-muted">Base</small>
+                <small class="fw-semibold">₱${parseFloat(item.basePrice || 0).toFixed(2)}</small>
+                <small class="text-muted">Labor</small>
+                <input type="number" class="form-control form-control-sm text-center" value="${parseFloat(item.labor || 0).toFixed(2)}" min="0" step="0.01" style="width:70px;font-size:11px;" onchange="editJoChangeLabor(${idx},this.value)">
+              </div>
+            </div>
+            <div class="d-flex align-items-center gap-1 ms-2">
+              <input type="number" class="form-control form-control-sm text-center" value="${item.qty}" min="1" style="width:46px;font-size:11px;" onchange="editJoChangeQty(${idx},this.value)">
+              <span style="min-width:60px;text-align:right;font-weight:600;">₱${(unitPrice*item.qty).toFixed(2)}</span>
+              <button type="button" class="btn btn-sm btn-outline-danger py-0 px-1" onclick="editJoRemoveItem(${idx})"><i class="bi bi-x"></i></button>
+            </div>
+          </div>
+        </div>`;
+    }).join('');
+}
+
+function editJoChangeLabor(idx, val) {
+    const labor = parseFloat(val) || 0;
+    editJoItems[idx].labor = labor;
+    editJoItems[idx].price = (editJoItems[idx].basePrice || 0) + labor;
+    editJoRenderItems();
+    editJoUpdateBilling();
 }
 
 function editJoUpdateBilling() {
     const fmt = v => '₱' + parseFloat(v||0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,',');
-    const subtotal = editJoItems.reduce((s,i)=>s+i.price*i.qty,0);
+    const subtotal = editJoItems.reduce((s,i)=>s+(((i.basePrice||0)+(i.labor||0))*i.qty),0);
     document.getElementById('editJoSubtotal').textContent = fmt(subtotal);
     const parts = parseFloat(document.getElementById('editJoPartsCost').textContent.replace(/[₱,]/g,''))||0;
     document.getElementById('editJoTotal').textContent = fmt(subtotal + parts);
@@ -3118,7 +3259,9 @@ function editJobOrder(id) {
                 type: s.bundle_id ? 'bundle' : 'service',
                 id: s.bundle_id ? s.bundle_id : (s.service_id || null),
                 name: s.service_name,
-                price: parseFloat(s.service_price),
+                basePrice: parseFloat(s.service_price || 0),
+                labor: parseFloat(s.labor_cost || 0),
+                price: parseFloat((s.service_price || 0) + (s.labor_cost || 0)),
                 qty: parseInt(s.quantity)
             }));
             editJoRenderItems();
@@ -3151,7 +3294,15 @@ function saveEditJobOrder() {
         payment_status:   document.getElementById('editJoPayStatus').value,
         partial_amount:   parseFloat(document.getElementById('editJoPartialAmount').value) || 0,
         notes:            document.getElementById('editJoNotes').value.trim(),
-        items:            editJoItems,
+        items:            editJoItems.map(item => ({
+            type: item.type,
+            id: item.id,
+            name: item.name,
+            base_price: parseFloat(item.basePrice || item.price || 0),
+            labor_cost: parseFloat(item.labor || 0),
+            price: parseFloat((item.basePrice || item.price || 0) + (item.labor || 0)),
+            qty: parseInt(item.qty || 1)
+        })),
     };
     fetch(APP_URL + '/api/job_orders.php?id=' + id, {
         method: 'PUT',
@@ -3307,16 +3458,16 @@ function printJobOrder(id) {
 
         <!-- Technician + Signatures pinned to bottom -->
         <div style="position:fixed;bottom:15mm;left:0;right:0;">
-            <div style="font-size:9pt;margin-bottom:10px;border-top:1px solid #ddd;padding-top:6px;">
+            <div style="font-size:9pt;margin-bottom:10px;padding-top:6px;">
                 <strong>Assigned Technician:</strong> Unassigned
             </div>
             <table style="width:100%;border-collapse:collapse;font-size:9pt;">
                 <tr>
                     <td style="width:33%;text-align:center;padding:0 10px;">
-                        <div style="border-top:1px solid #555;padding-top:5px;margin-top:36px;">Customer Signature</div>
+                        <div style="border-top:1px solid #555;padding-top:5px;margin-top:36px;">Technician Signature</div>
                     </td>
                     <td style="width:33%;text-align:center;padding:0 10px;">
-                        <div style="border-top:1px solid #555;padding-top:5px;margin-top:36px;">Technician Signature</div>
+                        <div style="border-top:1px solid #555;padding-top:5px;margin-top:36px;">Customer Signature</div>
                     </td>
                     <td style="width:33%;text-align:center;padding:0 10px;">
                         <div style="border-top:1px solid #555;padding-top:5px;margin-top:36px;">Authorized Signature</div>

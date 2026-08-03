@@ -147,7 +147,11 @@ try {
             $items    = $input['items']    ?? [];
             $products = $input['products'] ?? [];
 
-            $subtotal  = array_sum(array_map(fn($i) => $i['price'] * $i['qty'], $items));
+            $subtotal  = array_sum(array_map(function ($i) {
+                $basePrice = isset($i['base_price']) ? (float)$i['base_price'] : (float)($i['price'] ?? 0);
+                $laborCost = isset($i['labor_cost']) ? (float)$i['labor_cost'] : (float)($i['labor'] ?? 0);
+                return ($basePrice + $laborCost) * (int)($i['qty'] ?? 1);
+            }, $items));
             $partsCost = array_sum(array_map(fn($p) => $p['price'] * $p['qty'], $products));
             $base      = $subtotal + $partsCost;
 
@@ -230,14 +234,20 @@ try {
             // ── 6. Insert job_order_services ─────────────────────────────────
             foreach ($items as $item) {
                 if (($item['type'] ?? '') === 'service' && !empty($item['id'])) {
+                    $basePrice = isset($item['base_price']) ? (float)$item['base_price'] : (float)($item['price'] ?? 0);
+                    $laborCost = isset($item['labor_cost']) ? (float)$item['labor_cost'] : (float)($item['labor'] ?? 0);
+                    $unitTotal = $basePrice + $laborCost;
                     $db->query(
                         "INSERT INTO job_order_services (job_order_id, service_id, service_name, service_price, labor_cost, quantity, total) VALUES (?,?,?,?,?,?,?)",
-                        [$jobOrderId, $item['id'], sanitize($item['name']), (float)$item['price'], 0, (int)($item['qty']??1), (float)$item['price'] * (int)($item['qty']??1)]
+                        [$jobOrderId, $item['id'], sanitize($item['name']), $basePrice, $laborCost, (int)($item['qty']??1), $unitTotal * (int)($item['qty']??1)]
                     );
                 } elseif (($item['type'] ?? '') === 'bundle' && !empty($item['id'])) {
+                    $basePrice = isset($item['base_price']) ? (float)$item['base_price'] : (float)($item['price'] ?? 0);
+                    $laborCost = isset($item['labor_cost']) ? (float)$item['labor_cost'] : (float)($item['labor'] ?? 0);
+                    $unitTotal = $basePrice + $laborCost;
                     $db->query(
                         "INSERT INTO job_order_services (job_order_id, bundle_id, service_name, service_price, labor_cost, quantity, total) VALUES (?,?,?,?,?,?,?)",
-                        [$jobOrderId, $item['id'], sanitize($item['name']), (float)$item['price'], 0, (int)($item['qty']??1), (float)$item['price'] * (int)($item['qty']??1)]
+                        [$jobOrderId, $item['id'], sanitize($item['name']), $basePrice, $laborCost, (int)($item['qty']??1), $unitTotal * (int)($item['qty']??1)]
                     );
                 }
             }
