@@ -35,14 +35,6 @@ $isTechnician = ($_SESSION['user_role'] ?? '') === 'technician';
         </a>
         <?php endif; ?>
 
-        <?php if (hasAnyRole(['admin'])): ?>
-        <a href="<?php echo APP_URL; ?>/views/staff/index.php"
-           class="nav-item <?php echo strpos($p, '/staff/') !== false ? 'active' : ''; ?>">
-            <i class="bi bi-people-fill"></i>
-            <span>Staff Management</span>
-        </a>
-        <?php endif; ?>
-
         <?php if ($isTechnician): ?>
         <a href="<?php echo APP_URL; ?>/views/services/manage.php?tab=job_orders"
            class="nav-item <?php echo strpos($p, '/services/') !== false ? 'active' : ''; ?>">
@@ -50,17 +42,33 @@ $isTechnician = ($_SESSION['user_role'] ?? '') === 'technician';
             <span>Job Orders</span>
         </a>
         <?php else: ?>
-        <a href="<?php echo APP_URL; ?>/views/inventory/index.php"
-           class="nav-item <?php echo strpos($p, '/inventory/') !== false ? 'active' : ''; ?>">
-            <i class="bi bi-box-seam"></i>
-            <span>Inventory</span>
-        </a>
-
         <a href="<?php echo APP_URL; ?>/views/reports/index.php"
            class="nav-item <?php echo strpos($p, '/reports/') !== false ? 'active' : ''; ?>">
             <i class="bi bi-file-earmark-bar-graph"></i>
             <span>Report</span>
         </a>
+
+          <a href="<?php echo APP_URL; ?>/views/inventory/index.php"
+              class="nav-item <?php echo strpos($p, '/inventory/') !== false ? 'active' : ''; ?>">
+                <i class="bi bi-box-seam"></i>
+                <span>Inventory</span>
+          </a>
+
+          <?php if (hasAnyRole(['admin'])): ?>
+          <a href="<?php echo APP_URL; ?>/views/staff/index.php"
+              class="nav-item <?php echo strpos($p, '/staff/') !== false ? 'active' : ''; ?>">
+                <i class="bi bi-people-fill"></i>
+                <span>Staff Management</span>
+          </a>
+          <?php endif; ?>
+
+        <?php if (hasAnyRole(['admin'])): ?>
+        <a href="<?php echo APP_URL; ?>/views/settings/index.php"
+           class="nav-item <?php echo strpos($p, '/settings/') !== false ? 'active' : ''; ?>">
+            <i class="bi bi-gear"></i>
+            <span>Settings</span>
+        </a>
+        <?php endif; ?>
         <?php endif; ?>
     </nav>
 

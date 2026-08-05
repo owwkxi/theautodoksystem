@@ -114,7 +114,7 @@ include __DIR__ . '/../partials/header.php';
         <form method="GET" action="" class="row g-3">
             <div class="col-md-4">
                 <input type="text" class="form-control" name="search" 
-                       placeholder="Search by name, username, email, or staff ID..." 
+                      placeholder="Search by name, login ID, email, or staff ID..." 
                        value="<?php echo escape($filters['search']); ?>">
             </div>
             <div class="col-md-2">
@@ -159,7 +159,7 @@ include __DIR__ . '/../partials/header.php';
                         <th>ID</th>
                         <th>Name</th>
                         <th>Role</th>
-                        <th>Username</th>
+                        <th>Login ID</th>
                         <th>Contact</th>
                         <th>Email</th>
                         <th>Status</th>
@@ -202,7 +202,7 @@ include __DIR__ . '/../partials/header.php';
                                     <?php echo escape(getRoleLabel($staff['role'])); ?>
                                 </span>
                             </td>
-                            <td><?php echo escape($staff['username']); ?></td>
+                            <td><?php echo escape($staff['staff_id']); ?></td>
                             <td><?php echo escape($staff['contact_number']); ?></td>
                             <td><?php echo escape($staff['email']); ?></td>
                             <td>
@@ -294,8 +294,8 @@ include __DIR__ . '/../partials/header.php';
                             <input type="text" class="form-control" id="add_full_name" name="full_name" required>
                         </div>
                         <div class="col-md-6">
-                            <label for="add_username" class="form-label">Username <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" id="add_username" name="username" required>
+                            <label class="form-label">Login ID</label>
+                            <input type="text" class="form-control" value="Auto-generated 5-digit ID" readonly>
                         </div>
                         <div class="col-md-6">
                             <label for="add_password" class="form-label">Password <span class="text-danger">*</span></label>
@@ -373,8 +373,8 @@ include __DIR__ . '/../partials/header.php';
                             <input type="text" class="form-control" id="edit_full_name" name="full_name" required>
                         </div>
                         <div class="col-md-6">
-                            <label for="edit_username" class="form-label">Username <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" id="edit_username" name="username" required>
+                            <label class="form-label">Login ID</label>
+                            <input type="text" class="form-control" id="edit_staff_login_id" readonly>
                         </div>
                         <div class="col-md-6">
                             <label for="edit_password" class="form-label">Password <small class="text-muted">(leave blank to keep current)</small></label>

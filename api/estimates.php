@@ -55,14 +55,14 @@ try {
                 throw new Exception('Invalid CSRF token');
             }
 
-            // Generate estimate number
-            $year    = date('Y');
-            $last    = $db->fetch(
-                "SELECT estimate_number FROM job_estimates WHERE estimate_number LIKE ? ORDER BY id DESC LIMIT 1",
-                ["EST-{$year}-%"]
+            // Generate estimate number (JE###)
+            $last = $db->fetch(
+                "SELECT MAX(CAST(SUBSTRING(estimate_number, 3) AS UNSIGNED)) AS max_num
+                 FROM job_estimates
+                 WHERE estimate_number REGEXP '^JE[0-9]+$'"
             );
-            $num     = $last ? (intval(substr($last['estimate_number'], -4)) + 1) : 1;
-            $estNum  = sprintf("EST-%s-%04d", $year, $num);
+            $num = (int)($last['max_num'] ?? 0) + 1;
+            $estNum = 'JE' . str_pad((string)$num, 3, '0', STR_PAD_LEFT);
 
             $servicesTotal = (float)($input['services_total'] ?? 0);
             $productsTotal = (float)($input['products_total'] ?? 0);

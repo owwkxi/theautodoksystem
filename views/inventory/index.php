@@ -29,7 +29,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_GET['action'])) {
         $action = $_GET['action'];
 
         if ($action === 'add_product') {
-            $code = sanitize($_POST['product_code'] ?: ('PRD-'.date('Y').'-'.str_pad(rand(1,9999),4,'0',STR_PAD_LEFT)));
+          $inputCode = strtoupper(sanitize($_POST['product_code'] ?? ''));
+          if ($inputCode && preg_match('/^PRD\d{2,}$/', $inputCode)) {
+            $code = $inputCode;
+          } else {
+            $last = $db->query(
+              "SELECT MAX(CAST(SUBSTRING(product_code, 4) AS UNSIGNED)) AS max_num
+               FROM products
+               WHERE product_code REGEXP '^PRD[0-9]+$'"
+            )->fetch(PDO::FETCH_ASSOC);
+            $next = (int)($last['max_num'] ?? 0) + 1;
+            $code = 'PRD' . str_pad((string)$next, 2, '0', STR_PAD_LEFT);
+          }
             $stmt = $db->prepare("INSERT INTO products (product_code,product_name,category_id,brand_id,unit_id,description,cost_price,selling_price,quantity,min_stock_level,status) VALUES (?,?,?,?,?,?,?,?,?,?,?)");
             $stmt->execute([$code, sanitize($_POST['product_name']), $_POST['category_id']?:null, $_POST['brand_id']?:null, $_POST['unit_id']?:null, sanitize($_POST['description']??''), (float)$_POST['cost_price'], (float)$_POST['selling_price'], (int)$_POST['quantity'], (int)($_POST['min_stock_level']??10), sanitize($_POST['status']??'active')]);
             echo json_encode(['success'=>true,'message'=>'Product added']);
@@ -311,7 +322,7 @@ include __DIR__ . '/../partials/header.php';
     <div class="modal-body">
       <div class="row g-3">
         <div class="col-md-6"><label class="form-label form-label-sm">Product Name *</label><input type="text" class="form-control form-control-sm" id="ap_name" required></div>
-        <div class="col-md-6"><label class="form-label form-label-sm">Product Code <small class="text-muted">(auto if blank)</small></label><input type="text" class="form-control form-control-sm" id="ap_code" placeholder="Auto-generated"></div>
+        <div class="col-md-6"><label class="form-label form-label-sm">Product Code <small class="text-muted">(PRD##, auto if blank)</small></label><input type="text" class="form-control form-control-sm" id="ap_code" placeholder="PRD01"></div>
         <div class="col-md-4">
           <label class="form-label form-label-sm">Category</label>
           <select class="form-select form-select-sm" id="ap_category">
@@ -547,8 +558,14 @@ function saveEditProduct() {
 }
 
 function deleteProduct(id) {
-    if (!confirm('Delete this product? This cannot be undone.')) return;
+  appConfirm('Delete this product? This cannot be undone.', {
+    title: 'Delete Product',
+    confirmText: 'Delete',
+    variant: 'danger'
+  }).then(confirmed => {
+    if (!confirmed) return;
     invPost('delete_product', { id }, () => {});
+  });
 }
 
 /* ── Stock In / Out ── */
@@ -621,8 +638,14 @@ function saveCategory() {
 }
 
 function deleteCategory(id) {
-    if (!confirm('Delete this category?')) return;
+  appConfirm('Delete this category?', {
+    title: 'Delete Category',
+    confirmText: 'Delete',
+    variant: 'danger'
+  }).then(confirmed => {
+    if (!confirmed) return;
     invPost('delete_category', { id }, () => {});
+  });
 }
 
 /* ── Suppliers ── */
@@ -661,8 +684,14 @@ function saveSupplier() {
 }
 
 function deleteSupplier(id) {
-    if (!confirm('Delete this supplier?')) return;
+  appConfirm('Delete this supplier?', {
+    title: 'Delete Supplier',
+    confirmText: 'Delete',
+    variant: 'danger'
+  }).then(confirmed => {
+    if (!confirmed) return;
     invPost('delete_supplier', { id }, () => {});
+  });
 }
 </script>
 

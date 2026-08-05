@@ -25,23 +25,17 @@ class Staff {
 
     /**
      * Generate unique staff ID
-     * @return string Staff ID in format STF-YYYY-NNNN
+     * @return string Staff ID in 5 random-digit format
      */
     private function generateStaffId() {
-        $year = date('Y');
-        $sql = "SELECT staff_id FROM staff 
-                WHERE staff_id LIKE ? 
-                ORDER BY id DESC LIMIT 1";
-        $result = $this->db->fetch($sql, ["STF-{$year}-%"]);
-        
-        if ($result) {
-            $lastNumber = intval(substr($result['staff_id'], -4));
-            $newNumber = $lastNumber + 1;
-        } else {
-            $newNumber = 1;
+        for ($attempt = 0; $attempt < 50; $attempt++) {
+            $candidate = str_pad((string) random_int(0, 99999), 5, '0', STR_PAD_LEFT);
+            if (!$this->findByStaffId($candidate) && !$this->usernameExists($candidate)) {
+                return $candidate;
+            }
         }
-        
-        return sprintf("STF-%s-%04d", $year, $newNumber);
+
+        throw new RuntimeException('Unable to generate unique staff ID');
     }
 
     /**
@@ -50,17 +44,13 @@ class Staff {
      * @return int|false Staff ID on success, false on failure
      */
     public function create($data) {
-        // Check if username already exists
-        if ($this->usernameExists($data['username'])) {
-            return false;
-        }
-
         // Check if email already exists
         if ($this->emailExists($data['email'])) {
             return false;
         }
 
         list($firstName, $lastName) = $this->splitFullName($data['full_name']);
+        $staffId = $this->generateStaffId();
         $sql = "INSERT INTO staff (staff_id, first_name, last_name, username, password, email, phone, address, role, profile_photo, hire_date, status) 
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         
@@ -69,10 +59,10 @@ class Staff {
         
         try {
             $this->db->query($sql, [
-                $this->generateStaffId(),
+                $staffId,
                 $firstName,
                 $lastName,
-                $data['username'],
+                $staffId,
                 $hashedPassword,
                 $data['email'],
                 $data['contact_number'],
@@ -102,7 +92,7 @@ class Staff {
 
     /**
      * Find staff by staff ID
-     * @param string $staffId Staff ID (e.g., STF-2026-0001)
+        * @param string $staffId Staff ID (e.g., 04217)
      * @return array|false Staff data
      */
     public function findByStaffId($staffId) {
@@ -382,13 +372,16 @@ class Staff {
     }
 
     /**
-     * Authenticate staff with username and password
-     * @param string $username Username
+     * Authenticate staff with login ID and password
+     * @param string $loginId Staff ID or legacy username
      * @param string $password Plain text password
      * @return array|false Staff data without password on success, false on failure
      */
-    public function authenticate($username, $password) {
-        $staff = $this->findByUsername($username);
+    public function authenticate($loginId, $password) {
+        $staff = $this->db->fetch(
+            "SELECT * FROM staff WHERE staff_id = ? OR username = ? LIMIT 1",
+            [$loginId, $loginId]
+        );
         
         if (!$staff) {
             return false;

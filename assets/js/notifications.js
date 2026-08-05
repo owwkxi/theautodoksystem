@@ -324,7 +324,16 @@ const NotificationManager = {
    * Clear all notifications
    */
   async clearAllNotifications() {
-    if (!confirm("Are you sure you want to clear all notifications?")) {
+    const confirmed = await appConfirm(
+      "Are you sure you want to clear all notifications?",
+      {
+        title: "Clear Notifications",
+        confirmText: "Clear All",
+        variant: "danger",
+      },
+    );
+
+    if (!confirmed) {
       return;
     }
 

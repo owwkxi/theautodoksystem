@@ -275,10 +275,12 @@ class JobOrder {
      * Generate unique job order number
      */
     public function generateJobOrderNumber() {
-        $year = date('Y');
-        $sql = "SELECT COUNT(*) as count FROM job_orders WHERE YEAR(created_at) = ?";
-        $result = $this->db->fetch($sql, [$year]);
-        $count = ($result['count'] ?? 0) + 1;
-        return sprintf('JO-%s-%04d', $year, $count);
+        $result = $this->db->fetch(
+            "SELECT MAX(CAST(SUBSTRING(job_order_number, 3) AS UNSIGNED)) AS max_num
+             FROM job_orders
+             WHERE job_order_number REGEXP '^JO[0-9]+$'"
+        );
+        $next = (int)($result['max_num'] ?? 0) + 1;
+        return 'JO' . str_pad((string)$next, 3, '0', STR_PAD_LEFT);
     }
 }

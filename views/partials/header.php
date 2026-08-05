@@ -72,8 +72,8 @@ if (!defined('APP_ACCESS')) {
                 $msg = getMessage();
                 $type = ($msg['type'] === 'error') ? 'danger' : $msg['type'];
             ?>
-            <div class="alert alert-<?php echo $type; ?> alert-dismissible fade show mb-3" role="alert">
-                <?php echo escape($msg['message']); ?>
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
+            <div id="flashToastMessage"
+                 data-message="<?php echo escape($msg['message']); ?>"
+                 data-type="<?php echo escape($type); ?>"
+                 style="display:none;"></div>
             <?php endif; ?>

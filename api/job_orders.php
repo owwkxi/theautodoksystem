@@ -43,10 +43,12 @@ try {
                             c.email AS customer_email, c.address AS customer_address,
                             v.brand AS vehicle_make, v.model AS vehicle_model,
                             v.year_model AS vehicle_year, v.plate_number AS vehicle_license,
-                            v.color AS vehicle_color, v.mileage AS vehicle_mileage
+                            v.color AS vehicle_color, v.mileage AS vehicle_mileage,
+                            sa.full_name AS assigned_technician_name
                      FROM job_orders jo
                      LEFT JOIN customers c ON jo.customer_id = c.id
                      LEFT JOIN vehicles  v ON jo.vehicle_id  = v.id
+                     LEFT JOIN staff     sa ON jo.service_adviser_id = sa.id
                      WHERE jo.id = ?",
                     [$id]
                 );
@@ -57,7 +59,8 @@ try {
                     [$id]
                 );
                 $jo['products'] = $db->fetchAll(
-                    "SELECT product_name, unit_price, quantity, total FROM job_order_products WHERE job_order_id = ?",
+                    "SELECT product_id AS id, product_name, unit_price, unit_price AS price, quantity, quantity AS qty, total
+                     FROM job_order_products WHERE job_order_id = ?",
                     [$id]
                 );
                 $response['success'] = true;
@@ -298,7 +301,11 @@ try {
             if (!$input) throw new Exception('Invalid JSON payload');
 
             // Get current JO to find customer_id and vehicle_id
-            $jo = $db->fetch("SELECT customer_id, vehicle_id, job_order_number FROM job_orders WHERE id=?", [$id]);
+            $jo = $db->fetch(
+                "SELECT customer_id, vehicle_id, job_order_number, status, payment_status, payment_method
+                 FROM job_orders WHERE id=?",
+                [$id]
+            );
             if (!$jo) throw new Exception('Job order not found');
 
             // Update customer
@@ -330,12 +337,16 @@ try {
             // Update job order status/payment/notes
             $editPartial = (float)($input['partial_amount'] ?? 0);
             if ($editPartial < 0) $editPartial = 0;
+            $serviceAdviserId = !empty($input['technician_id']) ? (int)$input['technician_id'] : null;
             $db->query(
-                "UPDATE job_orders SET status=?, payment_status=?, payment_method=?, partial_amount=?, notes=? WHERE id=?",
+                "UPDATE job_orders
+                 SET status=?, payment_status=?, payment_method=?, service_adviser_id=?, partial_amount=?, notes=?
+                 WHERE id=?",
                 [
-                    sanitize($input['status']         ?? 'pending'),
-                    sanitize($input['payment_status'] ?? 'pending'),
-                    sanitize($input['payment_method'] ?? 'cash'),
+                    sanitize($input['status']         ?? $jo['status'] ?? 'pending'),
+                    sanitize($input['payment_status'] ?? $jo['payment_status'] ?? 'pending'),
+                    sanitize($input['payment_method'] ?? $jo['payment_method'] ?? 'cash'),
+                    $serviceAdviserId,
                     $editPartial,
                     sanitize($input['notes']          ?? ''),
                     $id,

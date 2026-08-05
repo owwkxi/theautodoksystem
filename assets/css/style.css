@@ -1096,8 +1096,54 @@ body.login-body {
   border-radius: 10px;
 }
 
+.table-responsive.table-responsive-actions {
+  overflow: visible;
+}
+
+.action-dropdown .action-menu-btn {
+  min-width: 34px;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border-radius: 12px;
+  background: #6c757d;
+  border: 1px solid #6c757d;
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.action-dropdown .action-menu-btn:hover,
+.action-dropdown .action-menu-btn:focus,
+.action-dropdown .action-menu-btn.show {
+  background: #5c636a;
+  border-color: #5c636a;
+  color: #fff;
+  box-shadow: none;
+}
+
+.action-dropdown .action-menu-btn::after {
+  display: none;
+}
+
+.action-dropdown .action-menu-btn i {
+  font-size: 16px;
+  line-height: 1;
+}
+
 .action-dropdown .dropdown-menu {
   min-width: 190px;
+  border: 1px solid #e1e4e8;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12);
+  border-radius: 12px;
+  padding: 6px;
+  z-index: 1100;
+}
+
+.action-dropdown .dropdown-item {
+  border-radius: 8px;
+  padding: 8px 10px;
 }
 
 .action-dropdown .dropdown-item i {

@@ -196,7 +196,12 @@ include __DIR__ . '/../partials/header.php';
 
 <script>
 function deleteJobOrder(id) {
-    if (confirm('Are you sure you want to delete this job order? This action cannot be undone.')) {
+    appConfirm('Are you sure you want to delete this job order? This action cannot be undone.', {
+        title: 'Delete Job Order',
+        confirmText: 'Delete',
+        variant: 'danger'
+    }).then(confirmed => {
+        if (!confirmed) return;
         fetch('<?php echo APP_URL; ?>/api/job_orders.php?id=' + id, {
             method: 'DELETE',
             headers: {
@@ -216,7 +221,7 @@ function deleteJobOrder(id) {
             alert('Error deleting job order');
             console.error('Error:', error);
         });
-    }
+    });
 }
 </script>
 

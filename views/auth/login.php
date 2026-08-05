@@ -16,11 +16,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!isset($_POST['csrf_token']) || !verifyCSRFToken($_POST['csrf_token'])) {
         $error = 'Invalid request. Please try again.';
     } else {
-        $username = sanitize($_POST['username'] ?? '');
+        $loginId = sanitize($_POST['login_id'] ?? '');
         $password = $_POST['password'] ?? '';
 
         $authController = new AuthController();
-        $result = $authController->login($username, $password);
+        $result = $authController->login($loginId, $password);
 
         if ($result['success']) {
             redirect(APP_URL . '/views/dashboard/index.php');
@@ -104,8 +104,6 @@ $csrfToken = generateCSRFToken();
             color: #333;
         }
 
-        .input-wrap input::placeholder { color: #bbb; }
-
         .password-wrap {
             padding-right: 44px;
             position: relative;
@@ -179,16 +177,16 @@ $csrfToken = generateCSRFToken();
         <form method="POST" action="">
             <input type="hidden" name="csrf_token" value="<?php echo $csrfToken; ?>">
 
-            <label class="field-label" for="username">Username</label>
+            <label class="field-label" for="login_id">ID</label>
             <div class="input-wrap">
                 <i class="bi bi-person"></i>
-                <input type="text" id="username" name="username" placeholder="Username" required autofocus>
+                <input type="text" id="login_id" name="login_id" required autofocus>
             </div>
 
             <label class="field-label" for="password">Password</label>
             <div class="input-wrap password-wrap">
                 <i class="bi bi-lock"></i>
-                <input type="password" id="password" name="password" placeholder="••••••••" required>
+                <input type="password" id="password" name="password" required>
                 <button type="button" class="password-toggle" aria-label="Show password" aria-pressed="false">
                     <i class="bi bi-eye"></i>
                 </button>

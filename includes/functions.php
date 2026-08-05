@@ -100,6 +100,68 @@ function formatCurrency($amount) {
     return '₱' . number_format($amount, 2);
 }
 
+function getDefaultPrintTemplateSettings() {
+    return [
+        'company_name' => 'THE AUTODOK',
+        'company_subtitle' => 'Automotive Care Services',
+        'contact_line' => 'Tel: (02) XXX-XXXX | autodok@email.com',
+        'logo_url' => APP_URL . '/assets/images/logo.png',
+        'footer_note' => 'Thank you for choosing The Autodok - Automotive Care Services',
+        'header_template' => '<table style="width:100%;border-collapse:collapse;margin-bottom:8px;"><tr><td style="width:70px;vertical-align:middle;padding-right:12px;"><img src="{{logo_url}}" style="width:60px;height:60px;object-fit:contain;" alt="Logo"></td><td style="vertical-align:middle;"><div style="font-size:17pt;font-weight:700;letter-spacing:2px;line-height:1.1;">{{company_name}}</div><div style="font-size:9pt;color:#444;">{{company_subtitle}}</div><div style="font-size:8.5pt;color:#666;">{{contact_line}}</div></td><td style="text-align:right;vertical-align:middle;font-size:9pt;"><div style="font-size:12pt;font-weight:700;">{{document_title}}</div><div style="color:#555;"># {{document_number}}</div><div style="margin-top:4px;"><strong>Date:</strong> {{document_date}}</div></td></tr></table><hr style="border:none;border-top:1.5px solid #333;margin-bottom:10px;">',
+        'footer_template' => '<div style="text-align:center;font-size:8pt;color:#999;margin-top:10px;border-top:1px solid #ddd;padding-top:5px;">{{footer_note}}</div>'
+    ];
+}
+
+function getPrintTemplateSettings() {
+    $defaults = getDefaultPrintTemplateSettings();
+    $filePath = UPLOAD_PATH . 'print_template_settings.json';
+
+    if (!file_exists($filePath)) {
+        return $defaults;
+    }
+
+    $raw = file_get_contents($filePath);
+    if ($raw === false || trim($raw) === '') {
+        return $defaults;
+    }
+
+    $decoded = json_decode($raw, true);
+    if (!is_array($decoded)) {
+        return $defaults;
+    }
+
+    return array_merge($defaults, $decoded);
+}
+
+function savePrintTemplateSettings($settings) {
+    $defaults = getDefaultPrintTemplateSettings();
+    $merged = array_merge($defaults, (array)$settings);
+
+    $normalized = [];
+    foreach ($defaults as $key => $defaultValue) {
+        $normalized[$key] = trim((string)($merged[$key] ?? $defaultValue));
+        if ($normalized[$key] === '') {
+            $normalized[$key] = $defaultValue;
+        }
+    }
+
+    if (!is_dir(UPLOAD_PATH) && !mkdir(UPLOAD_PATH, 0755, true) && !is_dir(UPLOAD_PATH)) {
+        return false;
+    }
+
+    if (!is_writable(UPLOAD_PATH)) {
+        return false;
+    }
+
+    $filePath = UPLOAD_PATH . 'print_template_settings.json';
+    $json = json_encode($normalized, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    if ($json === false) {
+        return false;
+    }
+
+    return file_put_contents($filePath, $json) !== false;
+}
+
 function timeAgo($datetime) {
     $timestamp = strtotime($datetime);
     $difference = time() - $timestamp;
@@ -121,24 +183,16 @@ function timeAgo($datetime) {
 }
 
 function generateJobOrderNumber() {
-    $year = date('Y');
     $db = Database::getInstance();
-    
-    // Get the last job order number for this year
-    $sql = "SELECT job_order_number FROM job_orders 
-            WHERE job_order_number LIKE ? 
-            ORDER BY id DESC LIMIT 1";
-    $result = $db->fetch($sql, ["JO-{$year}-%"]);
-    
-    if ($result) {
-        // Extract the number and increment
-        $lastNumber = intval(substr($result['job_order_number'], -4));
-        $newNumber = $lastNumber + 1;
-    } else {
-        $newNumber = 1;
-    }
-    
-    return sprintf("JO-%s-%04d", $year, $newNumber);
+
+    $result = $db->fetch(
+        "SELECT MAX(CAST(SUBSTRING(job_order_number, 3) AS UNSIGNED)) AS max_num
+         FROM job_orders
+         WHERE job_order_number REGEXP '^JO[0-9]+$'"
+    );
+
+    $newNumber = (int)($result['max_num'] ?? 0) + 1;
+    return 'JO' . str_pad((string)$newNumber, 3, '0', STR_PAD_LEFT);
 }
 
 function uploadFile($file, $allowedTypes = ALLOWED_FILE_TYPES, $maxSize = MAX_FILE_SIZE) {
@@ -329,25 +383,23 @@ function getBearerToken() {
 
 /**
  * Generate unique staff ID
- * @return string Staff ID in format STF-YYYY-NNNN
+ * @return string Staff ID in 5 random-digit format
  */
 function generateStaffId() {
-    $year = date('Y');
     $db = Database::getInstance();
-    
-    $sql = "SELECT staff_id FROM staff 
-            WHERE staff_id LIKE ? 
-            ORDER BY id DESC LIMIT 1";
-    $result = $db->fetch($sql, ["STF-{$year}-%"]);
-    
-    if ($result) {
-        $lastNumber = intval(substr($result['staff_id'], -4));
-        $newNumber = $lastNumber + 1;
-    } else {
-        $newNumber = 1;
+
+    for ($attempt = 0; $attempt < 50; $attempt++) {
+        $candidate = str_pad((string) random_int(0, 99999), 5, '0', STR_PAD_LEFT);
+        $exists = $db->fetch(
+            "SELECT id FROM staff WHERE staff_id = ? OR username = ? LIMIT 1",
+            [$candidate, $candidate]
+        );
+        if (!$exists) {
+            return $candidate;
+        }
     }
-    
-    return sprintf("STF-%s-%04d", $year, $newNumber);
+
+    throw new RuntimeException('Unable to generate unique staff ID');
 }
 
 // Note: setMessage(), getMessage(), and hasMessage() functions 

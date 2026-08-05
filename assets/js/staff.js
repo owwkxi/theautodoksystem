@@ -3,32 +3,6 @@
  * Handles all client-side operations for staff management
  */
 
-// Toast notification function
-function showToast(message, type = "success") {
-  const alertClass = type === "success" ? "alert-success" : "alert-danger";
-  const iconClass =
-    type === "success" ? "bi-check-circle-fill" : "bi-exclamation-circle-fill";
-
-  const toast = `
-        <div class="alert ${alertClass} alert-dismissible fade show position-fixed top-0 end-0 m-3" 
-             role="alert" style="z-index: 9999; min-width: 300px;">
-            <i class="bi ${iconClass} me-2"></i>
-            ${message}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    `;
-
-  document.body.insertAdjacentHTML("beforeend", toast);
-
-  // Auto remove after 5 seconds
-  setTimeout(() => {
-    const alerts = document.querySelectorAll(".alert");
-    if (alerts.length > 0) {
-      alerts[alerts.length - 1].remove();
-    }
-  }, 5000);
-}
-
 // Image preview for add form
 document
   .getElementById("add_profile_image")
@@ -185,7 +159,7 @@ async function editStaff(id) {
       // Populate form fields
       document.getElementById("edit_staff_id").value = staff.id;
       document.getElementById("edit_full_name").value = staff.full_name;
-      document.getElementById("edit_username").value = staff.username;
+      document.getElementById("edit_staff_login_id").value = staff.staff_id || "";
       document.getElementById("edit_email").value = staff.email;
       document.getElementById("edit_contact_number").value =
         staff.contact_number;
@@ -339,8 +313,8 @@ async function viewStaff(id) {
                         <p class="mb-0">${staff.full_name}</p>
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label fw-bold small text-muted">Username</label>
-                        <p class="mb-0">${staff.username}</p>
+                      <label class="form-label fw-bold small text-muted">Login ID</label>
+                      <p class="mb-0">${staff.staff_id}</p>
                     </div>
                     <div class="col-md-6">
                         <label class="form-label fw-bold small text-muted">Email</label>
@@ -396,7 +370,13 @@ async function toggleStatus(id, currentStatus) {
   const action = currentStatus === "active" ? "deactivate" : "activate";
   const confirmMessage = `Are you sure you want to ${action} this staff member?`;
 
-  if (!confirm(confirmMessage)) {
+  const confirmed = await appConfirm(confirmMessage, {
+    title: "Change Staff Status",
+    confirmText: action === "deactivate" ? "Deactivate" : "Activate",
+    variant: action === "deactivate" ? "warning" : "primary",
+  });
+
+  if (!confirmed) {
     return;
   }
 
@@ -432,11 +412,16 @@ async function toggleStatus(id, currentStatus) {
 
 // Delete Staff Function
 async function deleteStaff(id) {
-  if (
-    !confirm(
-      "Are you sure you want to delete this staff member? This action cannot be undone.",
-    )
-  ) {
+  const confirmed = await appConfirm(
+    "Are you sure you want to delete this staff member? This action cannot be undone.",
+    {
+      title: "Delete Staff",
+      confirmText: "Delete",
+      variant: "danger",
+    },
+  );
+
+  if (!confirmed) {
     return;
   }
 

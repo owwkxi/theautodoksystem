@@ -264,30 +264,21 @@ class Service {
      * Generate unique service code
      */
     public function generateServiceCode() {
-        $year = date('Y');
-        $prefix = "SVC-{$year}-";
+        $prefix = 'SVC';
         
         try {
-            // Get the last service code for this year
-            $sql = "SELECT service_code FROM services 
-                    WHERE service_code LIKE ? 
-                    ORDER BY service_code DESC LIMIT 1";
+            $sql = "SELECT MAX(CAST(SUBSTRING(service_code, 4) AS UNSIGNED)) AS max_num
+                    FROM services
+                WHERE service_code REGEXP '^(SVS|SVC)[0-9]+$'";
             $stmt = $this->db->prepare($sql);
-            $stmt->execute([$prefix . '%']);
+            $stmt->execute();
             $result = $stmt->fetch(PDO::FETCH_ASSOC);
-            
-            if ($result) {
-                // Extract number and increment
-                $lastNumber = (int)substr($result['service_code'], -4);
-                $newNumber = $lastNumber + 1;
-            } else {
-                $newNumber = 1;
-            }
-            
-            return $prefix . str_pad($newNumber, 4, '0', STR_PAD_LEFT);
+
+            $newNumber = (int)($result['max_num'] ?? 0) + 1;
+            return $prefix . str_pad((string)$newNumber, 2, '0', STR_PAD_LEFT);
         } catch (PDOException $e) {
             error_log("Service generateServiceCode error: " . $e->getMessage());
-            return $prefix . '0001';
+            return $prefix . '01';
         }
     }
     

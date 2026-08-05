@@ -20,13 +20,13 @@ class AuthController {
     /**
      * Handle login — checks both users table (admin) and staff table (technicians etc.)
      */
-    public function login($username, $password) {
-        if (empty($username) || empty($password)) {
-            return ['success' => false, 'message' => 'Username and password are required'];
+    public function login($loginId, $password) {
+        if (empty($loginId) || empty($password)) {
+            return ['success' => false, 'message' => 'ID and password are required'];
         }
 
         // ── 1. Try admin users table first ───────────────────────────────────
-        $user = $this->userModel->authenticate($username, $password);
+        $user = $this->userModel->authenticate($loginId, $password);
 
         if ($user) {
             $_SESSION['user_id']   = $user['id'];
@@ -45,13 +45,13 @@ class AuthController {
         $db   = Database::getInstance();
         $staff = $db->fetch(
             "SELECT id, staff_id, first_name, last_name, full_name, username, password, role, status
-             FROM staff WHERE username = ? LIMIT 1",
-            [$username]
+             FROM staff WHERE staff_id = ? OR username = ? LIMIT 1",
+            [$loginId, $loginId]
         );
 
         if (!$staff) {
-            logActivity(0, 'failed_login', "Failed login attempt for username: {$username}");
-            return ['success' => false, 'message' => 'Invalid username or password'];
+            logActivity(0, 'failed_login', "Failed login attempt for ID: {$loginId}");
+            return ['success' => false, 'message' => 'Invalid ID or password'];
         }
 
         if ($staff['status'] !== 'active') {
@@ -59,13 +59,13 @@ class AuthController {
         }
 
         if (empty($staff['password']) || !password_verify($password, $staff['password'])) {
-            logActivity(0, 'failed_login', "Failed login attempt for staff username: {$username}");
-            return ['success' => false, 'message' => 'Invalid username or password'];
+            logActivity(0, 'failed_login', "Failed login attempt for staff ID: {$loginId}");
+            return ['success' => false, 'message' => 'Invalid ID or password'];
         }
 
         // Set session for staff
         $_SESSION['user_id']   = $staff['id'];
-        $_SESSION['username']  = $staff['username'];
+        $_SESSION['username']  = $staff['staff_id'];
         $_SESSION['user_role'] = $staff['role'];
         $_SESSION['full_name'] = $staff['full_name'] ?: trim($staff['first_name'] . ' ' . $staff['last_name']);
         $_SESSION['staff_id']  = $staff['staff_id'];

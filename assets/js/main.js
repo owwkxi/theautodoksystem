@@ -31,7 +31,95 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Confirm before delete
 function confirmDelete(message = 'Are you sure you want to delete this item?') {
-    return confirm(message);
+    return appConfirm(message, {
+        title: 'Confirm Delete',
+        confirmText: 'Delete',
+        variant: 'danger'
+    });
+}
+
+// Reusable app confirmation modal (promise-based)
+function appConfirm(message, options = {}) {
+    const {
+        title = 'Confirm Action',
+        confirmText = 'OK',
+        cancelText = 'Cancel',
+        variant = 'primary'
+    } = options;
+
+    const variantClass = variant === 'danger'
+        ? 'btn-danger'
+        : variant === 'warning'
+            ? 'btn-warning'
+            : 'btn-primary';
+
+    return new Promise((resolve) => {
+        let modalEl = document.getElementById('appConfirmModal');
+
+        if (!modalEl) {
+            modalEl = document.createElement('div');
+            modalEl.id = 'appConfirmModal';
+            modalEl.className = 'modal fade';
+            modalEl.tabIndex = -1;
+            modalEl.setAttribute('aria-hidden', 'true');
+            modalEl.innerHTML = `
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content border-0 shadow">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="appConfirmTitle">Confirm Action</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <p class="mb-0" id="appConfirmMessage"></p>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" id="appConfirmCancel" data-bs-dismiss="modal">Cancel</button>
+                            <button type="button" class="btn btn-primary" id="appConfirmOk">OK</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modalEl);
+        }
+
+        const titleEl = document.getElementById('appConfirmTitle');
+        const messageEl = document.getElementById('appConfirmMessage');
+        const cancelBtn = document.getElementById('appConfirmCancel');
+        const okBtn = document.getElementById('appConfirmOk');
+
+        titleEl.textContent = title;
+        messageEl.textContent = message;
+        cancelBtn.textContent = cancelText;
+        okBtn.textContent = confirmText;
+        okBtn.className = `btn ${variantClass}`;
+
+        const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+
+        let resolved = false;
+        const cleanup = () => {
+            okBtn.removeEventListener('click', onConfirm);
+            modalEl.removeEventListener('hidden.bs.modal', onHidden);
+        };
+
+        const onConfirm = () => {
+            if (resolved) return;
+            resolved = true;
+            cleanup();
+            modal.hide();
+            resolve(true);
+        };
+
+        const onHidden = () => {
+            if (resolved) return;
+            resolved = true;
+            cleanup();
+            resolve(false);
+        };
+
+        okBtn.addEventListener('click', onConfirm);
+        modalEl.addEventListener('hidden.bs.modal', onHidden);
+        modal.show();
+    });
 }
 
 // Show loading spinner
@@ -110,21 +198,24 @@ async function apiRequest(url, method = 'GET', data = null, token = null) {
 
 // Show toast notification
 function showToast(message, type = 'info') {
-    const toastContainer = document.getElementById('toastContainer');
+    let toastContainer = document.getElementById('toastContainer');
     if (!toastContainer) {
         const container = document.createElement('div');
         container.id = 'toastContainer';
         container.className = 'toast-container position-fixed top-0 end-0 p-3';
+        container.style.zIndex = '1080';
         document.body.appendChild(container);
+        toastContainer = container;
     }
 
     const toastId = 'toast-' + Date.now();
     const bgClass = type === 'success' ? 'bg-success' : 
                     type === 'error' ? 'bg-danger' : 
+                    type === 'danger' ? 'bg-danger' : 
                     type === 'warning' ? 'bg-warning' : 'bg-info';
 
     const toastHTML = `
-        <div id="${toastId}" class="toast ${bgClass} text-white" role="alert">
+        <div id="${toastId}" class="toast ${bgClass} text-white border-0 shadow" role="alert" data-bs-delay="3500" aria-live="assertive" aria-atomic="true" style="min-width:280px;max-width:380px;">
             <div class="toast-header ${bgClass} text-white">
                 <strong class="me-auto">Notification</strong>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
@@ -135,7 +226,7 @@ function showToast(message, type = 'info') {
         </div>
     `;
 
-    document.getElementById('toastContainer').insertAdjacentHTML('beforeend', toastHTML);
+    toastContainer.insertAdjacentHTML('beforeend', toastHTML);
     const toastElement = document.getElementById(toastId);
     const toast = new bootstrap.Toast(toastElement);
     toast.show();
@@ -144,6 +235,28 @@ function showToast(message, type = 'info') {
         toastElement.remove();
     });
 }
+
+// Show server-side flash messages with the same toast style
+document.addEventListener('DOMContentLoaded', function() {
+    const flash = document.getElementById('flashToastMessage');
+    if (!flash) return;
+
+    const message = flash.dataset.message || '';
+    const rawType = (flash.dataset.type || 'info').toLowerCase();
+    const type = rawType === 'danger' ? 'error' : rawType;
+    if (message) {
+        showToast(message, type);
+    }
+});
+
+// Normalize browser alert popups into app toasts for a consistent UX
+window.nativeAlert = window.alert;
+window.alert = function(message) {
+    const text = String(message || 'Notification');
+    const lower = text.toLowerCase();
+    const isError = lower.includes('error') || lower.includes('failed') || lower.includes('network') || lower.includes('required') || lower.includes('invalid');
+    showToast(text, isError ? 'error' : 'info');
+};
 
 // Print function
 function printPage() {

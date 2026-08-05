@@ -104,7 +104,7 @@ function handleGet($staffModel) {
  */
 function handlePost($staffModel) {
     // Validate required fields
-    $requiredFields = ['full_name', 'username', 'password', 'email', 'contact_number', 'role'];
+    $requiredFields = ['full_name', 'password', 'email', 'contact_number', 'role'];
     foreach ($requiredFields as $field) {
         if (empty($_POST[$field])) {
             jsonResponse(['success' => false, 'message' => ucfirst(str_replace('_', ' ', $field)) . ' is required'], 400);
@@ -124,11 +124,6 @@ function handlePost($staffModel) {
     // Validate email format
     if (!filter_var($_POST['email'], FILTER_VALIDATE_EMAIL)) {
         jsonResponse(['success' => false, 'message' => 'Invalid email format'], 400);
-    }
-    
-    // Check if username already exists
-    if ($staffModel->usernameExists($_POST['username'])) {
-        jsonResponse(['success' => false, 'message' => 'Username already exists'], 400);
     }
     
     // Check if email already exists
@@ -157,7 +152,6 @@ function handlePost($staffModel) {
     // Prepare data
     $data = [
         'full_name' => sanitize($_POST['full_name']),
-        'username' => sanitize($_POST['username']),
         'password' => $_POST['password'],
         'email' => sanitize($_POST['email']),
         'contact_number' => sanitize($_POST['contact_number']),
@@ -209,7 +203,7 @@ function handlePut($staffModel) {
     }
     
     // If this is a status-only update, allow it without full validation
-    if (!empty($_PUT['status']) && empty($_PUT['full_name']) && empty($_PUT['username']) && empty($_PUT['email']) && empty($_PUT['contact_number']) && empty($_PUT['role'])) {
+    if (!empty($_PUT['status']) && empty($_PUT['full_name']) && empty($_PUT['email']) && empty($_PUT['contact_number']) && empty($_PUT['role'])) {
         $data = ['status' => sanitize($_PUT['status'])];
         $success = $staffModel->update($staffId, $data);
         
@@ -222,7 +216,7 @@ function handlePut($staffModel) {
     }
     
     // Validate required fields for full update
-    $requiredFields = ['full_name', 'username', 'email', 'contact_number', 'role'];
+    $requiredFields = ['full_name', 'email', 'contact_number', 'role'];
     foreach ($requiredFields as $field) {
         if (empty($_PUT[$field])) {
             jsonResponse(['success' => false, 'message' => ucfirst(str_replace('_', ' ', $field)) . ' is required'], 400);
@@ -243,11 +237,6 @@ function handlePut($staffModel) {
     // Validate email format
     if (!filter_var($_PUT['email'], FILTER_VALIDATE_EMAIL)) {
         jsonResponse(['success' => false, 'message' => 'Invalid email format'], 400);
-    }
-    
-    // Check if username already exists for other staff
-    if ($staffModel->usernameExists($_PUT['username'], $staffId)) {
-        jsonResponse(['success' => false, 'message' => 'Username already exists'], 400);
     }
     
     // Check if email already exists for other staff
@@ -273,7 +262,6 @@ function handlePut($staffModel) {
     // Prepare data
     $data = [
         'full_name' => sanitize($_PUT['full_name']),
-        'username' => sanitize($_PUT['username']),
         'email' => sanitize($_PUT['email']),
         'contact_number' => sanitize($_PUT['contact_number']),
         'address' => sanitize($_PUT['address'] ?? ''),
