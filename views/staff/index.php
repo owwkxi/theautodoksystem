@@ -4,11 +4,15 @@ require_once __DIR__ . '/../../includes/config.php';
 require_once __DIR__ . '/../../includes/Database.php';
 require_once __DIR__ . '/../../includes/functions.php';
 require_once __DIR__ . '/../../includes/session.php';
+require_once __DIR__ . '/../../includes/security.php';
 require_once __DIR__ . '/../../models/Staff.php';
 
-// Require login and admin role
+// Require login and admin/cashier role
 requireLogin();
-requireRole('admin');
+requireAnyRole(['admin', 'cashier', 'chief_mechanic', 'service_adviser']);
+
+$isCashier = (($_SESSION['user_role'] ?? '') === 'cashier');
+$canManageStaff = hasAnyRole(['admin', 'cashier']);
 
 $pageTitle = 'Staff Management';
 
@@ -39,9 +43,11 @@ include __DIR__ . '/../partials/header.php';
         <h4 class="mb-0">Staff Management</h4>
         <p class="text-muted small mb-0">Manage all staff members and their information</p>
     </div>
+    <?php if ($canManageStaff): ?>
     <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addStaffModal">
         <i class="bi bi-plus-circle"></i> Add New Staff
     </button>
+    <?php endif; ?>
 </div>
 
 <!-- Statistics Cards -->
@@ -120,10 +126,10 @@ include __DIR__ . '/../partials/header.php';
             <div class="col-md-2">
                 <select class="form-select" name="role">
                     <option value="">All Roles</option>
+                    <option value="admin" <?php echo $filters['role'] === 'admin' ? 'selected' : ''; ?>>Admin</option>
                     <option value="cashier" <?php echo $filters['role'] === 'cashier' ? 'selected' : ''; ?>>Cashier</option>
                     <option value="chief_mechanic" <?php echo $filters['role'] === 'chief_mechanic' ? 'selected' : ''; ?>>Chief Mechanic</option>
                     <option value="service_adviser" <?php echo $filters['role'] === 'service_adviser' ? 'selected' : ''; ?>>Service Adviser</option>
-                    <option value="lead_man" <?php echo $filters['role'] === 'lead_man' ? 'selected' : ''; ?>>Lead Man</option>
                     <option value="technician" <?php echo $filters['role'] === 'technician' ? 'selected' : ''; ?>>Technician</option>
                 </select>
             </div>
@@ -173,9 +179,11 @@ include __DIR__ . '/../partials/header.php';
                         <td colspan="9" class="text-center py-5">
                             <i class="bi bi-inbox display-4 text-muted"></i>
                             <p class="text-muted mt-3">No staff members found</p>
+                            <?php if ($canManageStaff): ?>
                             <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addStaffModal">
                                 <i class="bi bi-plus-circle"></i> Add First Staff Member
                             </button>
+                            <?php endif; ?>
                         </td>
                     </tr>
                     <?php else: ?>
@@ -217,19 +225,25 @@ include __DIR__ . '/../partials/header.php';
                                             onclick="viewStaff(<?php echo $staff['id']; ?>)" title="View">
                                         <i class="bi bi-eye"></i>
                                     </button>
+                                    <?php if ($canManageStaff && !($isCashier && $staff['role'] === 'admin')): ?>
                                     <button type="button" class="btn btn-outline-warning btn-icon" 
                                             onclick="editStaff(<?php echo $staff['id']; ?>)" title="Edit">
                                         <i class="bi bi-pencil"></i>
                                     </button>
+                                    <?php endif; ?>
+                                    <?php if ($canManageStaff && !($isCashier && $staff['role'] === 'admin')): ?>
                                     <button type="button" class="btn btn-outline-<?php echo $staff['status'] === 'active' ? 'danger' : 'success'; ?> btn-icon" 
                                             onclick="toggleStatus(<?php echo $staff['id']; ?>, '<?php echo $staff['status']; ?>')" 
                                             title="<?php echo $staff['status'] === 'active' ? 'Deactivate' : 'Activate'; ?>">
                                         <i class="bi bi-<?php echo $staff['status'] === 'active' ? 'x-circle' : 'check-circle'; ?>"></i>
                                     </button>
+                                    <?php endif; ?>
+                                    <?php if ($canManageStaff && !$isCashier): ?>
                                     <button type="button" class="btn btn-outline-danger btn-icon" 
                                             onclick="deleteStaff(<?php echo $staff['id']; ?>)" title="Delete">
                                         <i class="bi bi-trash"></i>
                                     </button>
+                                    <?php endif; ?>
                                 </div>
                             </td>
                         </tr>
@@ -276,6 +290,7 @@ include __DIR__ . '/../partials/header.php';
     <?php endif; ?>
 </div>
 
+<?php if ($canManageStaff): ?>
 <!-- Add Staff Modal -->
 <div class="modal fade" id="addStaffModal" tabindex="-1" aria-labelledby="addStaffModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
@@ -321,10 +336,12 @@ include __DIR__ . '/../partials/header.php';
                             <label for="add_role" class="form-label">Role/Position <span class="text-danger">*</span></label>
                             <select class="form-select" id="add_role" name="role" required>
                                 <option value="">Select Role</option>
+                                <?php if (!$isCashier): ?>
+                                <option value="admin">Admin</option>
+                                <?php endif; ?>
                                 <option value="cashier">Cashier</option>
                                 <option value="chief_mechanic">Chief Mechanic</option>
                                 <option value="service_adviser">Service Adviser</option>
-                                <option value="lead_man">Lead Man</option>
                                 <option value="technician">Technician</option>
                             </select>
                         </div>
@@ -400,10 +417,12 @@ include __DIR__ . '/../partials/header.php';
                             <label for="edit_role" class="form-label">Role/Position <span class="text-danger">*</span></label>
                             <select class="form-select" id="edit_role" name="role" required>
                                 <option value="">Select Role</option>
+                                <?php if (!$isCashier): ?>
+                                <option value="admin">Admin</option>
+                                <?php endif; ?>
                                 <option value="cashier">Cashier</option>
                                 <option value="chief_mechanic">Chief Mechanic</option>
                                 <option value="service_adviser">Service Adviser</option>
-                                <option value="lead_man">Lead Man</option>
                                 <option value="technician">Technician</option>
                             </select>
                         </div>
@@ -432,6 +451,7 @@ include __DIR__ . '/../partials/header.php';
         </div>
     </div>
 </div>
+<?php endif; ?>
 
 <!-- View Staff Modal -->
 <div class="modal fade" id="viewStaffModal" tabindex="-1" aria-labelledby="viewStaffModalLabel" aria-hidden="true">

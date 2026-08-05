@@ -44,37 +44,70 @@ class Report {
         $stats['total_users'] = $result['total'] ?? 0;
 
         // Today's income
-        $sql = "SELECT SUM(total_amount) as total FROM job_orders 
-                WHERE DATE(created_at) = CURDATE() AND payment_status = 'paid'";
+        $sql = "SELECT SUM(
+                    CASE
+                        WHEN payment_status = 'paid' THEN total_amount
+                        WHEN payment_status = 'partial' THEN COALESCE(partial_amount, 0)
+                        ELSE 0
+                    END
+                ) as total
+                FROM job_orders
+                WHERE DATE(created_at) = CURDATE()";
         $result = $this->db->fetch($sql);
         $stats['today_income'] = $result['total'] ?? 0;
 
         // Yesterday's income
-        $sql = "SELECT SUM(total_amount) as total FROM job_orders 
-                WHERE DATE(created_at) = DATE_SUB(CURDATE(), INTERVAL 1 DAY) AND payment_status = 'paid'";
+        $sql = "SELECT SUM(
+                    CASE
+                        WHEN payment_status = 'paid' THEN total_amount
+                        WHEN payment_status = 'partial' THEN COALESCE(partial_amount, 0)
+                        ELSE 0
+                    END
+                ) as total
+                FROM job_orders
+                WHERE DATE(created_at) = DATE_SUB(CURDATE(), INTERVAL 1 DAY)";
         $result = $this->db->fetch($sql);
         $stats['yesterday_income'] = $result['total'] ?? 0;
 
         // This month's income
-        $sql = "SELECT SUM(total_amount) as total FROM job_orders 
+        $sql = "SELECT SUM(
+                    CASE
+                        WHEN payment_status = 'paid' THEN total_amount
+                        WHEN payment_status = 'partial' THEN COALESCE(partial_amount, 0)
+                        ELSE 0
+                    END
+                ) as total
+                FROM job_orders 
                 WHERE YEAR(created_at) = YEAR(CURDATE()) 
-                AND MONTH(created_at) = MONTH(CURDATE()) 
-                AND payment_status = 'paid'";
+                AND MONTH(created_at) = MONTH(CURDATE())";
         $result = $this->db->fetch($sql);
         $stats['month_income'] = $result['total'] ?? 0;
 
         // Last month's income
-        $sql = "SELECT SUM(total_amount) as total FROM job_orders 
+        $sql = "SELECT SUM(
+                    CASE
+                        WHEN payment_status = 'paid' THEN total_amount
+                        WHEN payment_status = 'partial' THEN COALESCE(partial_amount, 0)
+                        ELSE 0
+                    END
+                ) as total
+                FROM job_orders 
                 WHERE YEAR(created_at) = YEAR(DATE_SUB(CURDATE(), INTERVAL 1 MONTH)) 
-                AND MONTH(created_at) = MONTH(DATE_SUB(CURDATE(), INTERVAL 1 MONTH)) 
-                AND payment_status = 'paid'";
+                AND MONTH(created_at) = MONTH(DATE_SUB(CURDATE(), INTERVAL 1 MONTH))";
         $result = $this->db->fetch($sql);
         $stats['last_month_income'] = $result['total'] ?? 0;
 
         // This year's income
-        $sql = "SELECT SUM(total_amount) as total FROM job_orders 
+        $sql = "SELECT SUM(
+                    CASE
+                        WHEN payment_status = 'paid' THEN total_amount
+                        WHEN payment_status = 'partial' THEN COALESCE(partial_amount, 0)
+                        ELSE 0
+                    END
+                ) as total
+                FROM job_orders 
                 WHERE YEAR(created_at) = YEAR(CURDATE()) 
-                AND payment_status = 'paid'";
+                ";
         $result = $this->db->fetch($sql);
         $stats['year_income'] = $result['total'] ?? 0;
 
@@ -85,8 +118,15 @@ class Report {
      * Get income for a specific date
      */
     public function getDailyIncomeByDate($date) {
-        $sql = "SELECT SUM(total_amount) as total FROM job_orders 
-                WHERE DATE(created_at) = ? AND payment_status = 'paid'";
+        $sql = "SELECT SUM(
+                    CASE
+                        WHEN payment_status = 'paid' THEN total_amount
+                        WHEN payment_status = 'partial' THEN COALESCE(partial_amount, 0)
+                        ELSE 0
+                    END
+                ) as total
+                FROM job_orders
+                WHERE DATE(created_at) = ?";
         $result = $this->db->fetch($sql, [$date]);
         return (float)($result['total'] ?? 0);
     }
@@ -95,8 +135,15 @@ class Report {
      * Get income for a specific year and month
      */
     public function getMonthlyIncomeByYearMonth($year, $month) {
-        $sql = "SELECT SUM(total_amount) as total FROM job_orders 
-                WHERE YEAR(created_at) = ? AND MONTH(created_at) = ? AND payment_status = 'paid'";
+        $sql = "SELECT SUM(
+                    CASE
+                        WHEN payment_status = 'paid' THEN total_amount
+                        WHEN payment_status = 'partial' THEN COALESCE(partial_amount, 0)
+                        ELSE 0
+                    END
+                ) as total
+                FROM job_orders
+                WHERE YEAR(created_at) = ? AND MONTH(created_at) = ?";
         $result = $this->db->fetch($sql, [(int)$year, (int)$month]);
         return (float)($result['total'] ?? 0);
     }
@@ -109,8 +156,20 @@ class Report {
                     DATE(created_at) as date,
                     COUNT(*) as job_orders_count,
                     SUM(total_amount) as total_income,
-                    SUM(CASE WHEN payment_status = 'paid' THEN total_amount ELSE 0 END) as paid_income,
-                    SUM(CASE WHEN payment_status = 'pending' THEN total_amount ELSE 0 END) as pending_income
+                    SUM(
+                        CASE
+                            WHEN payment_status = 'paid' THEN total_amount
+                            WHEN payment_status = 'partial' THEN COALESCE(partial_amount, 0)
+                            ELSE 0
+                        END
+                    ) as paid_income,
+                    SUM(
+                        CASE
+                            WHEN payment_status = 'pending' THEN total_amount
+                            WHEN payment_status = 'partial' THEN GREATEST(total_amount - COALESCE(partial_amount, 0), 0)
+                            ELSE 0
+                        END
+                    ) as pending_income
                 FROM job_orders
                 WHERE DATE(created_at) BETWEEN ? AND ?
                 GROUP BY DATE(created_at)
@@ -128,9 +187,15 @@ class Report {
         $sql = "SELECT 
                     MONTH(created_at) as month,
                     COUNT(*) as job_orders_count,
-                    SUM(total_amount) as total_income
+                    SUM(
+                        CASE
+                            WHEN payment_status = 'paid' THEN total_amount
+                            WHEN payment_status = 'partial' THEN COALESCE(partial_amount, 0)
+                            ELSE 0
+                        END
+                    ) as total_income
                 FROM job_orders
-                WHERE YEAR(created_at) = ? AND payment_status = 'paid'
+                WHERE YEAR(created_at) = ?
                 GROUP BY MONTH(created_at)
                 ORDER BY MONTH(created_at) ASC";
         

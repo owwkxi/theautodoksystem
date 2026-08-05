@@ -18,6 +18,7 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 $currentUserId = $_SESSION['user_id'];
+$currentUserRole = $_SESSION['user_role'] ?? '';
 $method        = $_SERVER['REQUEST_METHOD'];
 $id            = $_GET['id'] ?? null;
 $response      = ['success' => false, 'message' => '', 'data' => null];
@@ -28,6 +29,9 @@ try {
     switch ($method) {
 
         case 'GET':
+            if (!in_array($currentUserRole, ['admin', 'cashier'], true)) {
+                throw new Exception('Insufficient permissions');
+            }
             if ($id) {
                 $est = $db->fetch("SELECT * FROM job_estimates WHERE id = ?", [$id]);
                 if (!$est) throw new Exception('Estimate not found');
@@ -48,6 +52,9 @@ try {
             break;
 
         case 'POST':
+            if (!in_array($currentUserRole, ['admin', 'cashier'], true)) {
+                throw new Exception('Insufficient permissions');
+            }
             $input = json_decode(file_get_contents('php://input'), true);
             if (!$input) throw new Exception('Invalid JSON payload');
 
@@ -103,6 +110,9 @@ try {
             break;
 
         case 'PUT':
+            if (!in_array($currentUserRole, ['admin', 'cashier'], true)) {
+                throw new Exception('Insufficient permissions');
+            }
             if (!$id) throw new Exception('Estimate ID is required');
             $input = json_decode(file_get_contents('php://input'), true);
             if (!$input) throw new Exception('Invalid JSON payload');
@@ -128,6 +138,9 @@ try {
 
         case 'DELETE':
             if (!$id) throw new Exception('Estimate ID is required');
+            if ($currentUserRole !== 'admin') {
+                throw new Exception('Only admins can delete estimates');
+            }
             $est = $db->fetch("SELECT estimate_number FROM job_estimates WHERE id = ?", [$id]);
             if (!$est) throw new Exception('Estimate not found');
             $db->query("DELETE FROM job_estimates WHERE id = ?", [$id]);

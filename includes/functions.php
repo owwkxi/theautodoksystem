@@ -57,16 +57,30 @@ function isLoggedIn() {
     return isset($_SESSION['user_id']) && !empty($_SESSION['user_id']);
 }
 
+function normalizeRole($role) {
+    $normalized = strtolower(trim((string)$role));
+    $aliases = [
+        'system_administrator' => 'admin',
+        'system_admin' => 'admin',
+        'administrator' => 'admin',
+    ];
+    return $aliases[$normalized] ?? $normalized;
+}
+
 function hasRole($role) {
-    return isset($_SESSION['user_role']) && strcasecmp($_SESSION['user_role'], $role) === 0;
+    if (!isset($_SESSION['user_role'])) {
+        return false;
+    }
+    return normalizeRole($_SESSION['user_role']) === normalizeRole($role);
 }
 
 function hasAnyRole($roles) {
     if (!isset($_SESSION['user_role'])) {
         return false;
     }
+    $currentRole = normalizeRole($_SESSION['user_role']);
     foreach ((array)$roles as $role) {
-        if (strcasecmp($_SESSION['user_role'], $role) === 0) {
+        if ($currentRole === normalizeRole($role)) {
             return true;
         }
     }
@@ -234,11 +248,12 @@ function uploadFile($file, $allowedTypes = ALLOWED_FILE_TYPES, $maxSize = MAX_FI
 }
 
 function getRoleLabel($role) {
+    $role = normalizeRole($role);
     $labels = [
+        'admin' => 'Admin',
         'cashier' => 'Cashier',
         'chief_mechanic' => 'Chief Mechanic',
         'service_adviser' => 'Service Adviser',
-        'lead_man' => 'Lead Man',
         'technician' => 'Technician'
     ];
     return $labels[$role] ?? ucfirst(str_replace('_', ' ', $role));

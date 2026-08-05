@@ -9,6 +9,7 @@ if (!defined('APP_ACCESS')) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo isset($pageTitle) ? $pageTitle . ' — ' . APP_NAME : APP_NAME; ?></title>
+    <link rel="icon" type="image/png" href="<?php echo APP_URL; ?>/assets/images/logo.png">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     <link rel="stylesheet" href="<?php echo APP_URL; ?>/assets/css/style.css?v=<?php echo time(); ?>">
@@ -29,7 +30,10 @@ if (!defined('APP_ACCESS')) {
             <button class="hamburger-btn" id="sidebarToggle">
                 <i class="bi bi-list"></i>
             </button>
-            <div class="topbar-title"><?php echo isset($pageTitle) ? $pageTitle : 'Dashboard'; ?></div>
+            <div class="topbar-title d-flex align-items-center" style="gap:8px;">
+                <img src="<?php echo APP_URL; ?>/assets/images/logo.png" alt="Logo" style="width:20px;height:20px;object-fit:contain;">
+                <span><?php echo isset($pageTitle) ? $pageTitle : 'Dashboard'; ?></span>
+            </div>
             <div class="topbar-actions">
                 <div class="bell-wrap" id="bellWrap" title="Notifications">
                     <i class="bi bi-bell-fill"></i>

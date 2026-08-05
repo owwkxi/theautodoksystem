@@ -7,7 +7,7 @@ require_once __DIR__ . '/../../includes/session.php';
 require_once __DIR__ . '/../../includes/security.php';
 
 requireLogin();
-requireAnyRole(['admin']);
+requireAnyRole(['admin', 'cashier']);
 
 $pageTitle = 'Settings';
 
@@ -35,6 +35,22 @@ include __DIR__ . '/../partials/header.php';
                 </div>
             </div>
         </div>
+
+        <?php if (hasRole('admin')): ?>
+        <div class="col-md-6 col-lg-4">
+            <div class="card h-100">
+                <div class="card-body d-flex flex-column">
+                    <h6 class="mb-2"><i class="bi bi-shield-check me-2"></i>Role Permissions Matrix</h6>
+                    <p class="text-muted small mb-3">View what each role can and cannot do based on current runtime access rules.</p>
+                    <div class="mt-auto">
+                        <a href="<?php echo APP_URL; ?>/views/settings/role_permissions.php" class="btn btn-dark btn-sm">
+                            <i class="bi bi-table"></i> View Matrix
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <?php endif; ?>
 
     </div>
 </div>

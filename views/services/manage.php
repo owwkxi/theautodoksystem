@@ -12,14 +12,29 @@ require_once '../../models/Staff.php';
 // Check authentication
 requireLogin();
 
-$isTechnician = ($_SESSION['user_role'] ?? '') === 'technician';
+$currentUserRole = $_SESSION['user_role'] ?? '';
+$isTechnician = $currentUserRole === 'technician';
+$isChiefMechanic = $currentUserRole === 'chief_mechanic';
+$isServiceAdviser = $currentUserRole === 'service_adviser';
+$isCashier = $currentUserRole === 'cashier';
 
-// Technicians can only access the job_orders tab
-if ($isTechnician && ($_GET['tab'] ?? 'job_orders') !== 'job_orders') {
+$isJobOrdersOnlyRole = $isTechnician || $isChiefMechanic || $isServiceAdviser;
+$canManageCatalog = hasAnyRole(['admin', 'cashier']);
+$canDeleteRecords = hasRole('admin');
+$canCreateJobOrder = hasAnyRole(['admin', 'cashier']);
+$canEditJobOrder = hasAnyRole(['admin', 'cashier']);
+$canEditJoStatus = hasAnyRole(['admin', 'cashier', 'service_adviser']);
+$canStartJoTimer = hasAnyRole(['admin', 'cashier', 'chief_mechanic', 'service_adviser']);
+$canStopJoTimer = hasAnyRole(['admin', 'cashier', 'technician', 'chief_mechanic', 'service_adviser']);
+$canDoneJoTimer = hasAnyRole(['admin', 'cashier', 'technician']);
+$activeJobOrderStatuses = ['pending', 'ongoing', 'under_inspection', 'returned_for_revision'];
+
+// Job-order-only roles can only access the job_orders tab
+if ($isJobOrdersOnlyRole && ($_GET['tab'] ?? 'job_orders') !== 'job_orders') {
     redirect(APP_URL . '/views/services/manage.php?tab=job_orders');
 }
 
-$pageTitle = $isTechnician ? 'Job Orders' : 'Services Management';
+$pageTitle = $isJobOrdersOnlyRole ? 'Job Orders' : 'Services Management';
 
 $serviceModel = new Service();
 $bundleModel = new ServiceBundle();
@@ -29,6 +44,9 @@ $printTemplateSettings = getPrintTemplateSettings();
 // Handle form submission for creating service
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'create_service') {
     try {
+        if (!$canManageCatalog) {
+            throw new Exception('Insufficient permissions');
+        }
         validateCSRF();
         
         // Auto-generate service code if empty
@@ -61,6 +79,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 // Handle form submission for creating bundle
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'create_bundle') {
     try {
+        if (!$canManageCatalog) {
+            throw new Exception('Insufficient permissions');
+        }
         validateCSRF();
         
         $data = [
@@ -103,6 +124,10 @@ if (isset($_GET['action']) && $_SERVER['REQUEST_METHOD'] === 'POST') {
     
     switch ($_GET['action']) {
         case 'delete_service':
+            if (!$canDeleteRecords) {
+                echo json_encode(['success' => false, 'message' => 'Only admin can delete records']);
+                exit;
+            }
             validateCSRF();
             $id = (int)$_POST['id'];
             $result = $serviceModel->delete($id);
@@ -110,6 +135,10 @@ if (isset($_GET['action']) && $_SERVER['REQUEST_METHOD'] === 'POST') {
             exit;
             
         case 'toggle_service':
+            if (!$canManageCatalog) {
+                echo json_encode(['success' => false, 'message' => 'Insufficient permissions']);
+                exit;
+            }
             validateCSRF();
             $id = (int)$_POST['id'];
             $result = $serviceModel->toggleStatus($id);
@@ -117,6 +146,10 @@ if (isset($_GET['action']) && $_SERVER['REQUEST_METHOD'] === 'POST') {
             exit;
             
         case 'delete_bundle':
+            if (!$canDeleteRecords) {
+                echo json_encode(['success' => false, 'message' => 'Only admin can delete records']);
+                exit;
+            }
             validateCSRF();
             $id = (int)$_POST['id'];
             $result = $bundleModel->delete($id);
@@ -124,6 +157,10 @@ if (isset($_GET['action']) && $_SERVER['REQUEST_METHOD'] === 'POST') {
             exit;
             
         case 'toggle_bundle':
+            if (!$canManageCatalog) {
+                echo json_encode(['success' => false, 'message' => 'Insufficient permissions']);
+                exit;
+            }
             validateCSRF();
             $id = (int)$_POST['id'];
             $result = $bundleModel->toggleStatus($id);
@@ -131,6 +168,10 @@ if (isset($_GET['action']) && $_SERVER['REQUEST_METHOD'] === 'POST') {
             exit;
 
         case 'update_service':
+            if (!$canManageCatalog) {
+                echo json_encode(['success' => false, 'message' => 'Insufficient permissions']);
+                exit;
+            }
             validateCSRF();
             $id = (int)$_POST['id'];
             $data = [
@@ -146,6 +187,10 @@ if (isset($_GET['action']) && $_SERVER['REQUEST_METHOD'] === 'POST') {
             exit;
 
         case 'update_bundle':
+            if (!$canManageCatalog) {
+                echo json_encode(['success' => false, 'message' => 'Insufficient permissions']);
+                exit;
+            }
             validateCSRF();
             $id = (int)$_POST['id'];
             $data = [
@@ -165,7 +210,7 @@ if (isset($_GET['action']) && $_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // Get active tab
-$activeTab = $_GET['tab'] ?? 'services';
+$activeTab = $_GET['tab'] ?? ($isJobOrdersOnlyRole ? 'job_orders' : 'services');
 
 // Validate tab
 $validTabs = ['services', 'bundles', 'job_orders', 'estimates'];
@@ -237,6 +282,21 @@ try {
 if ($activeTab === 'job_orders') {
     try {
         $dbConn = Database::getInstance()->getConnection();
+        $assignedTotalJo = 0;
+        $assignedActiveJo = 0;
+
+        if ($isTechnician) {
+            $techStaffId = $_SESSION['user_id'] ?? 0;
+            $countRow = $dbConn->prepare("SELECT COUNT(DISTINCT jo.id) AS total_assigned FROM job_orders jo INNER JOIN job_order_technicians jot ON jot.job_order_id = jo.id WHERE jot.technician_id = ?");
+            $countRow->execute([$techStaffId]);
+            $assignedTotalJo = (int)($countRow->fetch(PDO::FETCH_ASSOC)['total_assigned'] ?? 0);
+
+            $activeCountSql = "SELECT COUNT(DISTINCT jo.id) AS active_assigned FROM job_orders jo INNER JOIN job_order_technicians jot ON jot.job_order_id = jo.id WHERE jot.technician_id = ? AND jo.status IN (" . implode(',', array_fill(0, count($activeJobOrderStatuses), '?')) . ")";
+            $activeCountStmt = $dbConn->prepare($activeCountSql);
+            $activeCountStmt->execute(array_merge([$techStaffId], $activeJobOrderStatuses));
+            $assignedActiveJo = (int)($activeCountStmt->fetch(PDO::FETCH_ASSOC)['active_assigned'] ?? 0);
+        }
+
         $joSearch = $_GET['jo_search'] ?? '';
         $joStatus = $_GET['jo_status'] ?? '';
         $joWhere  = 'WHERE 1=1';
@@ -252,6 +312,11 @@ if ($activeTab === 'job_orders') {
             $joParams[] = $techStaffId;
         }
 
+        if ($isChiefMechanic || $isServiceAdviser) {
+            $joWhere .= " AND jo.status IN (" . implode(',', array_fill(0, count($activeJobOrderStatuses), '?')) . ")";
+            $joParams = array_merge($joParams, $activeJobOrderStatuses);
+        }
+
         if ($joSearch) {
             $joWhere .= " AND (jo.job_order_number LIKE ? OR c.full_name LIKE ? OR v.plate_number LIKE ?)";
             $joParams = array_merge($joParams, ["%$joSearch%", "%$joSearch%", "%$joSearch%"]);
@@ -262,7 +327,8 @@ if ($activeTab === 'job_orders') {
         }
         $joStmt = $dbConn->prepare("
             SELECT jo.id, jo.job_order_number, jo.status, jo.payment_status,
-                   jo.total_amount, jo.created_at,
+                 jo.total_amount, jo.created_at,
+                 jo.status_timer_seconds, jo.status_timer_started_at,
                    c.full_name AS customer_name, c.phone AS customer_phone,
                    v.brand, v.model, v.plate_number
             FROM job_orders jo
@@ -275,6 +341,8 @@ if ($activeTab === 'job_orders') {
         $allJobOrders = $joStmt->fetchAll(PDO::FETCH_ASSOC);
     } catch (Exception $e) {
         $allJobOrders = [];
+        $assignedTotalJo = 0;
+        $assignedActiveJo = 0;
     }
 }
 
@@ -344,6 +412,57 @@ include_once '../partials/header.php';
     background-color: #2a2a2a !important;
     border-color: #2a2a2a !important;
     color: #fff !important;
+}
+
+/* JO technician selector: keep visuals neutral gray */
+.jo-tech-check:checked {
+    background-color: #6c757d !important;
+    border-color: #6c757d !important;
+}
+.jo-tech-check:focus {
+    border-color: #6c757d !important;
+    box-shadow: 0 0 0 0.2rem rgba(108, 117, 125, 0.2) !important;
+}
+
+/* JO status row: compact dropdown + inline timer */
+.jo-status-cell {
+    min-width: 218px;
+}
+.jo-status-select {
+    max-width: 122px;
+    font-size: 11px;
+    padding-top: 0.18rem;
+    padding-bottom: 0.18rem;
+}
+.jo-status-timer-wrap {
+    min-width: 86px;
+    text-align: center;
+    font-size: 10.5px;
+    color: #6c757d;
+    letter-spacing: 0.2px;
+}
+.jo-status-timer {
+    display: inline-block;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    background: #f3f3f3;
+    border: 1px solid #e1e1e1;
+    border-radius: 4px;
+    padding: 1px 6px;
+    min-width: 72px;
+}
+.jo-timer-controls {
+    display: flex;
+    justify-content: center;
+    gap: 4px;
+    margin-top: 4px;
+}
+.jo-timer-btn {
+    font-size: 10px;
+    line-height: 1;
+    padding: 2px 6px;
+}
+.jo-row-under-inspection td {
+    background-color: #fdeaea !important;
 }
 .stats-card-row {
     display: flex;
@@ -450,11 +569,11 @@ include_once '../partials/header.php';
                 <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addBundleModal">
                     <i class="bi bi-plus-circle"></i> Add Bundle
                 </button>
-            <?php elseif ($activeTab === 'job_orders'): ?>
+            <?php elseif ($activeTab === 'job_orders' && $canCreateJobOrder): ?>
                 <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createJobOrderModal">
                     <i class="bi bi-plus-circle"></i> Create Job Order
                 </button>
-            <?php elseif ($activeTab === 'estimates'): ?>
+            <?php elseif ($activeTab === 'estimates' && $canManageCatalog): ?>
                 <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#jobEstimateModal">
                     <i class="bi bi-calculator"></i> New Estimate
                 </button>
@@ -501,6 +620,7 @@ include_once '../partials/header.php';
                 <i class="bi bi-file-earmark-text"></i> Job Orders
             </a>
         </li>
+        <?php if (!$isJobOrdersOnlyRole): ?>
         <li class="nav-item">
             <a class="nav-link <?php echo $activeTab === 'estimates' ? 'active' : ''; ?>" 
                href="?tab=estimates"
@@ -522,6 +642,7 @@ include_once '../partials/header.php';
                 <i class="bi bi-box-seam"></i> Service Bundles
             </a>
         </li>
+        <?php endif; ?>
     </ul>
 
     <!-- Search and Filter -->
@@ -613,11 +734,13 @@ include_once '../partials/header.php';
                                                         <i class="bi bi-arrow-repeat"></i><?php echo $service['status'] === 'active' ? 'Deactivate' : 'Activate'; ?>
                                                     </button>
                                                 </li>
+                                                <?php if ($canDeleteRecords): ?>
                                                 <li>
                                                     <button type="button" class="dropdown-item text-danger" onclick="deleteItem('service', <?php echo $service['id']; ?>)">
                                                         <i class="bi bi-trash"></i>Delete
                                                     </button>
                                                 </li>
+                                                <?php endif; ?>
                                             </ul>
                                         </div>
                                     </td>
@@ -677,10 +800,12 @@ include_once '../partials/header.php';
                                                 class="btn btn-sm btn-warning btn-icon" title="Toggle Status">
                                             <i class="bi bi-arrow-repeat"></i>
                                         </button>
+                                        <?php if ($canDeleteRecords): ?>
                                         <button onclick="deleteItem('bundle', <?php echo $bundle['id']; ?>)" 
                                                 class="btn btn-sm btn-danger btn-icon" title="Delete">
                                             <i class="bi bi-trash"></i>
                                         </button>
+                                        <?php endif; ?>
                                     </td>
                                 </tr>
                                 <?php endforeach; ?>
@@ -707,7 +832,7 @@ include_once '../partials/header.php';
                     <div class="col-md-3">
                         <select name="jo_status" class="form-select form-select-sm">
                             <option value="">All Status</option>
-                            <?php foreach (['pending','ongoing','under_inspection','for_approval','completed','released','cancelled'] as $s): ?>
+                            <?php foreach (['pending','ongoing','under_inspection','completed','released','returned_for_revision','cancelled'] as $s): ?>
                             <option value="<?php echo $s; ?>" <?php echo (($_GET['jo_status'] ?? '') === $s) ? 'selected' : ''; ?>>
                                 <?php echo ucfirst(str_replace('_',' ',$s)); ?>
                             </option>
@@ -718,7 +843,7 @@ include_once '../partials/header.php';
                         <button type="submit" class="btn btn-sm btn-dark"><i class="bi bi-search"></i> Search</button>
                         <a href="?tab=job_orders" class="btn btn-sm btn-secondary ms-1"><i class="bi bi-x"></i> Clear</a>
                     </div>
-                    <?php if (!$isTechnician): ?>
+                    <?php if ($canCreateJobOrder): ?>
                     <div class="col-auto ms-auto">
                         <button type="button" class="btn btn-sm btn-dark" data-bs-toggle="modal" data-bs-target="#createJobOrderModal">
                             <i class="bi bi-plus-circle"></i> Create Job Order
@@ -726,6 +851,13 @@ include_once '../partials/header.php';
                     </div>
                     <?php endif; ?>
                 </form>
+                <?php if ($isTechnician): ?>
+                <div class="mt-2 small text-muted">
+                    Assigned Active Job Orders: <strong><?php echo (int)$assignedActiveJo; ?></strong>
+                    <span class="mx-1">|</span>
+                    Assigned Total Job Orders: <strong><?php echo (int)$assignedTotalJo; ?></strong>
+                </div>
+                <?php endif; ?>
             </div>
         </div>
 
@@ -734,8 +866,8 @@ include_once '../partials/header.php';
                 <?php if (empty($allJobOrders)): ?>
                     <div class="text-center py-5">
                         <i class="bi bi-file-earmark-text" style="font-size:3rem;color:#ccc;"></i>
-                        <p class="text-muted mt-3"><?php echo $isTechnician ? 'No job orders assigned to you' : 'No job orders found'; ?></p>
-                        <?php if (!$isTechnician): ?>
+                        <p class="text-muted mt-3"><?php echo $isTechnician ? 'No job orders assigned to you' : (($isChiefMechanic || $isServiceAdviser) ? 'No active job orders found' : 'No job orders found'); ?></p>
+                        <?php if ($canCreateJobOrder): ?>
                         <button class="btn btn-dark btn-sm" data-bs-toggle="modal" data-bs-target="#createJobOrderModal">
                             <i class="bi bi-plus-circle"></i> Create Job Order
                         </button>
@@ -752,29 +884,26 @@ include_once '../partials/header.php';
                                 <th>Plate</th>
                                 <th>Amount</th>
                                 <th>Payment</th>
-                                <th>Status</th>
                                 <th>Date</th>
+                                <th>Status</th>
+                                <th class="text-center">Timer</th>
                                 <th></th>
                             </tr>
                         </thead>
                         <tbody>
                         <?php foreach ($allJobOrders as $jo): ?>
                             <?php
-                                $statusColors = [
-                                    'pending'               => 'secondary',
-                                    'ongoing'               => 'primary',
-                                    'under_inspection'      => 'info',
-                                    'for_approval'          => 'warning',
-                                    'completed'             => 'success',
-                                    'released'              => 'success',
-                                    'returned_for_revision' => 'danger',
-                                    'cancelled'             => 'danger',
-                                ];
                                 $payColors = ['pending'=>'secondary','partial'=>'warning','paid'=>'success'];
-                                $sc = $statusColors[$jo['status']] ?? 'secondary';
                                 $pc = $payColors[$jo['payment_status']] ?? 'secondary';
+                                $rowTimerBase = (int)($jo['status_timer_seconds'] ?? 0);
+                                $rowTimerRunning = in_array($jo['status'], ['ongoing', 'under_inspection'], true) && !empty($jo['status_timer_started_at']);
+                                if ($rowTimerRunning) {
+                                    $rowTimerBase += max(0, time() - strtotime($jo['status_timer_started_at']));
+                                }
+                                $rowTimerVisible = in_array($jo['status'], ['ongoing', 'under_inspection', 'completed'], true);
+                                $rowTimerLocked = $jo['status'] === 'completed';
                             ?>
-                            <tr>
+                            <tr id="jo-row-<?php echo $jo['id']; ?>" class="<?php echo $jo['status'] === 'under_inspection' ? 'jo-row-under-inspection' : ''; ?>">
                                 <td class="px-3 fw-bold"><?php echo escape($jo['job_order_number']); ?></td>
                                 <td>
                                     <div><?php echo escape($jo['customer_name']); ?></div>
@@ -784,15 +913,73 @@ include_once '../partials/header.php';
                                 <td><?php echo escape($jo['plate_number'] ?? '—'); ?></td>
                                 <td><?php echo formatCurrency($jo['total_amount']); ?></td>
                                 <td><span class="badge bg-<?php echo $pc; ?>"><?php echo ucfirst($jo['payment_status']); ?></span></td>
-                                <td><span class="badge bg-<?php echo $sc; ?>"><?php echo ucfirst(str_replace('_',' ',$jo['status'])); ?></span></td>
                                 <td><?php echo date('M d, Y', strtotime($jo['created_at'])); ?></td>
+                                <td>
+                                    <select
+                                        id="jo-status-select-<?php echo $jo['id']; ?>"
+                                        class="form-select form-select-sm jo-status-select"
+                                        data-prev="<?php echo $jo['status']; ?>"
+                                        <?php if (!$canEditJoStatus): ?>disabled<?php endif; ?>
+                                        onchange="updateJoStatusInline(<?php echo $jo['id']; ?>, this.value, this)">
+                                        <?php foreach (['pending','ongoing','under_inspection','completed','released','returned_for_revision','cancelled'] as $statusOption): ?>
+                                        <option value="<?php echo $statusOption; ?>" <?php echo $jo['status'] === $statusOption ? 'selected' : ''; ?>>
+                                            <?php echo ucfirst(str_replace('_', ' ', $statusOption)); ?>
+                                        </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </td>
+                                <td class="text-center align-middle">
+                                    <div
+                                        id="jo-status-timer-wrap-<?php echo $jo['id']; ?>"
+                                        class="jo-status-timer-wrap"
+                                        style="<?php echo $rowTimerVisible ? '' : 'display:none;'; ?>"
+                                    >
+                                        <span
+                                            id="jo-status-timer-<?php echo $jo['id']; ?>"
+                                            class="jo-status-timer"
+                                            data-seconds="<?php echo $rowTimerBase; ?>"
+                                            data-running="<?php echo $rowTimerRunning ? '1' : '0'; ?>"
+                                        >00:00:00</span>
+                                        <?php if ($canStartJoTimer || $canStopJoTimer || $canDoneJoTimer): ?>
+                                        <div class="jo-timer-controls" id="jo-timer-controls-<?php echo $jo['id']; ?>" style="<?php echo $rowTimerLocked ? 'display:none;' : ''; ?>">
+                                            <?php if ($canStartJoTimer && !$rowTimerLocked): ?>
+                                            <button
+                                                type="button"
+                                                id="jo-timer-start-<?php echo $jo['id']; ?>"
+                                                class="btn btn-outline-secondary btn-sm jo-timer-btn"
+                                                onclick="controlJoTimer(<?php echo $jo['id']; ?>, 'start', this)">
+                                                Start
+                                            </button>
+                                            <?php endif; ?>
+                                            <?php if ($canStopJoTimer && !$isTechnician && !$rowTimerLocked): ?>
+                                            <button
+                                                type="button"
+                                                id="jo-timer-stop-<?php echo $jo['id']; ?>"
+                                                class="btn btn-outline-secondary btn-sm jo-timer-btn"
+                                                onclick="controlJoTimer(<?php echo $jo['id']; ?>, 'stop', this)">
+                                                Stop
+                                            </button>
+                                            <?php endif; ?>
+                                            <?php if ($canDoneJoTimer && !$rowTimerLocked): ?>
+                                            <button
+                                                type="button"
+                                                id="jo-timer-done-<?php echo $jo['id']; ?>"
+                                                class="btn btn-outline-danger btn-sm jo-timer-btn"
+                                                onclick="controlJoTimer(<?php echo $jo['id']; ?>, 'done', this)">
+                                                Done
+                                            </button>
+                                            <?php endif; ?>
+                                        </div>
+                                        <?php endif; ?>
+                                    </div>
+                                </td>
                                 <td>
                                     <div class="btn-group btn-group-sm">
                                         <!-- View — always visible -->
                                         <button class="btn btn-outline-secondary py-0 px-2" onclick="viewJobOrder(<?php echo $jo['id']; ?>)" title="View">
                                             <i class="bi bi-eye"></i>
                                         </button>
-                                        <?php if (!$isTechnician): ?>
+                                        <?php if ($canEditJobOrder): ?>
                                         <button class="btn btn-outline-dark py-0 px-2" onclick="editJobOrder(<?php echo $jo['id']; ?>)" title="Edit">
                                             <i class="bi bi-pencil"></i>
                                         </button>
@@ -817,6 +1004,21 @@ include_once '../partials/header.php';
         </div>
 
         <script>
+        const canEditJoStatus = <?php echo $canEditJoStatus ? 'true' : 'false'; ?>;
+        const canStartJoTimer = <?php echo $canStartJoTimer ? 'true' : 'false'; ?>;
+        const canStopJoTimer = <?php echo $canStopJoTimer ? 'true' : 'false'; ?>;
+        const canDoneJoTimer = <?php echo $canDoneJoTimer ? 'true' : 'false'; ?>;
+
+        function updateJoRowHighlight(id, status) {
+            const row = document.getElementById('jo-row-' + id);
+            if (!row) return;
+            if (status === 'under_inspection') {
+                row.classList.add('jo-row-under-inspection');
+            } else {
+                row.classList.remove('jo-row-under-inspection');
+            }
+        }
+
         function deleteJobOrder(id) {
             appConfirm('Delete this job order? This cannot be undone.', {
                 title: 'Delete Job Order',
@@ -834,6 +1036,172 @@ include_once '../partials/header.php';
                 .catch(() => alert('Network error'));
             });
         }
+
+        function updateJoStatusInline(id, status, selectEl) {
+            const prevValue = selectEl?.dataset.prev || 'pending';
+            if (!canEditJoStatus) {
+                if (selectEl) selectEl.value = prevValue;
+                alert('You are not allowed to update job order status.');
+                return;
+            }
+            if (selectEl) selectEl.disabled = true;
+
+            fetch('<?php echo APP_URL; ?>/api/job_orders.php?id=' + id, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ csrf_token: '<?php echo generateCSRFToken(); ?>', status })
+            })
+            .then(r => r.json())
+            .then(d => {
+                if (!d.success) {
+                    if (selectEl) selectEl.value = prevValue;
+                    alert('Error: ' + d.message);
+                    return;
+                }
+
+                const timerEl = document.getElementById('jo-status-timer-' + id);
+                const timerWrapEl = document.getElementById('jo-status-timer-wrap-' + id);
+                if (timerEl && timerWrapEl) {
+                    const isRunningStatus = status === 'ongoing' || status === 'under_inspection';
+                    const isCompleted = status === 'completed';
+
+                    timerEl.dataset.running = isRunningStatus ? '1' : '0';
+                    timerWrapEl.style.display = (isRunningStatus || isCompleted) ? '' : 'none';
+                    setJoTimerControlsState(id, isRunningStatus);
+                }
+
+                updateJoRowHighlight(id, status);
+
+                if (selectEl) selectEl.dataset.prev = status;
+            })
+            .catch(() => {
+                if (selectEl) selectEl.value = prevValue;
+                alert('Network error while updating status.');
+            })
+            .finally(() => {
+                if (selectEl) selectEl.disabled = false;
+            });
+        }
+
+        function isJoTimerLocked(id) {
+            const statusSelect = document.getElementById('jo-status-select-' + id);
+            return !!statusSelect && statusSelect.value === 'completed';
+        }
+
+        function setJoTimerControlsState(id, isRunning) {
+            const startBtn = document.getElementById('jo-timer-start-' + id);
+            const stopBtn = document.getElementById('jo-timer-stop-' + id);
+            const doneBtn = document.getElementById('jo-timer-done-' + id);
+            const controlsWrap = document.getElementById('jo-timer-controls-' + id);
+            const isLocked = isJoTimerLocked(id);
+            if (controlsWrap) {
+                controlsWrap.style.display = isLocked ? 'none' : '';
+            }
+            if (startBtn) startBtn.disabled = isLocked || !!isRunning;
+            if (stopBtn) stopBtn.disabled = isLocked || !isRunning;
+            if (doneBtn) doneBtn.disabled = isLocked;
+        }
+
+        function controlJoTimer(id, action, btnEl) {
+            const timerEl = document.getElementById('jo-status-timer-' + id);
+            if (!timerEl) return;
+            if (action === 'start' && !canStartJoTimer) {
+                alert('You are not allowed to start the timer.');
+                return;
+            }
+            if (action === 'stop' && !canStopJoTimer) {
+                alert('You are not allowed to stop the timer.');
+                return;
+            }
+            if (action === 'done' && !canDoneJoTimer) {
+                alert('You are not allowed to mark this job as done.');
+                return;
+            }
+            if (isJoTimerLocked(id)) {
+                alert('Completed job order timer is locked and cannot be edited.');
+                return;
+            }
+
+            const startBtn = document.getElementById('jo-timer-start-' + id);
+            const stopBtn = document.getElementById('jo-timer-stop-' + id);
+            const doneBtn = document.getElementById('jo-timer-done-' + id);
+            if (startBtn) startBtn.disabled = true;
+            if (stopBtn) stopBtn.disabled = true;
+            if (doneBtn) doneBtn.disabled = true;
+
+            fetch('<?php echo APP_URL; ?>/api/job_orders.php?id=' + id, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    csrf_token: '<?php echo generateCSRFToken(); ?>',
+                    timer_action: action
+                })
+            })
+            .then(r => r.json())
+            .then(d => {
+                if (!d.success) {
+                    alert('Error: ' + d.message);
+                    return;
+                }
+
+                const isRunning = typeof d?.data?.status_timer_is_running !== 'undefined'
+                    ? !!d.data.status_timer_is_running
+                    : (action === 'start');
+                timerEl.dataset.running = isRunning ? '1' : '0';
+                if (typeof d?.data?.status_elapsed_seconds !== 'undefined') {
+                    timerEl.dataset.seconds = String(parseInt(d.data.status_elapsed_seconds, 10) || 0);
+                    timerEl.textContent = formatRowTimer(timerEl.dataset.seconds);
+                }
+
+                if (action === 'done') {
+                    const statusSelect = document.getElementById('jo-status-select-' + id);
+                    if (statusSelect) {
+                        statusSelect.value = 'under_inspection';
+                        statusSelect.dataset.prev = 'under_inspection';
+                    }
+                    updateJoRowHighlight(id, 'under_inspection');
+                }
+
+                setJoTimerControlsState(id, isRunning);
+            })
+            .catch(() => alert('Network error while controlling timer.'))
+            .finally(() => {
+                const isRunningNow = timerEl.dataset.running === '1';
+                setJoTimerControlsState(id, isRunningNow);
+            });
+        }
+
+        function formatRowTimer(totalSeconds) {
+            const sec = Math.max(0, parseInt(totalSeconds, 10) || 0);
+            const hours = String(Math.floor(sec / 3600)).padStart(2, '0');
+            const minutes = String(Math.floor((sec % 3600) / 60)).padStart(2, '0');
+            const seconds = String(sec % 60).padStart(2, '0');
+            return `${hours}:${minutes}:${seconds}`;
+        }
+
+        function renderJoRowTimers() {
+            document.querySelectorAll('.jo-status-timer').forEach((timerEl) => {
+                const seconds = parseInt(timerEl.dataset.seconds || '0', 10) || 0;
+                timerEl.textContent = formatRowTimer(seconds);
+                const id = (timerEl.id || '').replace('jo-status-timer-', '');
+                if (id) {
+                    setJoTimerControlsState(id, timerEl.dataset.running === '1');
+                }
+            });
+        }
+
+        function tickJoRowTimers() {
+            document.querySelectorAll('.jo-status-timer').forEach((timerEl) => {
+                if (timerEl.dataset.running === '1') {
+                    const next = (parseInt(timerEl.dataset.seconds || '0', 10) || 0) + 1;
+                    timerEl.dataset.seconds = String(next);
+                    timerEl.textContent = formatRowTimer(next);
+                }
+            });
+        }
+
+        renderJoRowTimers();
+        setInterval(tickJoRowTimers, 1000);
         </script>
     <?php endif; ?>
     
@@ -909,9 +1277,11 @@ include_once '../partials/header.php';
                                         <button class="btn btn-outline-primary py-0 px-2" onclick="printEstimate(<?php echo $est['id']; ?>)" title="Print">
                                             <i class="bi bi-printer"></i>
                                         </button>
+                                        <?php if ($canDeleteRecords): ?>
                                         <button class="btn btn-outline-danger py-0 px-2" onclick="deleteEstimate(<?php echo $est['id']; ?>)" title="Delete">
                                             <i class="bi bi-trash"></i>
                                         </button>
+                                        <?php endif; ?>
                                     </div>
                                 </td>
                             </tr>
@@ -1451,17 +1821,31 @@ include_once '../partials/header.php';
                         <!-- Technician -->
                         <div class="card mb-3" style="border:1.5px solid #e0e0e0;">
                             <div class="card-header" style="background:#fff;border-bottom:1.5px solid #e0e0e0;padding:10px 15px;">
-                                <h6 class="mb-0" style="font-weight:600;"><i class="bi bi-tools me-1"></i>Technician</h6>
+                                <h6 class="mb-0" style="font-weight:600;"><i class="bi bi-tools me-1"></i>Technicians</h6>
                             </div>
                             <div class="card-body" style="padding:15px;">
-                                <select class="form-select form-select-sm" id="jo_technician">
-                                    <option value="">— Unassigned —</option>
+                                <div id="jo_technicians" class="border rounded p-2" style="max-height:140px;overflow:auto;background:#fff;">
                                     <?php foreach ($allTechnicians as $tech): ?>
-                                    <option value="<?php echo $tech['id']; ?>" data-name="<?php echo escape($tech['full_name']); ?>">
-                                        <?php echo escape($tech['full_name']); ?>
-                                    </option>
+                                    <div class="form-check mb-1">
+                                        <input
+                                            class="form-check-input jo-tech-check"
+                                            type="checkbox"
+                                            value="<?php echo $tech['id']; ?>"
+                                            id="jo_tech_<?php echo $tech['id']; ?>"
+                                            data-name="<?php echo escape($tech['full_name']); ?>"
+                                            onchange="joUpdateTechnicianIndicator()"
+                                        >
+                                        <label class="form-check-label small" for="jo_tech_<?php echo $tech['id']; ?>">
+                                            <?php echo escape($tech['full_name']); ?>
+                                        </label>
+                                    </div>
                                     <?php endforeach; ?>
-                                </select>
+                                </div>
+                                <div class="d-flex align-items-center justify-content-between mt-2">
+                                    <small class="text-muted">You can assign one or more technicians.</small>
+                                    <span id="joTechCountBadge" class="badge bg-secondary">0 selected</span>
+                                </div>
+                                <div id="joTechSelectedNames" class="small mt-2 text-muted">No technician assigned.</div>
                             </div>
                         </div>
 
@@ -2004,6 +2388,29 @@ function joCalcPartial() {
     document.getElementById('joRemainingBalance').textContent = fmt(remaining);
 }
 
+function getSelectedTechnicianIds() {
+    return Array.from(document.querySelectorAll('.jo-tech-check:checked'))
+        .map((check) => parseInt(check.value, 10))
+        .filter((id) => Number.isInteger(id) && id > 0);
+}
+
+function joUpdateTechnicianIndicator() {
+    const badge = document.getElementById('joTechCountBadge');
+    const namesEl = document.getElementById('joTechSelectedNames');
+    if (!badge || !namesEl) return;
+
+    const selectedChecks = Array.from(document.querySelectorAll('.jo-tech-check:checked'));
+    const count = selectedChecks.length;
+    const names = selectedChecks
+        .map((check) => (check.dataset.name || '').trim())
+        .filter(Boolean);
+
+    badge.textContent = `${count} selected`;
+    badge.className = 'badge bg-secondary';
+    namesEl.textContent = count > 0 ? names.join(', ') : 'No technician assigned.';
+    namesEl.className = 'small mt-2 text-muted';
+}
+
 function joSave() {
     const name  = document.getElementById('jo_customer_name').value.trim();
     const phone = document.getElementById('jo_customer_phone').value.trim();
@@ -2022,7 +2429,8 @@ function joSave() {
         vehicle_license:  document.getElementById('jo_vehicle_plate').value.trim(),
         vehicle_color:    document.getElementById('jo_vehicle_color').value.trim(),
         vehicle_mileage:  document.getElementById('jo_vehicle_mileage').value.trim(),
-        technician_id:    document.getElementById('jo_technician').value,
+        status:           joEditingId ? (joEditingStatus || 'pending') : 'pending',
+        technician_ids:   getSelectedTechnicianIds(),
         discount_type:    document.getElementById('jo_discount_type').value,
         discount_value:   document.getElementById('jo_discount_value').value,
         parts_cost:       joProducts.reduce((s, p) => s + p.price * p.qty, 0),
@@ -2043,9 +2451,6 @@ function joSave() {
     };
 
     const isEditMode = !!joEditingId;
-    if (isEditMode) {
-        payload.status = joEditingStatus || 'pending';
-    }
 
     const url = isEditMode
         ? `${APP_URL}/api/job_orders.php?id=${joEditingId}`
@@ -2081,6 +2486,8 @@ function joReset() {
     joRenderProducts();
     joCalc();
     document.getElementById('joForm').reset();
+    Array.from(document.querySelectorAll('.jo-tech-check')).forEach((check) => { check.checked = false; });
+    joUpdateTechnicianIndicator();
     document.getElementById('joPartialRow').style.display = 'none';
     document.getElementById('joRemainingBalance').textContent = '₱0.00';
     joSetMode(false);
@@ -2097,8 +2504,10 @@ function joPrintPreview() {
     const plate   = document.getElementById('jo_vehicle_plate').value.trim() || '—';
     const color   = document.getElementById('jo_vehicle_color').value.trim() || '—';
     const mileage = document.getElementById('jo_vehicle_mileage').value.trim() || '—';
-    const techSel = document.getElementById('jo_technician');
-    const techName = techSel.options[techSel.selectedIndex]?.dataset.name || 'Unassigned';
+    const techNames = Array.from(document.querySelectorAll('.jo-tech-check:checked'))
+        .map((check) => (check.dataset.name || '').trim())
+        .filter(Boolean);
+    const techName = techNames.length ? techNames.join(', ') : 'Unassigned';
     const notes   = document.getElementById('jo_notes').value.trim() || '—';
     const payMethod = document.getElementById('jo_payment_method').value;
     const payStatus = document.getElementById('jo_payment_status').value;
@@ -2223,7 +2632,7 @@ function joPrintPreview() {
         <!-- Signatures + Technician — pinned to bottom -->
         <div style="position:fixed;bottom:15mm;left:0;right:0;">
             <div style="font-size:9pt;margin-bottom:10px;padding-top:6px;">
-                <strong>Assigned Technician:</strong> ${techName}
+                <strong>Assigned Technician(s):</strong> ${techName}
             </div>
             <table style="width:100%;border-collapse:collapse;font-size:9pt;">
                 <tr>
@@ -3055,19 +3464,6 @@ function saveEditBundle() {
                 </div>
                 <div class="card-body" style="padding:15px;">
                   <div class="mb-3">
-                    <label class="form-label form-label-sm">Job Order Status</label>
-                    <select class="form-select form-select-sm" id="editJoStatus">
-                      <option value="pending">Pending</option>
-                      <option value="ongoing">Ongoing</option>
-                      <option value="under_inspection">Under Inspection</option>
-                      <option value="for_approval">For Approval</option>
-                      <option value="completed">Completed</option>
-                      <option value="released">Released</option>
-                      <option value="returned_for_revision">Returned for Revision</option>
-                      <option value="cancelled">Cancelled</option>
-                    </select>
-                  </div>
-                  <div class="mb-3">
                     <label class="form-label form-label-sm">Payment Method</label>
                     <select class="form-select form-select-sm" id="editJoPayMethod">
                       <option value="cash">Cash</option>
@@ -3236,9 +3632,17 @@ function viewJobOrder(id) {
             if (!res.success) { document.getElementById('viewJoBody').innerHTML = '<p class="text-danger p-3">'+res.message+'</p>'; return; }
             const d   = res.data;
             const fmt = v => '₱' + parseFloat(v||0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,',');
-            const statusBadge = {pending:'secondary',ongoing:'primary',under_inspection:'info',for_approval:'warning',completed:'success',released:'success',returned_for_revision:'danger',cancelled:'danger'};
+            const statusBadge = {pending:'secondary',ongoing:'primary',under_inspection:'info',completed:'success',released:'success',returned_for_revision:'danger',cancelled:'danger'};
             const payBadge    = {pending:'secondary',partial:'warning',paid:'success'};
             const date = d.created_at ? new Date(d.created_at).toLocaleDateString('en-PH',{year:'numeric',month:'long',day:'numeric'}) : '—';
+            const assignedTechnicians = Array.isArray(d.technicians) && d.technicians.length
+                ? d.technicians.map((t) => t.full_name).filter(Boolean).join(', ')
+                : (d.assigned_technician_name || 'Unassigned');
+            const elapsedSec = parseInt(d.status_elapsed_seconds ?? d.status_timer_seconds ?? 0, 10) || 0;
+            const elapsedH = String(Math.floor(elapsedSec / 3600)).padStart(2, '0');
+            const elapsedM = String(Math.floor((elapsedSec % 3600) / 60)).padStart(2, '0');
+            const elapsedS = String(elapsedSec % 60).padStart(2, '0');
+            const recordedWorkTime = `${elapsedH}:${elapsedM}:${elapsedS}`;
 
             document.getElementById('viewJoBody').innerHTML = `
             <div style="font-family:Arial,sans-serif;font-size:10pt;color:#000;padding:10px;">
@@ -3274,6 +3678,14 @@ function viewJobOrder(id) {
                 <div><small class="text-muted d-block">Method</small><span class="badge bg-dark">${(d.payment_method||'—').replace(/_/g,' ')}</span></div>
                 ${d.payment_status==='partial' ? `<div><small class="text-muted d-block">Paid</small><strong class="text-success">${fmt(d.partial_amount)}</strong></div><div><small class="text-muted d-block">Balance</small><strong class="text-danger">${fmt(parseFloat(d.total_amount||0)-parseFloat(d.partial_amount||0))}</strong></div>` : ''}
               </div>
+                            <div class="mb-3" style="font-size:9pt;">
+                                <small class="text-muted d-block">Assigned Technician(s)</small>
+                                <strong>${assignedTechnicians}</strong>
+                            </div>
+                            <div class="mb-3" style="font-size:9pt;">
+                                <small class="text-muted d-block">Recorded Work Time</small>
+                                <strong>${recordedWorkTime}</strong>
+                            </div>
               <!-- Services / Items table -->
               <div style="font-size:8.5pt;font-weight:700;letter-spacing:.5px;margin-bottom:4px;">SERVICES / ITEMS</div>
               <table style="width:100%;border-collapse:collapse;margin-bottom:0;font-size:9pt;">
@@ -3424,7 +3836,19 @@ function editJobOrder(id) {
             document.getElementById('jo_payment_method').value   = d.payment_method    || 'cash';
             document.getElementById('jo_payment_status').value   = d.payment_status    || 'pending';
             document.getElementById('jo_notes').value            = d.notes             || '';
-            document.getElementById('jo_technician').value       = d.service_adviser_id || '';
+            const statusAliases = {
+                for_approval: 'under_inspection',
+                return_for_revision: 'returned_for_revision'
+            };
+            const normalizedStatus = statusAliases[d.status] || d.status || 'pending';
+            const selectedIds = Array.isArray(d.technician_ids) && d.technician_ids.length
+                ? d.technician_ids.map((v) => parseInt(v, 10))
+                : (d.service_adviser_id ? [parseInt(d.service_adviser_id, 10)] : []);
+            Array.from(document.querySelectorAll('.jo-tech-check')).forEach((check) => {
+                const checkId = parseInt(check.value, 10);
+                check.checked = selectedIds.includes(checkId);
+            });
+            joUpdateTechnicianIndicator();
 
             if (d.payment_status === 'partial') {
                 document.getElementById('joPartialRow').style.display = 'block';
@@ -3461,6 +3885,10 @@ function editJobOrder(id) {
         })
         .catch(() => alert('Failed to load job order.'));
 }
+
+document.addEventListener('DOMContentLoaded', function () {
+    joUpdateTechnicianIndicator();
+});
 </script>
 
 <script>
@@ -3481,7 +3909,7 @@ function saveEditJobOrder() {
         vehicle_license:  document.getElementById('editJoPlate').value.trim(),
         vehicle_color:    document.getElementById('editJoColor').value.trim(),
         vehicle_mileage:  document.getElementById('editJoMileage').value.trim(),
-        status:           document.getElementById('editJoStatus').value,
+        status:           joEditingStatus || 'pending',
         payment_method:   document.getElementById('editJoPayMethod').value,
         payment_status:   document.getElementById('editJoPayStatus').value,
         partial_amount:   parseFloat(document.getElementById('editJoPartialAmount').value) || 0,
@@ -3531,6 +3959,8 @@ function printJobOrder(id) {
             const partialAmt = parseFloat(d.partial_amount || 0);
             const remaining  = d.payment_status === 'partial' ? Math.max(0, total - partialAmt) : 0;
             const assignedTechnician = d.assigned_technician_name || 'Unassigned';
+            const recordedSec = parseInt(d.status_elapsed_seconds ?? d.status_timer_seconds ?? 0, 10) || 0;
+            const recordedTime = `${String(Math.floor(recordedSec / 3600)).padStart(2, '0')}:${String(Math.floor((recordedSec % 3600) / 60)).padStart(2, '0')}:${String(recordedSec % 60).padStart(2, '0')}`;
 
             // Build item rows — same style as joPrintPreview
             let itemRows = '';
@@ -3635,6 +4065,7 @@ function printJobOrder(id) {
         <div style="position:fixed;bottom:15mm;left:0;right:0;">
             <div style="font-size:9pt;margin-bottom:10px;padding-top:6px;">
                 <strong>Assigned Technician:</strong> ${assignedTechnician}
+                <span style="margin-left:12px;"><strong>Recorded Work Time:</strong> ${recordedTime}</span>
             </div>
             <table style="width:100%;border-collapse:collapse;font-size:9pt;">
                 <tr>

@@ -19,9 +19,13 @@ if (!isLoggedIn()) {
     jsonResponse(['success' => false, 'message' => 'Unauthorized access'], 401);
 }
 
-if (!hasRole('Admin')) {
+if (!hasAnyRole(['admin', 'cashier', 'chief_mechanic', 'service_adviser'])) {
     jsonResponse(['success' => false, 'message' => 'Insufficient permissions'], 403);
 }
+
+$currentRole = $_SESSION['user_role'] ?? '';
+$isCashier = ($currentRole === 'cashier');
+$canManageStaff = hasAnyRole(['admin', 'cashier']);
 
 $staffModel = new Staff();
 $method = $_SERVER['REQUEST_METHOD'];
@@ -38,14 +42,23 @@ try {
             break;
         
         case 'POST':
+            if (!$canManageStaff) {
+                jsonResponse(['success' => false, 'message' => 'Insufficient permissions'], 403);
+            }
             handlePost($staffModel);
             break;
         
         case 'PUT':
+            if (!$canManageStaff) {
+                jsonResponse(['success' => false, 'message' => 'Insufficient permissions'], 403);
+            }
             handlePut($staffModel);
             break;
         
         case 'DELETE':
+            if (!$canManageStaff) {
+                jsonResponse(['success' => false, 'message' => 'Insufficient permissions'], 403);
+            }
             handleDelete($staffModel);
             break;
         
@@ -71,6 +84,42 @@ function handleGet($staffModel) {
         
         // Remove password from response
         unset($staff['password']);
+
+        $staff['assigned_job_orders'] = [];
+        if (($staff['role'] ?? '') === 'technician') {
+            $db = Database::getInstance();
+            $assignedJobOrders = $db->fetchAll(
+                "SELECT jo.id,
+                        jo.job_order_number,
+                        jo.status,
+                        jo.created_at,
+                        jo.status_timer_seconds,
+                        jo.status_timer_started_at,
+                        c.full_name AS customer_name,
+                        v.plate_number
+                 FROM job_orders jo
+                 INNER JOIN job_order_technicians jot ON jot.job_order_id = jo.id
+                 LEFT JOIN customers c ON c.id = jo.customer_id
+                 LEFT JOIN vehicles v ON v.id = jo.vehicle_id
+                 WHERE jot.technician_id = ?
+                 ORDER BY jo.created_at DESC",
+                [(int)$staff['id']]
+            );
+
+            foreach ($assignedJobOrders as &$jo) {
+                $elapsedSeconds = (int)($jo['status_timer_seconds'] ?? 0);
+                if (in_array($jo['status'] ?? '', ['ongoing', 'under_inspection'], true) && !empty($jo['status_timer_started_at'])) {
+                    $elapsedSeconds += max(0, time() - strtotime($jo['status_timer_started_at']));
+                }
+                $hours = floor($elapsedSeconds / 3600);
+                $minutes = floor(($elapsedSeconds % 3600) / 60);
+                $seconds = $elapsedSeconds % 60;
+                $jo['elapsed_display'] = sprintf('%02d:%02d:%02d', $hours, $minutes, $seconds);
+            }
+            unset($jo);
+
+            $staff['assigned_job_orders'] = $assignedJobOrders;
+        }
         
         jsonResponse(['success' => true, 'data' => $staff]);
     }
@@ -103,6 +152,7 @@ function handleGet($staffModel) {
  * Handle POST requests (Create)
  */
 function handlePost($staffModel) {
+    global $isCashier;
     // Validate required fields
     $requiredFields = ['full_name', 'password', 'email', 'contact_number', 'role'];
     foreach ($requiredFields as $field) {
@@ -132,9 +182,12 @@ function handlePost($staffModel) {
     }
 
     // Validate role value
-    $allowedRoles = ['cashier', 'chief_mechanic', 'service_adviser', 'lead_man', 'technician'];
+    $allowedRoles = ['admin', 'cashier', 'chief_mechanic', 'service_adviser', 'technician'];
     if (!in_array($_POST['role'], $allowedRoles, true)) {
         jsonResponse(['success' => false, 'message' => 'Invalid staff role'], 400);
+    }
+    if ($_POST['role'] === 'admin' && !hasRole('admin')) {
+        jsonResponse(['success' => false, 'message' => 'Only admin can assign admin role'], 403);
     }
     
     // Handle profile image upload
@@ -182,6 +235,7 @@ function handlePost($staffModel) {
  * Handle PUT requests (Update)
  */
 function handlePut($staffModel) {
+    global $isCashier;
     // Parse PUT data or method-override POST data
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $_PUT = $_POST;
@@ -245,9 +299,12 @@ function handlePut($staffModel) {
     }
 
     // Validate role value
-    $allowedRoles = ['cashier', 'chief_mechanic', 'service_adviser', 'lead_man', 'technician'];
+    $allowedRoles = ['admin', 'cashier', 'chief_mechanic', 'service_adviser', 'technician'];
     if (!in_array($_PUT['role'], $allowedRoles, true)) {
         jsonResponse(['success' => false, 'message' => 'Invalid staff role'], 400);
+    }
+    if ($_PUT['role'] === 'admin' && !hasRole('admin')) {
+        jsonResponse(['success' => false, 'message' => 'Only admin can assign admin role'], 403);
     }
     
     // Handle profile image upload if provided
@@ -298,6 +355,10 @@ function handlePut($staffModel) {
  * Handle DELETE requests
  */
 function handleDelete($staffModel) {
+    global $isCashier;
+    if ($isCashier) {
+        jsonResponse(['success' => false, 'message' => 'Cashier is not allowed to delete staff records'], 403);
+    }
     // Get staff ID
     if (empty($_GET['id'])) {
         jsonResponse(['success' => false, 'message' => 'Staff ID is required'], 400);

@@ -54,9 +54,8 @@ class Database {
             $stmt->execute($params);
             return $stmt;
         } catch (PDOException $e) {
-            error_log("Query Error: " . $e->getMessage());
-            // Temporarily show detailed error for debugging
-            throw new Exception("Database query failed: " . $e->getMessage() . " | SQL: " . $sql);
+            error_log("Query Error: " . $e->getMessage() . " | SQL: " . $sql);
+            throw new Exception("Database query failed.");
         }
     }
 

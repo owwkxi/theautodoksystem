@@ -8,8 +8,11 @@ require_once __DIR__ . '/../../includes/security.php';
 
 requireLogin();
 
-// Technicians cannot access inventory
-if (($_SESSION['user_role'] ?? '') === 'technician') {
+$currentUserRole = $_SESSION['user_role'] ?? '';
+$isCashier = ($currentUserRole === 'cashier');
+
+// Only admin and cashier can access inventory
+if (!hasAnyRole(['admin', 'cashier'])) {
     redirect(APP_URL . '/views/services/manage.php?tab=job_orders');
 }
 
@@ -49,6 +52,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_GET['action'])) {
             $stmt->execute([sanitize($_POST['product_name']), $_POST['category_id']?:null, $_POST['brand_id']?:null, $_POST['unit_id']?:null, sanitize($_POST['description']??''), (float)$_POST['cost_price'], (float)$_POST['selling_price'], (int)($_POST['min_stock_level']??10), sanitize($_POST['status']), (int)$_POST['id']]);
             echo json_encode(['success'=>true,'message'=>'Product updated']);
         } elseif ($action === 'delete_product') {
+          if ($isCashier) {
+            throw new Exception('Cashier is not allowed to delete products');
+          }
             $db->prepare("DELETE FROM products WHERE id=?")->execute([(int)$_POST['id']]);
             echo json_encode(['success'=>true,'message'=>'Product deleted']);
         } elseif ($action === 'stock_in') {
@@ -72,6 +78,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_GET['action'])) {
             $db->prepare("UPDATE product_categories SET category_name=?,description=?,status=? WHERE id=?")->execute([sanitize($_POST['category_name']),sanitize($_POST['description']??''),sanitize($_POST['status']),(int)$_POST['id']]);
             echo json_encode(['success'=>true,'message'=>'Category updated']);
         } elseif ($action === 'delete_category') {
+          if ($isCashier) {
+            throw new Exception('Cashier is not allowed to delete categories');
+          }
             $db->prepare("DELETE FROM product_categories WHERE id=?")->execute([(int)$_POST['id']]);
             echo json_encode(['success'=>true,'message'=>'Category deleted']);
         } elseif ($action === 'add_supplier') {
@@ -81,6 +90,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_GET['action'])) {
             $db->prepare("UPDATE suppliers SET supplier_name=?,contact_person=?,phone=?,email=?,address=?,status=? WHERE id=?")->execute([sanitize($_POST['supplier_name']),sanitize($_POST['contact_person']??''),sanitize($_POST['phone']??''),sanitize($_POST['email']??''),sanitize($_POST['address']??''),sanitize($_POST['status']),(int)$_POST['id']]);
             echo json_encode(['success'=>true,'message'=>'Supplier updated']);
         } elseif ($action === 'delete_supplier') {
+          if ($isCashier) {
+            throw new Exception('Cashier is not allowed to delete suppliers');
+          }
             $db->prepare("DELETE FROM suppliers WHERE id=?")->execute([(int)$_POST['id']]);
             echo json_encode(['success'=>true,'message'=>'Supplier deleted']);
         } else {
@@ -224,7 +236,9 @@ include __DIR__ . '/../partials/header.php';
               <button class="btn btn-outline-success py-0 px-2" onclick="openStockIn(<?php echo $p['id']; ?>,'<?php echo addslashes(escape($p['product_name'])); ?>',<?php echo $p['quantity']; ?>)" title="Stock In"><i class="bi bi-plus-lg"></i></button>
               <button class="btn btn-outline-warning py-0 px-2" onclick="openStockOut(<?php echo $p['id']; ?>,'<?php echo addslashes(escape($p['product_name'])); ?>',<?php echo $p['quantity']; ?>)" title="Stock Out"><i class="bi bi-dash-lg"></i></button>
               <button class="btn btn-outline-dark py-0 px-2" onclick="openEditProduct(<?php echo htmlspecialchars(json_encode($p),ENT_QUOTES); ?>)" title="Edit"><i class="bi bi-pencil"></i></button>
+              <?php if (!$isCashier): ?>
               <button class="btn btn-outline-danger py-0 px-2" onclick="deleteProduct(<?php echo $p['id']; ?>)" title="Delete"><i class="bi bi-trash"></i></button>
+              <?php endif; ?>
             </div>
           </td>
         </tr>
@@ -252,7 +266,9 @@ include __DIR__ . '/../partials/header.php';
         <td>
           <div class="btn-group btn-group-sm">
             <button class="btn btn-outline-dark py-0 px-2" onclick="openEditCategory(<?php echo $c['id']; ?>,'<?php echo addslashes(escape($c['category_name'])); ?>','<?php echo addslashes(escape($c['description']??'')); ?>','<?php echo $c['status']; ?>')"><i class="bi bi-pencil"></i></button>
+            <?php if (!$isCashier): ?>
             <button class="btn btn-outline-danger py-0 px-2" onclick="deleteCategory(<?php echo $c['id']; ?>)"><i class="bi bi-trash"></i></button>
+            <?php endif; ?>
           </div>
         </td>
       </tr>
@@ -281,7 +297,9 @@ include __DIR__ . '/../partials/header.php';
         <td>
           <div class="btn-group btn-group-sm">
             <button class="btn btn-outline-dark py-0 px-2" onclick="openEditSupplier(<?php echo htmlspecialchars(json_encode($s),ENT_QUOTES); ?>)"><i class="bi bi-pencil"></i></button>
+            <?php if (!$isCashier): ?>
             <button class="btn btn-outline-danger py-0 px-2" onclick="deleteSupplier(<?php echo $s['id']; ?>)"><i class="bi bi-trash"></i></button>
+            <?php endif; ?>
           </div>
         </td>
       </tr>

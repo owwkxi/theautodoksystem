@@ -27,6 +27,44 @@ $id              = $_GET['id'] ?? null;
 
 $response = ['success' => false, 'message' => '', 'data' => null];
 
+$allowedJoStatuses = ['pending', 'ongoing', 'under_inspection', 'completed', 'released', 'returned_for_revision', 'cancelled'];
+$runningJoStatuses = ['ongoing', 'under_inspection'];
+$activeJoStatuses = ['pending', 'ongoing', 'under_inspection', 'returned_for_revision'];
+
+$normalizeJoStatus = static function ($status) {
+    $clean = sanitize((string)$status);
+    $aliases = [
+        'for_approval' => 'under_inspection',
+        'return_for_revision' => 'returned_for_revision',
+    ];
+    return $aliases[$clean] ?? $clean;
+};
+
+$isAssignedTechnician = static function ($db, $jobOrderId, $technicianId): bool {
+    $row = $db->fetch(
+        "SELECT 1 AS found FROM job_order_technicians WHERE job_order_id = ? AND technician_id = ? LIMIT 1",
+        [$jobOrderId, $technicianId]
+    );
+    return (bool)$row;
+};
+
+$canViewJobOrder = static function ($db, $jobOrderId, $jobOrderStatus, $role, $userId) use ($activeJoStatuses, $isAssignedTechnician): bool {
+    if (in_array($role, ['admin', 'cashier'], true)) {
+        return true;
+    }
+
+    if ($role === 'chief_mechanic' || $role === 'service_adviser') {
+        return in_array($jobOrderStatus, $activeJoStatuses, true);
+    }
+
+    if ($role === 'technician') {
+        return in_array($jobOrderStatus, $activeJoStatuses, true)
+            && $isAssignedTechnician($db, (int)$jobOrderId, (int)$userId);
+    }
+
+    return false;
+};
+
 try {
     $db = Database::getInstance();
 
@@ -44,15 +82,45 @@ try {
                             v.brand AS vehicle_make, v.model AS vehicle_model,
                             v.year_model AS vehicle_year, v.plate_number AS vehicle_license,
                             v.color AS vehicle_color, v.mileage AS vehicle_mileage,
-                            sa.full_name AS assigned_technician_name
+                            COALESCE(
+                                NULLIF(GROUP_CONCAT(DISTINCT st.full_name ORDER BY st.full_name SEPARATOR ', '), ''),
+                                sa.full_name,
+                                'Unassigned'
+                            ) AS assigned_technician_name
                      FROM job_orders jo
                      LEFT JOIN customers c ON jo.customer_id = c.id
                      LEFT JOIN vehicles  v ON jo.vehicle_id  = v.id
+                     LEFT JOIN job_order_technicians jot ON jot.job_order_id = jo.id
+                     LEFT JOIN staff st ON st.id = jot.technician_id
                      LEFT JOIN staff     sa ON jo.service_adviser_id = sa.id
-                     WHERE jo.id = ?",
+                     WHERE jo.id = ?
+                     GROUP BY jo.id",
                     [$id]
                 );
                 if (!$jo) throw new Exception('Job order not found');
+                if (!$canViewJobOrder($db, (int)$jo['id'], (string)$jo['status'], $currentUserRole, $currentUserId)) {
+                    throw new Exception('Insufficient permissions');
+                }
+
+                $elapsedSeconds = (int)($jo['status_timer_seconds'] ?? 0);
+                $isTimerRunning = in_array($jo['status'], $runningJoStatuses, true) && !empty($jo['status_timer_started_at']);
+                if ($isTimerRunning) {
+                    $elapsedSeconds += max(0, time() - strtotime($jo['status_timer_started_at']));
+                }
+                $jo['status_elapsed_seconds'] = $elapsedSeconds;
+                $jo['status_timer_is_running'] = $isTimerRunning;
+
+                $techRows = $db->fetchAll(
+                    "SELECT DISTINCT s.id, s.full_name
+                     FROM job_order_technicians jot
+                     INNER JOIN staff s ON s.id = jot.technician_id
+                     WHERE jot.job_order_id = ?
+                     ORDER BY s.full_name ASC",
+                    [$id]
+                );
+                $jo['technicians'] = $techRows;
+                $jo['technician_ids'] = array_map(fn($t) => (int)$t['id'], $techRows);
+
                 // Attach services and products
                 $jo['services'] = $db->fetchAll(
                     "SELECT service_id, bundle_id, service_name, service_price, labor_cost, quantity, total FROM job_order_services WHERE job_order_id = ?",
@@ -66,6 +134,9 @@ try {
                 $response['success'] = true;
                 $response['data']    = $jo;
             } else {
+                if (!in_array($currentUserRole, ['admin', 'cashier'], true)) {
+                    throw new Exception('Insufficient permissions');
+                }
                 $filters = [
                     'status'         => $_GET['status']         ?? '',
                     'payment_status' => $_GET['payment_status'] ?? '',
@@ -83,6 +154,9 @@ try {
 
         // ── POST (create) ────────────────────────────────────────────────────
         case 'POST':
+            if (!in_array($currentUserRole, ['admin', 'cashier'], true)) {
+                throw new Exception('Insufficient permissions');
+            }
             $input = json_decode(file_get_contents('php://input'), true);
             if (!$input) throw new Exception('Invalid JSON payload');
 
@@ -201,7 +275,30 @@ try {
             if ($partialAmount < 0) $partialAmount = 0;
             if ($partialAmount > $total) $partialAmount = $total;
 
-            $serviceAdviserId = !empty($input['technician_id']) ? (int)$input['technician_id'] : null;
+            $status = $normalizeJoStatus($input['status'] ?? 'pending');
+            if (!in_array($status, $allowedJoStatuses, true)) {
+                $status = 'pending';
+            }
+
+            $now = date('Y-m-d H:i:s');
+            $statusTimerStartedAt = in_array($status, $runningJoStatuses, true) ? $now : null;
+            $workStartedAt = $status === 'ongoing' ? $now : null;
+            $inspectionStartedAt = $status === 'under_inspection' ? $now : null;
+            $completedAt = $status === 'completed' ? $now : null;
+
+            $technicianIds = [];
+            if (!empty($input['technician_ids']) && is_array($input['technician_ids'])) {
+                foreach ($input['technician_ids'] as $techId) {
+                    $idInt = (int)$techId;
+                    if ($idInt > 0) $technicianIds[] = $idInt;
+                }
+            } elseif (!empty($input['technician_id'])) {
+                $idInt = (int)$input['technician_id'];
+                if ($idInt > 0) $technicianIds[] = $idInt;
+            }
+            $technicianIds = array_values(array_unique($technicianIds));
+
+            $serviceAdviserId = !empty($technicianIds) ? (int)$technicianIds[0] : null;
 
             $db->query(
                 "INSERT INTO job_orders
@@ -209,8 +306,10 @@ try {
                      subtotal, labor_total, parts_total,
                      discount_type, discount_amount, discount_percentage,
                      partial_amount, total_amount, payment_method, payment_status,
-                     status, priority, notes, created_by)
-                 VALUES (?,?,?,?, ?,?,?, ?,?,?, ?,?,?,?, ?,?,?,?)",
+                     status, priority, notes, created_by,
+                     status_timer_seconds, status_timer_started_at,
+                     work_started_at, inspection_started_at, completed_at)
+                 VALUES (?,?,?,?, ?,?,?, ?,?,?, ?,?,?,?, ?,?,?,?, ?,?,?,?,?)",
                 [
                     $joNumber,
                     $customerId,
@@ -226,13 +325,27 @@ try {
                     $total,
                     sanitize($input['payment_method'] ?? 'cash'),
                     sanitize($input['payment_status'] ?? 'pending'),
-                    'pending',
+                    $status,
                     'normal',
                     sanitize($input['notes'] ?? ''),
                     $currentUserId,
+                    0,
+                    $statusTimerStartedAt,
+                    $workStartedAt,
+                    $inspectionStartedAt,
+                    $completedAt,
                 ]
             );
             $jobOrderId = $db->lastInsertId();
+
+            // ── 5b. Insert JO technician assignments ───────────────────────
+            foreach ($technicianIds as $techId) {
+                $db->query(
+                    "INSERT INTO job_order_technicians (job_order_id, technician_id, assigned_at, status)
+                     VALUES (?, ?, NOW(), 'assigned')",
+                    [$jobOrderId, $techId]
+                );
+            }
 
             // ── 6. Insert job_order_services ─────────────────────────────────
             foreach ($items as $item) {
@@ -296,13 +409,18 @@ try {
 
         // ── PUT (update) ───────────────────────────────────────────────────────
         case 'PUT':
+            if (!in_array($currentUserRole, ['admin', 'cashier'], true)) {
+                throw new Exception('Insufficient permissions');
+            }
             if (!$id) throw new Exception('Job order ID is required');
             $input = json_decode(file_get_contents('php://input'), true);
             if (!$input) throw new Exception('Invalid JSON payload');
 
             // Get current JO to find customer_id and vehicle_id
             $jo = $db->fetch(
-                "SELECT customer_id, vehicle_id, job_order_number, status, payment_status, payment_method
+                "SELECT customer_id, vehicle_id, job_order_number, status, payment_status, payment_method,
+                        status_timer_seconds, status_timer_started_at,
+                        work_started_at, inspection_started_at, completed_at
                  FROM job_orders WHERE id=?",
                 [$id]
             );
@@ -337,21 +455,88 @@ try {
             // Update job order status/payment/notes
             $editPartial = (float)($input['partial_amount'] ?? 0);
             if ($editPartial < 0) $editPartial = 0;
-            $serviceAdviserId = !empty($input['technician_id']) ? (int)$input['technician_id'] : null;
+
+            $technicianIds = [];
+            if (!empty($input['technician_ids']) && is_array($input['technician_ids'])) {
+                foreach ($input['technician_ids'] as $techId) {
+                    $idInt = (int)$techId;
+                    if ($idInt > 0) $technicianIds[] = $idInt;
+                }
+            } elseif (!empty($input['technician_id'])) {
+                $idInt = (int)$input['technician_id'];
+                if ($idInt > 0) $technicianIds[] = $idInt;
+            }
+            $technicianIds = array_values(array_unique($technicianIds));
+
+            $serviceAdviserId = !empty($technicianIds) ? (int)$technicianIds[0] : null;
+
+            $newStatus = $normalizeJoStatus($input['status'] ?? $jo['status'] ?? 'pending');
+            if (!in_array($newStatus, $allowedJoStatuses, true)) {
+                $newStatus = 'pending';
+            }
+
+            $now = date('Y-m-d H:i:s');
+            $timerSeconds = (int)($jo['status_timer_seconds'] ?? 0);
+            $timerStartedAt = $jo['status_timer_started_at'] ?? null;
+
+            $wasRunning = in_array($jo['status'], $runningJoStatuses, true) && !empty($timerStartedAt);
+            if ($wasRunning) {
+                $timerSeconds += max(0, strtotime($now) - strtotime($timerStartedAt));
+                $timerStartedAt = null;
+            }
+
+            if (in_array($newStatus, $runningJoStatuses, true)) {
+                $timerStartedAt = $now;
+            }
+
+            $workStartedAt = $jo['work_started_at'] ?? null;
+            $inspectionStartedAt = $jo['inspection_started_at'] ?? null;
+            $completedAt = $jo['completed_at'] ?? null;
+
+            if ($newStatus === 'ongoing' && empty($workStartedAt)) {
+                $workStartedAt = $now;
+            }
+            if ($newStatus === 'under_inspection' && empty($inspectionStartedAt)) {
+                $inspectionStartedAt = $now;
+            }
+            if ($newStatus === 'completed') {
+                $completedAt = $completedAt ?: $now;
+                $timerStartedAt = null;
+            } elseif (!empty($completedAt)) {
+                $completedAt = null;
+            }
+
             $db->query(
                 "UPDATE job_orders
-                 SET status=?, payment_status=?, payment_method=?, service_adviser_id=?, partial_amount=?, notes=?
+                 SET status=?, payment_status=?, payment_method=?, service_adviser_id=?, partial_amount=?, notes=?,
+                     status_timer_seconds=?, status_timer_started_at=?,
+                     work_started_at=?, inspection_started_at=?, completed_at=?
                  WHERE id=?",
                 [
-                    sanitize($input['status']         ?? $jo['status'] ?? 'pending'),
+                    $newStatus,
                     sanitize($input['payment_status'] ?? $jo['payment_status'] ?? 'pending'),
                     sanitize($input['payment_method'] ?? $jo['payment_method'] ?? 'cash'),
                     $serviceAdviserId,
                     $editPartial,
                     sanitize($input['notes']          ?? ''),
+                    $timerSeconds,
+                    $timerStartedAt,
+                    $workStartedAt,
+                    $inspectionStartedAt,
+                    $completedAt,
                     $id,
                 ]
             );
+
+            // Refresh technician assignments for this JO
+            $db->query("DELETE FROM job_order_technicians WHERE job_order_id=?", [$id]);
+            foreach ($technicianIds as $techId) {
+                $db->query(
+                    "INSERT INTO job_order_technicians (job_order_id, technician_id, assigned_at, status)
+                     VALUES (?, ?, NOW(), 'assigned')",
+                    [$id, $techId]
+                );
+            }
 
             // Update job_order_services if items provided
             if (isset($input['items']) && is_array($input['items'])) {
@@ -435,25 +620,231 @@ try {
             $response['message'] = 'Job order updated successfully';
             break;
 
+        // ── PATCH (status-only update from JO status row) ───────────────────
+        case 'PATCH':
+            if (!$id) throw new Exception('Job order ID is required');
+
+            $input = json_decode(file_get_contents('php://input'), true);
+            if (!$input) throw new Exception('Invalid JSON payload');
+            if (empty($input['csrf_token']) || !verifyCSRFToken($input['csrf_token'])) {
+                throw new Exception('Invalid CSRF token');
+            }
+
+            $jo = $db->fetch(
+                "SELECT job_order_number, status, status_timer_seconds, status_timer_started_at,
+                        work_started_at, inspection_started_at, completed_at
+                 FROM job_orders WHERE id=?",
+                [$id]
+            );
+            if (!$jo) throw new Exception('Job order not found');
+            if (!$canViewJobOrder($db, (int)$id, (string)$jo['status'], $currentUserRole, $currentUserId)) {
+                throw new Exception('Insufficient permissions');
+            }
+
+            $hasStatus = array_key_exists('status', $input);
+            $timerAction = sanitize($input['timer_action'] ?? '');
+            if (!$hasStatus && $timerAction === '') {
+                throw new Exception('No status or timer action provided');
+            }
+
+            if ($currentUserRole === 'service_adviser') {
+                $isStatusOnly = $hasStatus && $timerAction === '';
+                $isStartOnly = !$hasStatus && $timerAction === 'start';
+                $isStopOnly = !$hasStatus && $timerAction === 'stop';
+                if (!$isStatusOnly && !$isStartOnly && !$isStopOnly) {
+                    throw new Exception('Service adviser can only update status, start timer, or stop timer');
+                }
+            }
+
+            if ($currentUserRole === 'chief_mechanic') {
+                if ($hasStatus || !in_array($timerAction, ['start', 'stop'], true)) {
+                    throw new Exception('Chief mechanic can only start or stop timer');
+                }
+            }
+
+            if ($currentUserRole === 'technician') {
+                if ($hasStatus) {
+                    throw new Exception('Technician cannot update job order status');
+                }
+                if (!in_array($timerAction, ['stop', 'done'], true)) {
+                    throw new Exception('Technician can only stop timer or mark job done');
+                }
+                if (!$isAssignedTechnician($db, (int)$id, (int)$currentUserId)) {
+                    throw new Exception('You can only control timer for assigned job orders');
+                }
+            }
+
+            $targetStatusInput = $input['status'] ?? ($timerAction === 'done' ? 'under_inspection' : ($jo['status'] ?? 'pending'));
+            $newStatus = $normalizeJoStatus($targetStatusInput);
+            if (!in_array($newStatus, $allowedJoStatuses, true)) {
+                throw new Exception('Invalid job order status');
+            }
+
+            if ($timerAction === 'start' && !in_array($currentUserRole, ['admin', 'cashier', 'chief_mechanic', 'service_adviser'], true)) {
+                throw new Exception('Insufficient permissions');
+            }
+            if ($timerAction === 'done' && !in_array($currentUserRole, ['admin', 'cashier', 'technician'], true)) {
+                throw new Exception('Insufficient permissions');
+            }
+            if ($timerAction === 'stop' && !in_array($currentUserRole, ['admin', 'cashier', 'technician', 'chief_mechanic', 'service_adviser'], true)) {
+                throw new Exception('Insufficient permissions');
+            }
+            if ($timerAction !== '' && ($jo['status'] ?? '') === 'completed') {
+                throw new Exception('Completed job order timer is locked and cannot be edited');
+            }
+
+            $now = date('Y-m-d H:i:s');
+            $timerSeconds = (int)($jo['status_timer_seconds'] ?? 0);
+            $timerStartedAt = $jo['status_timer_started_at'] ?? null;
+
+            $workStartedAt = $jo['work_started_at'] ?? null;
+            $inspectionStartedAt = $jo['inspection_started_at'] ?? null;
+            $completedAt = $jo['completed_at'] ?? null;
+
+            if ($timerAction === 'start') {
+                if (empty($timerStartedAt)) {
+                    $timerStartedAt = $now;
+                }
+            } elseif ($timerAction === 'stop') {
+                if (!empty($timerStartedAt)) {
+                    $timerSeconds += max(0, strtotime($now) - strtotime($timerStartedAt));
+                    $timerStartedAt = null;
+                }
+            } elseif ($timerAction === 'done') {
+                $newStatus = 'under_inspection';
+                if (empty($inspectionStartedAt)) {
+                    $inspectionStartedAt = $now;
+                }
+                if (empty($timerStartedAt)) {
+                    $timerStartedAt = $now;
+                }
+            } else {
+                $wasRunning = in_array($jo['status'], $runningJoStatuses, true) && !empty($timerStartedAt);
+                if ($wasRunning) {
+                    $timerSeconds += max(0, strtotime($now) - strtotime($timerStartedAt));
+                    $timerStartedAt = null;
+                }
+
+                if (in_array($newStatus, $runningJoStatuses, true)) {
+                    $timerStartedAt = $now;
+                }
+
+                if ($newStatus === 'ongoing' && empty($workStartedAt)) {
+                    $workStartedAt = $now;
+                }
+                if ($newStatus === 'under_inspection' && empty($inspectionStartedAt)) {
+                    $inspectionStartedAt = $now;
+                }
+                if ($newStatus === 'completed') {
+                    $completedAt = $completedAt ?: $now;
+                    $timerStartedAt = null;
+                } elseif (!empty($completedAt)) {
+                    $completedAt = null;
+                }
+            }
+
+            $db->query(
+                "UPDATE job_orders
+                 SET status=?,
+                     status_timer_seconds=?, status_timer_started_at=?,
+                     work_started_at=?, inspection_started_at=?, completed_at=?
+                 WHERE id=?",
+                [
+                    $newStatus,
+                    $timerSeconds,
+                    $timerStartedAt,
+                    $workStartedAt,
+                    $inspectionStartedAt,
+                    $completedAt,
+                    $id,
+                ]
+            );
+
+            $elapsedSeconds = $timerSeconds;
+            if (!empty($timerStartedAt)) {
+                $elapsedSeconds += max(0, strtotime($now) - strtotime($timerStartedAt));
+            }
+
+            if ($timerAction !== '') {
+                logActivity($currentUserId, 'update_job_order_timer', "{$timerAction} timer for job order #{$jo['job_order_number']}");
+            } else {
+                logActivity($currentUserId, 'update_job_order_status', "Updated status for job order #{$jo['job_order_number']} to {$newStatus}");
+            }
+
+            if ($timerAction === 'done') {
+                $recipientIds = [];
+
+                $staffRecipients = $db->fetchAll(
+                    "SELECT id FROM staff WHERE status = 'active' AND role IN ('service_adviser', 'cashier', 'admin')"
+                );
+                foreach ($staffRecipients as $row) {
+                    $staffId = (int)($row['id'] ?? 0);
+                    if ($staffId > 0) {
+                        $recipientIds[] = $staffId;
+                    }
+                }
+
+                $adminUsers = $db->fetchAll(
+                    "SELECT id FROM users WHERE status = 'active' AND role = 'admin'"
+                );
+                foreach ($adminUsers as $row) {
+                    $userId = (int)($row['id'] ?? 0);
+                    if ($userId > 0) {
+                        $recipientIds[] = $userId;
+                    }
+                }
+
+                $recipientIds = array_values(array_unique(array_filter($recipientIds, fn($uid) => $uid !== (int)$currentUserId)));
+                $actorName = sanitize($_SESSION['full_name'] ?? $_SESSION['username'] ?? 'Technician');
+                foreach ($recipientIds as $recipientId) {
+                    $db->query(
+                        "INSERT INTO notifications (user_id, type, title, message, reference_type, reference_id, is_read)
+                         VALUES (?, 'job_status', ?, ?, 'job_order', ?, 0)",
+                        [
+                            $recipientId,
+                            'Job Order Ready for Inspection',
+                            "Job order #{$jo['job_order_number']} was marked done by {$actorName} and moved to Under Inspection.",
+                            (int)$id,
+                        ]
+                    );
+                }
+            }
+
+            $response['success'] = true;
+            $response['message'] = $timerAction === 'done'
+                ? 'Job order marked done and moved to under inspection'
+                : ($timerAction !== '' ? 'Job order timer updated successfully' : 'Job order status updated successfully');
+            $response['data'] = [
+                'status' => $newStatus,
+                'status_timer_is_running' => !empty($timerStartedAt),
+                'status_elapsed_seconds' => $elapsedSeconds,
+            ];
+            break;
+
         // ── DELETE ───────────────────────────────────────────────────────────
         case 'DELETE':
             if (!$id) throw new Exception('Job order ID is required');
             if ($currentUserRole !== 'admin') throw new Exception('Only admins can delete job orders');
 
-            $jo = $db->fetch("SELECT job_order_number FROM job_orders WHERE id=?", [$id]);
+            $jo = $db->fetch("SELECT job_order_number, status, payment_status FROM job_orders WHERE id=?", [$id]);
             if (!$jo) throw new Exception('Job order not found');
 
-            // Restore inventory for all products used in this JO
-            $joProds = $db->fetchAll(
-                "SELECT product_id, quantity FROM job_order_products WHERE job_order_id=? AND product_id IS NOT NULL",
-                [$id]
-            );
-            foreach ($joProds as $p) {
-                $db->query("UPDATE products SET quantity = quantity + ? WHERE id=?", [$p['quantity'], $p['product_id']]);
-                $db->query(
-                    "INSERT INTO inventory_transactions (product_id, transaction_type, quantity, reference_type, reference_id, notes, created_by) VALUES (?,?,?,?,?,?,?)",
-                    [$p['product_id'], 'return', $p['quantity'], 'job_order', $id, "JO #{$jo['job_order_number']} deleted", $currentUserId]
+            $shouldRestoreStock = !in_array($jo['status'], ['completed', 'released'], true)
+                && $jo['payment_status'] !== 'paid';
+
+            if ($shouldRestoreStock) {
+                // Restore inventory for all products used in this JO
+                $joProds = $db->fetchAll(
+                    "SELECT product_id, quantity FROM job_order_products WHERE job_order_id=? AND product_id IS NOT NULL",
+                    [$id]
                 );
+                foreach ($joProds as $p) {
+                    $db->query("UPDATE products SET quantity = quantity + ? WHERE id=?", [$p['quantity'], $p['product_id']]);
+                    $db->query(
+                        "INSERT INTO inventory_transactions (product_id, transaction_type, quantity, reference_type, reference_id, notes, created_by) VALUES (?,?,?,?,?,?,?)",
+                        [$p['product_id'], 'return', $p['quantity'], 'job_order', $id, "JO #{$jo['job_order_number']} deleted", $currentUserId]
+                    );
+                }
             }
 
             $db->query("DELETE FROM job_orders WHERE id=?", [$id]);

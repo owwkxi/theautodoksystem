@@ -299,6 +299,58 @@ async function viewStaff(id) {
           : '<span class="badge bg-danger">Inactive</span>';
 
       // Build content
+        const assignedJOs = Array.isArray(staff.assigned_job_orders)
+          ? staff.assigned_job_orders
+          : [];
+        const technicianJoList =
+          staff.role === "technician"
+            ? `
+                      <div class="col-12">
+                          <label class="form-label fw-bold small text-muted">Assigned Job Orders</label>
+                          ${assignedJOs.length === 0
+                            ? '<p class="mb-0 text-muted">No assigned job orders.</p>'
+                            : `
+                              <div class="table-responsive">
+                                  <table class="table table-sm table-hover align-middle mb-0" style="font-size:12px;">
+                                      <thead class="table-light">
+                                          <tr>
+                                              <th>JO #</th>
+                                              <th>Customer</th>
+                                              <th>Plate</th>
+                                              <th>Status</th>
+                                              <th>Recorded Time</th>
+                                              <th>Date</th>
+                                          </tr>
+                                      </thead>
+                                      <tbody>
+                                          ${assignedJOs.map((jo) => {
+                                              const statusLabel = String(jo.status || "").replaceAll("_", " ");
+                                              const createdDate = jo.created_at
+                                                ? new Date(jo.created_at).toLocaleDateString("en-US", {
+                                                    year: "numeric",
+                                                    month: "short",
+                                                    day: "numeric",
+                                                  })
+                                                : "N/A";
+                                              return `
+                                                  <tr>
+                                                      <td class="fw-semibold">${jo.job_order_number || "N/A"}</td>
+                                                      <td>${jo.customer_name || "N/A"}</td>
+                                                      <td>${jo.plate_number || "N/A"}</td>
+                                                      <td><span class="badge bg-secondary">${statusLabel || "N/A"}</span></td>
+                                                      <td class="fw-semibold">${jo.elapsed_display || "00:00:00"}</td>
+                                                      <td>${createdDate}</td>
+                                                  </tr>
+                                              `;
+                                          }).join("")}
+                                      </tbody>
+                                  </table>
+                              </div>
+                          `}
+                      </div>
+              `
+            : "";
+
       const content = `
                 <div class="text-center">
                     ${profileImageHtml}
@@ -346,6 +398,7 @@ async function viewStaff(id) {
                           day: "numeric",
                         })}</p>
                     </div>
+                    ${technicianJoList}
                 </div>
             `;
 

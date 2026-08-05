@@ -3,7 +3,13 @@ if (!defined('APP_ACCESS')) {
     die('Direct access not permitted');
 }
 $p = $_SERVER['PHP_SELF'];
-$isTechnician = ($_SESSION['user_role'] ?? '') === 'technician';
+$userRole = $_SESSION['user_role'] ?? '';
+$isTechnician = $userRole === 'technician';
+$isChiefMechanic = $userRole === 'chief_mechanic';
+$isServiceAdviser = $userRole === 'service_adviser';
+$isJobOrderOnlyRole = $isTechnician || $isChiefMechanic || $isServiceAdviser;
+$isAdminOrCashier = hasAnyRole(['admin', 'cashier']);
+$canOpenStaffManagement = hasAnyRole(['admin', 'cashier', 'chief_mechanic', 'service_adviser']);
 ?>
 <div class="sidebar">
 
@@ -21,27 +27,28 @@ $isTechnician = ($_SESSION['user_role'] ?? '') === 'technician';
     </div>
 
     <nav class="sidebar-nav">
+        <?php if (!$isTechnician): ?>
         <a href="<?php echo APP_URL; ?>/views/dashboard/index.php"
            class="nav-item <?php echo strpos($p, '/dashboard/') !== false ? 'active' : ''; ?>">
             <i class="bi bi-grid-fill"></i>
             <span>Dashboard</span>
         </a>
+        <?php endif; ?>
 
-        <?php if (!$isTechnician): ?>
+        <?php if ($isJobOrderOnlyRole): ?>
+        <a href="<?php echo APP_URL; ?>/views/services/manage.php"
+           class="nav-item <?php echo strpos($p, '/services/') !== false ? 'active' : ''; ?>">
+            <i class="bi bi-wrench"></i>
+            <span>Job Orders</span>
+        </a>
+        <?php else: ?>
         <a href="<?php echo APP_URL; ?>/views/services/manage.php"
            class="nav-item <?php echo strpos($p, '/services/') !== false ? 'active' : ''; ?>">
             <i class="bi bi-wrench"></i>
             <span>Services</span>
         </a>
-        <?php endif; ?>
 
-        <?php if ($isTechnician): ?>
-        <a href="<?php echo APP_URL; ?>/views/services/manage.php?tab=job_orders"
-           class="nav-item <?php echo strpos($p, '/services/') !== false ? 'active' : ''; ?>">
-            <i class="bi bi-file-earmark-text"></i>
-            <span>Job Orders</span>
-        </a>
-        <?php else: ?>
+        <?php if ($isAdminOrCashier): ?>
         <a href="<?php echo APP_URL; ?>/views/reports/index.php"
            class="nav-item <?php echo strpos($p, '/reports/') !== false ? 'active' : ''; ?>">
             <i class="bi bi-file-earmark-bar-graph"></i>
@@ -54,7 +61,7 @@ $isTechnician = ($_SESSION['user_role'] ?? '') === 'technician';
                 <span>Inventory</span>
           </a>
 
-          <?php if (hasAnyRole(['admin'])): ?>
+                                        <?php if ($canOpenStaffManagement): ?>
           <a href="<?php echo APP_URL; ?>/views/staff/index.php"
               class="nav-item <?php echo strpos($p, '/staff/') !== false ? 'active' : ''; ?>">
                 <i class="bi bi-people-fill"></i>
@@ -62,13 +69,14 @@ $isTechnician = ($_SESSION['user_role'] ?? '') === 'technician';
           </a>
           <?php endif; ?>
 
-        <?php if (hasAnyRole(['admin'])): ?>
+                <?php if (hasAnyRole(['admin', 'cashier'])): ?>
         <a href="<?php echo APP_URL; ?>/views/settings/index.php"
            class="nav-item <?php echo strpos($p, '/settings/') !== false ? 'active' : ''; ?>">
             <i class="bi bi-gear"></i>
             <span>Settings</span>
         </a>
         <?php endif; ?>
+                <?php endif; ?>
         <?php endif; ?>
     </nav>
 

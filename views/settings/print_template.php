@@ -7,7 +7,7 @@ require_once __DIR__ . '/../../includes/session.php';
 require_once __DIR__ . '/../../includes/security.php';
 
 requireLogin();
-requireAnyRole(['admin']);
+requireAnyRole(['admin', 'cashier']);
 
 $pageTitle = 'Print Template Settings';
 $current = getPrintTemplateSettings();
