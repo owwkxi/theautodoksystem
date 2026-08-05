@@ -11,6 +11,9 @@ require_once __DIR__ . '/../../models/Report.php';
 requireLogin();
 
 $isTechnician = ($_SESSION['user_role'] ?? '') === 'technician';
+if ($isTechnician) {
+    redirect(APP_URL . '/views/services/manage.php?tab=job_orders');
+}
 $pageTitle = 'Dashboard';
 
 $reportModel  = new Report();
@@ -22,6 +25,55 @@ $jobOrderModel = new JobOrder();
 if ($isTechnician) {
     $techId = $_SESSION['user_id'] ?? 0;
     $db = Database::getInstance();
+    $assignedTotalCountRow = $db->fetch(
+        "SELECT COUNT(DISTINCT jo.id) AS total_assigned
+         FROM job_orders jo
+         INNER JOIN job_order_technicians jot ON jot.job_order_id = jo.id
+         WHERE jot.technician_id = ?",
+        [$techId]
+    );
+    $assignedActiveCountRow = $db->fetch(
+        "SELECT COUNT(DISTINCT jo.id) AS active_assigned
+         FROM job_orders jo
+         INNER JOIN job_order_technicians jot ON jot.job_order_id = jo.id
+         WHERE jot.technician_id = ?
+           AND jo.status IN ('pending', 'ongoing', 'under_inspection', 'returned_for_revision')",
+        [$techId]
+    );
+    $assignedTotalJo = (int)($assignedTotalCountRow['total_assigned'] ?? 0);
+    $assignedActiveJo = (int)($assignedActiveCountRow['active_assigned'] ?? 0);
+
+    $assignedJobOrders = $db->fetchAll(
+        "SELECT jo.id,
+                jo.job_order_number,
+                jo.status,
+                jo.created_at,
+                jo.status_timer_seconds,
+                jo.status_timer_started_at,
+                c.full_name AS customer_name,
+                v.plate_number
+         FROM job_orders jo
+         INNER JOIN job_order_technicians jot ON jot.job_order_id = jo.id
+         LEFT JOIN customers c ON c.id = jo.customer_id
+         LEFT JOIN vehicles v ON v.id = jo.vehicle_id
+         WHERE jot.technician_id = ?
+         ORDER BY jo.created_at DESC",
+        [$techId]
+    );
+
+    $runningStatuses = ['ongoing', 'under_inspection'];
+    foreach ($assignedJobOrders as &$assignedJo) {
+        $elapsedSeconds = (int)($assignedJo['status_timer_seconds'] ?? 0);
+        if (in_array($assignedJo['status'], $runningStatuses, true) && !empty($assignedJo['status_timer_started_at'])) {
+            $elapsedSeconds += max(0, time() - strtotime($assignedJo['status_timer_started_at']));
+        }
+        $hours = floor($elapsedSeconds / 3600);
+        $minutes = floor(($elapsedSeconds % 3600) / 60);
+        $seconds = $elapsedSeconds % 60;
+        $assignedJo['elapsed_display'] = sprintf('%02d:%02d:%02d', $hours, $minutes, $seconds);
+    }
+    unset($assignedJo);
+
     $recentJobOrders = $db->fetchAll(
         "SELECT jo.* FROM job_orders jo
          INNER JOIN job_order_technicians jot ON jot.job_order_id = jo.id
@@ -53,6 +105,7 @@ $monthlyTrend = $monthlyVal > $previousMonthlyVal ? 'High' : 'Low';
 include __DIR__ . '/../partials/header.php';
 ?>
 
+<?php if (!$isTechnician): ?>
 <!-- Welcome banner -->
 <div class="welcome-banner">
     <?php echo $greeting; ?>, <?php echo $firstName; ?>!
@@ -65,7 +118,6 @@ include __DIR__ . '/../partials/header.php';
         <span class="qnav-label">Job Order</span>
         <i class="bi bi-chevron-right qnav-arrow"></i>
     </a>
-    <?php if (!$isTechnician): ?>
     <a href="<?php echo APP_URL; ?>/views/staff/index.php" class="qnav-card">
         <div class="qnav-icon"><i class="bi bi-people-fill"></i></div>
         <span class="qnav-label">Technician</span>
@@ -81,8 +133,81 @@ include __DIR__ . '/../partials/header.php';
         <span class="qnav-label">Reports</span>
         <i class="bi bi-chevron-right qnav-arrow"></i>
     </a>
-    <?php endif; ?>
 </div>
+<?php endif; ?>
+
+<?php if ($isTechnician): ?>
+<div class="card">
+    <div class="card-body p-0">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 px-3 py-2 border-bottom">
+            <h6 class="mb-0">My Job Orders</h6>
+            <div class="d-flex align-items-center gap-2">
+                <span class="badge bg-dark">Total: <?php echo (int)$assignedTotalJo; ?></span>
+                <span class="badge bg-primary">Active: <?php echo (int)$assignedActiveJo; ?></span>
+                <select id="techJoFilter" class="form-select form-select-sm" style="min-width: 170px;">
+                    <option value="all">All Status</option>
+                    <option value="pending">Pending</option>
+                    <option value="ongoing">Ongoing</option>
+                    <option value="under_inspection">Under Inspection</option>
+                    <option value="returned_for_revision">Returned for Revision</option>
+                    <option value="completed">Completed</option>
+                    <option value="released">Released</option>
+                    <option value="cancelled">Cancelled</option>
+                </select>
+            </div>
+        </div>
+        <?php if (empty($assignedJobOrders)): ?>
+        <div class="p-4 text-center text-muted">No assigned job orders found.</div>
+        <?php else: ?>
+        <div class="table-responsive">
+            <table class="table table-sm table-hover mb-0 align-middle" style="font-size: 13px;">
+                <thead class="table-light">
+                    <tr>
+                        <th class="px-3">JO #</th>
+                        <th>Customer</th>
+                        <th>Plate</th>
+                        <th>Status</th>
+                        <th>Recorded Time</th>
+                        <th>Date</th>
+                    </tr>
+                </thead>
+                <tbody id="techJoTableBody">
+                    <?php foreach ($assignedJobOrders as $assignedJo): ?>
+                    <?php
+                        $statusLabel = ucfirst(str_replace('_', ' ', $assignedJo['status']));
+                        $statusColor = 'secondary';
+                        if ($assignedJo['status'] === 'ongoing') {
+                            $statusColor = 'primary';
+                        } elseif ($assignedJo['status'] === 'under_inspection') {
+                            $statusColor = 'danger';
+                        } elseif ($assignedJo['status'] === 'completed' || $assignedJo['status'] === 'released') {
+                            $statusColor = 'success';
+                        } elseif ($assignedJo['status'] === 'returned_for_revision' || $assignedJo['status'] === 'cancelled') {
+                            $statusColor = 'warning';
+                        }
+                    ?>
+                    <tr data-status="<?php echo escape($assignedJo['status']); ?>">
+                        <td class="px-3 fw-semibold"><?php echo escape($assignedJo['job_order_number']); ?></td>
+                        <td><?php echo escape($assignedJo['customer_name'] ?? 'N/A'); ?></td>
+                        <td><?php echo escape($assignedJo['plate_number'] ?? 'N/A'); ?></td>
+                        <td>
+                            <span class="badge bg-<?php echo $statusColor; ?>"><?php echo escape($statusLabel); ?></span>
+                        </td>
+                        <td class="fw-semibold"><?php echo escape($assignedJo['elapsed_display']); ?></td>
+                        <td><?php echo !empty($assignedJo['created_at']) ? date('M d, Y', strtotime($assignedJo['created_at'])) : 'N/A'; ?></td>
+                    </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+        <div id="techJoEmptyState" class="p-3 text-center text-muted" style="display:none;">No job orders for selected filter.</div>
+        <?php endif; ?>
+        <div class="px-3 py-2 border-top text-end">
+            <a href="<?php echo APP_URL; ?>/views/services/manage.php?tab=job_orders" class="btn btn-dark btn-sm">Open Job Orders</a>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
 
 <!-- Income cards -->
 <?php if (!$isTechnician): ?>
@@ -153,6 +278,9 @@ include __DIR__ . '/../partials/header.php';
     }
 
     const canvas = document.getElementById('incomeChart');
+    if (!canvas) {
+        return;
+    }
     const ctx = canvas.getContext('2d');
 
     new Chart(ctx, {
@@ -215,6 +343,35 @@ include __DIR__ . '/../partials/header.php';
             }
         }
     });
+})();
+
+(function() {
+    const filterEl = document.getElementById('techJoFilter');
+    const tbody = document.getElementById('techJoTableBody');
+    const emptyEl = document.getElementById('techJoEmptyState');
+    if (!filterEl || !tbody) {
+        return;
+    }
+
+    function applyTechJoFilter() {
+        const selected = filterEl.value;
+        const rows = Array.from(tbody.querySelectorAll('tr[data-status]'));
+        let visibleCount = 0;
+
+        rows.forEach((row) => {
+            const status = row.getAttribute('data-status') || '';
+            const show = selected === 'all' || status === selected;
+            row.style.display = show ? '' : 'none';
+            if (show) visibleCount++;
+        });
+
+        if (emptyEl) {
+            emptyEl.style.display = visibleCount === 0 ? '' : 'none';
+        }
+    }
+
+    filterEl.addEventListener('change', applyTechJoFilter);
+    applyTechJoFilter();
 })();
 </script>
 
