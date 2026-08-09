@@ -288,45 +288,74 @@ class Report {
     /**
      * Get top customers
      */
-    public function getTopCustomers($limit = 10) {
+    public function getTopCustomers($limit = 10, $dateFrom = null, $dateTo = null) {
         $sql = "SELECT 
                     c.full_name as customer_name,
                     c.phone as customer_phone,
                     COUNT(jo.id) as total_visits,
                     SUM(jo.total_amount) as total_spent
                 FROM job_orders jo
-                INNER JOIN customers c ON jo.customer_id = c.id
+                INNER JOIN customers c ON jo.customer_id = c.id";
+
+        $params = [];
+        if ($dateFrom && $dateTo) {
+            $sql .= " WHERE DATE(jo.created_at) BETWEEN ? AND ?";
+            $params[] = $dateFrom;
+            $params[] = $dateTo;
+        }
+
+        $sql .= "
                 GROUP BY c.id, c.full_name, c.phone
                 ORDER BY total_spent DESC
                 LIMIT ?";
+
+        $params[] = (int)$limit;
         
-        return $this->db->fetchAll($sql, [(int)$limit]);
+        return $this->db->fetchAll($sql, $params);
     }
 
     /**
      * Get payment status summary
      */
-    public function getPaymentStatusSummary() {
+    public function getPaymentStatusSummary($dateFrom = null, $dateTo = null) {
         $sql = "SELECT 
                     payment_status,
                     COUNT(*) as count,
                     SUM(total_amount) as total_amount
-                FROM job_orders
+                FROM job_orders";
+
+        $params = [];
+        if ($dateFrom && $dateTo) {
+            $sql .= " WHERE DATE(created_at) BETWEEN ? AND ?";
+            $params[] = $dateFrom;
+            $params[] = $dateTo;
+        }
+
+        $sql .= "
                 GROUP BY payment_status
                 ORDER BY count DESC";
         
-        return $this->db->fetchAll($sql);
+        return $this->db->fetchAll($sql, $params);
     }
 
     /**
      * Get job order status summary
      */
-    public function getJobOrderStatusSummary() {
+    public function getJobOrderStatusSummary($dateFrom = null, $dateTo = null) {
         $sql = "SELECT 
                     status,
                     COUNT(*) as count,
                     SUM(total_amount) as total_amount
-                FROM job_orders
+                FROM job_orders";
+
+        $params = [];
+        if ($dateFrom && $dateTo) {
+            $sql .= " WHERE DATE(created_at) BETWEEN ? AND ?";
+            $params[] = $dateFrom;
+            $params[] = $dateTo;
+        }
+
+        $sql .= "
                 GROUP BY status
                 ORDER BY 
                     CASE status
@@ -336,23 +365,36 @@ class Report {
                         WHEN 'cancelled' THEN 4
                     END";
         
-        return $this->db->fetchAll($sql);
+        return $this->db->fetchAll($sql, $params);
     }
 
     /**
      * Get recent activity
      */
-    public function getRecentActivity($limit = 10) {
+    public function getRecentActivity($limit = 10, $activityDate = null) {
         $sql = "SELECT 
                     al.action,
                     al.description,
                     al.created_at,
-                    u.username
+                    COALESCE(NULLIF(u.username, ''), NULLIF(s.username, ''), NULLIF(s.full_name, ''), 'System') AS username
                 FROM activity_logs al
                 LEFT JOIN users u ON al.user_id = u.id
-                ORDER BY al.created_at DESC
-                LIMIT ?";
-        
-        return $this->db->fetchAll($sql, [(int)$limit]);
+                LEFT JOIN staff s ON al.user_id = s.id
+                WHERE 1=1";
+
+        $params = [];
+        $cleanDate = trim((string)$activityDate);
+        if ($cleanDate !== '') {
+            $sql .= " AND DATE(al.created_at) = ?";
+            $params[] = $cleanDate;
+        }
+
+        $sql .= " ORDER BY al.created_at DESC";
+        if ((int)$limit > 0) {
+            $sql .= " LIMIT ?";
+            $params[] = (int)$limit;
+        }
+
+        return $this->db->fetchAll($sql, $params);
     }
 }

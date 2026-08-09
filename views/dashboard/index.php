@@ -11,7 +11,9 @@ require_once __DIR__ . '/../../models/Report.php';
 requireLogin();
 
 $isTechnician = ($_SESSION['user_role'] ?? '') === 'technician';
-if ($isTechnician) {
+$isServiceAdviser = ($_SESSION['user_role'] ?? '') === 'service_adviser';
+$isChiefMechanic = ($_SESSION['user_role'] ?? '') === 'chief_mechanic';
+if ($isTechnician || $isServiceAdviser || $isChiefMechanic) {
     redirect(APP_URL . '/views/services/manage.php?tab=job_orders');
 }
 $pageTitle = 'Dashboard';
@@ -37,7 +39,7 @@ if ($isTechnician) {
          FROM job_orders jo
          INNER JOIN job_order_technicians jot ON jot.job_order_id = jo.id
          WHERE jot.technician_id = ?
-           AND jo.status IN ('pending', 'ongoing', 'under_inspection', 'returned_for_revision')",
+           AND jo.status IN ('pending', 'ongoing', 'under_inspection', 'car_washing', 'returned_for_revision')",
         [$techId]
     );
     $assignedTotalJo = (int)($assignedTotalCountRow['total_assigned'] ?? 0);
@@ -149,6 +151,7 @@ include __DIR__ . '/../partials/header.php';
                     <option value="pending">Pending</option>
                     <option value="ongoing">Ongoing</option>
                     <option value="under_inspection">Under Inspection</option>
+                    <option value="car_washing">Car Washing</option>
                     <option value="returned_for_revision">Returned for Revision</option>
                     <option value="completed">Completed</option>
                     <option value="released">Released</option>
@@ -180,6 +183,8 @@ include __DIR__ . '/../partials/header.php';
                             $statusColor = 'primary';
                         } elseif ($assignedJo['status'] === 'under_inspection') {
                             $statusColor = 'danger';
+                        } elseif ($assignedJo['status'] === 'car_washing') {
+                            $statusColor = 'warning';
                         } elseif ($assignedJo['status'] === 'completed' || $assignedJo['status'] === 'released') {
                             $statusColor = 'success';
                         } elseif ($assignedJo['status'] === 'returned_for_revision' || $assignedJo['status'] === 'cancelled') {

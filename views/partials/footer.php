@@ -15,6 +15,8 @@ if (!defined('APP_ACCESS')) {
 (function () {
     let baselineToken = null;
     let checking = false;
+    let pendingRefresh = false;
+    let pendingToken = null;
 
     function hasOpenModal() {
         return !!document.querySelector('.modal.show');
@@ -56,6 +58,10 @@ if (!defined('APP_ACCESS')) {
         });
     }
 
+    function isSafeToRefresh() {
+        return !hasOpenModal() && !hasActiveInputFocus() && !hasDirtyForm();
+    }
+
     async function fetchLiveToken() {
         const res = await fetch('<?php echo APP_URL; ?>/api/live_updates.php', {
             method: 'GET',
@@ -81,10 +87,17 @@ if (!defined('APP_ACCESS')) {
             }
 
             if (token !== baselineToken) {
-                if (hasOpenModal() || hasActiveInputFocus() || hasDirtyForm()) {
-                    baselineToken = token;
+                pendingRefresh = true;
+                pendingToken = token;
+            }
+
+            if (pendingRefresh) {
+                if (!isSafeToRefresh()) {
                     return;
                 }
+                baselineToken = pendingToken || token;
+                pendingRefresh = false;
+                pendingToken = null;
                 window.location.reload();
             }
         } catch (e) {
@@ -95,11 +108,20 @@ if (!defined('APP_ACCESS')) {
     }
 
     setTimeout(checkUpdates, 1200);
-    setInterval(checkUpdates, 12000);
+    setInterval(checkUpdates, 3000);
     document.addEventListener('visibilitychange', function () {
         if (!document.hidden) {
             checkUpdates();
         }
+    });
+
+    // If there is a pending refresh, trigger a quick re-check after user interaction ends.
+    ['input', 'change', 'blur'].forEach(function (evtName) {
+        document.addEventListener(evtName, function () {
+            if (pendingRefresh) {
+                setTimeout(checkUpdates, 150);
+            }
+        }, true);
     });
 })();
 </script>

@@ -6,14 +6,49 @@ defined('APP_ACCESS') or define('APP_ACCESS', true);
 define('DB_HOST', 'localhost');
 define('DB_USER', 'root');
 define('DB_PASS', '');
-define('DB_NAME', 'autodok_db');
+define('DB_NAME', 'autodok_prime_auto_services_db');
 define('DB_CHARSET', 'utf8mb4');
 
 // Application Configuration
-define('APP_NAME', 'The Autodok');
-define('APP_DESCRIPTION', 'Automotive Care Services');
+define('APP_NAME', 'Autodok Prime Auto Services');
+define('APP_DESCRIPTION', 'Prime Automotive Care Services');
+define('SHOP_BRANCH_NAME', 'autodok-prime-auto-services');
 define('APP_VERSION', '1.0.0');
 define('APP_URL', 'http://localhost/theautodoksystem');
+
+if (!function_exists('getShopOptions')) {
+	function getShopOptions() {
+		return [
+			'autodok_main' => [
+				'name' => 'The Autodok',
+				'db_name' => 'autodok_db',
+			],
+			'autodok_prime' => [
+				'name' => 'Autodok Prime Auto Services',
+				'db_name' => 'autodok_prime_auto_services_db',
+			],
+		];
+	}
+}
+
+if (!function_exists('resolveShopOption')) {
+	function resolveShopOption($shopKey) {
+		$options = getShopOptions();
+		$key = trim((string)$shopKey);
+		if ($key !== '' && isset($options[$key])) {
+			return ['key' => $key] + $options[$key];
+		}
+
+		foreach ($options as $candidateKey => $option) {
+			if (($option['db_name'] ?? '') === DB_NAME) {
+				return ['key' => $candidateKey] + $option;
+			}
+		}
+
+		$firstKey = array_key_first($options);
+		return ['key' => $firstKey] + $options[$firstKey];
+	}
+}
 
 // Path Configuration
 define('BASE_PATH', dirname(__DIR__));
@@ -65,7 +100,7 @@ define('SMTP_PORT', 587);
 define('SMTP_USER', 'your-email@gmail.com');
 define('SMTP_PASS', 'your-password');
 define('SMTP_FROM', 'noreply@autodok.com');
-define('SMTP_FROM_NAME', 'The Autodok');
+define('SMTP_FROM_NAME', 'Autodok Prime Auto Services');
 
 // Application Status
 define('MAINTENANCE_MODE', false);

@@ -12,6 +12,6 @@ if (isLoggedIn()) {
     // Redirect to dashboard
     redirect(APP_URL . '/views/dashboard/index.php');
 } else {
-    // Redirect to login
-    redirect(APP_URL . '/views/auth/login.php');
+    // Redirect to login with main shop as the default branch view
+    redirect(APP_URL . '/views/auth/login.php?shop=autodok_main');
 }

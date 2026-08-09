@@ -10,36 +10,171 @@ require_once __DIR__ . '/../../models/Report.php';
 requireLogin();
 requireAnyRole(['admin', 'cashier']);
 
+$canManageExpenses = hasAnyRole(['admin', 'system_administrator']);
+
 $pageTitle = 'Reports';
 
-// Date range filter
-$dateFrom = $_GET['from'] ?? date('Y-m-d', strtotime('-30 days'));
+// Date range filter (default to today)
+$dateFrom = $_GET['from'] ?? date('Y-m-d');
 $dateTo = $_GET['to'] ?? date('Y-m-d');
+$activityDate = $dateTo;
 
 if (!strtotime($dateFrom)) {
-    $dateFrom = date('Y-m-d', strtotime('-30 days'));
+    $dateFrom = date('Y-m-d');
 }
 if (!strtotime($dateTo)) {
     $dateTo = date('Y-m-d');
 }
 if ($dateFrom > $dateTo) {
-    $dateFrom = date('Y-m-d', strtotime('-30 days'));
+    $dateFrom = date('Y-m-d');
     $dateTo = date('Y-m-d');
 }
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'delete_expense') {
+    try {
+        validateCSRF();
+
+        if (!$canManageExpenses) {
+            throw new Exception('Only admin/system administrator can delete expenses.');
+        }
+
+        $expenseId = trim((string)($_POST['expense_id'] ?? ''));
+        if ($expenseId === '') {
+            throw new Exception('Expense ID is required.');
+        }
+
+        $allExpenses = getReportExpenses();
+        $updatedExpenses = array_values(array_filter($allExpenses, function ($row) use ($expenseId) {
+            return (string)($row['id'] ?? '') !== $expenseId;
+        }));
+
+        if (count($updatedExpenses) === count($allExpenses)) {
+            throw new Exception('Expense entry not found.');
+        }
+
+        if (!saveReportExpenses($updatedExpenses)) {
+            throw new Exception('Failed to delete expense entry.');
+        }
+
+        $removedExpense = null;
+        foreach ($allExpenses as $row) {
+            if ((string)($row['id'] ?? '') === $expenseId) {
+                $removedExpense = $row;
+                break;
+            }
+        }
+
+        $actorName = sanitize($_SESSION['full_name'] ?? $_SESSION['username'] ?? 'Staff');
+        $removedAmount = (float)($removedExpense['amount'] ?? 0);
+        $removedDate = (string)($removedExpense['expense_date'] ?? date('Y-m-d'));
+        notifyRoles(
+            'system',
+            'Expense Deleted',
+            buildNotificationMessageTemplate(
+                $actorName,
+                'deleted',
+                'expense entry',
+                'Amount: ₱' . number_format($removedAmount, 2) . ', Date: ' . date('M d, Y', strtotime($removedDate))
+            ),
+            ['admin', 'cashier'],
+            [
+                'reference_type' => 'report_expense',
+            ]
+        );
+
+        setMessage('Expense entry deleted successfully.', 'success');
+    } catch (Exception $e) {
+        setMessage('Error: ' . $e->getMessage(), 'error');
+    }
+
+    $redirectFrom = $_POST['from'] ?? $dateFrom;
+    $redirectTo = $_POST['to'] ?? $dateTo;
+    redirect(APP_URL . '/views/reports/index.php?from=' . urlencode($redirectFrom) . '&to=' . urlencode($redirectTo));
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'add_expense') {
+    try {
+        validateCSRF();
+
+        $expenseDate = $_POST['expense_date'] ?? date('Y-m-d');
+        $expenseAmount = (float)($_POST['expense_amount'] ?? 0);
+        $expenseNotes = trim((string)($_POST['expense_notes'] ?? ''));
+
+        if (!strtotime($expenseDate)) {
+            throw new Exception('Please provide a valid expense date.');
+        }
+        if ($expenseAmount <= 0) {
+            throw new Exception('Expense amount must be greater than zero.');
+        }
+
+        $added = addReportExpense([
+            'expense_date' => date('Y-m-d', strtotime($expenseDate)),
+            'category' => 'General',
+            'description' => $expenseNotes,
+            'amount' => $expenseAmount,
+            'created_by' => $_SESSION['full_name'] ?? $_SESSION['username'] ?? 'System'
+        ]);
+
+        if (!$added) {
+            throw new Exception('Failed to save expense entry.');
+        }
+
+        $actorName = sanitize($_SESSION['full_name'] ?? $_SESSION['username'] ?? 'Staff');
+        notifyRoles(
+            'system',
+            'Expense Added',
+            buildNotificationMessageTemplate(
+                $actorName,
+                'added',
+                'an expense',
+                'Amount: ₱' . number_format($expenseAmount, 2) . ', Date: ' . date('M d, Y', strtotime($expenseDate))
+            ),
+            ['admin', 'cashier'],
+            [
+                'reference_type' => 'report_expense',
+            ]
+        );
+
+        setMessage('Expense entry added successfully.', 'success');
+    } catch (Exception $e) {
+        setMessage('Error: ' . $e->getMessage(), 'error');
+    }
+
+    $redirectFrom = $_POST['from'] ?? $dateFrom;
+    $redirectTo = $_POST['to'] ?? $dateTo;
+    redirect(APP_URL . '/views/reports/index.php?from=' . urlencode($redirectFrom) . '&to=' . urlencode($redirectTo));
+}
+
+$allExpenses = getReportExpenses();
+$filteredExpenses = array_values(array_filter($allExpenses, function ($row) use ($dateFrom, $dateTo) {
+    $expenseDate = $row['expense_date'] ?? '';
+    return $expenseDate >= $dateFrom && $expenseDate <= $dateTo;
+}));
+
+usort($filteredExpenses, function ($a, $b) {
+    $aDate = ($a['expense_date'] ?? '') . ' ' . ($a['created_at'] ?? '');
+    $bDate = ($b['expense_date'] ?? '') . ' ' . ($b['created_at'] ?? '');
+    return strcmp($bDate, $aDate);
+});
 
 $reportModel = new Report();
 $incomeReport = $reportModel->getIncomeReport($dateFrom, $dateTo);
 $serviceStats = $reportModel->getServiceTypeStats($dateFrom, $dateTo);
 $paymentMethods = $reportModel->getPaymentMethodStats($dateFrom, $dateTo);
-$paymentSummary = $reportModel->getPaymentStatusSummary();
-$statusSummary = $reportModel->getJobOrderStatusSummary();
-$topCustomers = $reportModel->getTopCustomers(10);
-$recentActivity = $reportModel->getRecentActivity(8);
+$paymentSummary = $reportModel->getPaymentStatusSummary($dateFrom, $dateTo);
+$statusSummary = $reportModel->getJobOrderStatusSummary($dateFrom, $dateTo);
+$topCustomers = $reportModel->getTopCustomers(10, $dateFrom, $dateTo);
+$recentActivity = $reportModel->getRecentActivity(0, $activityDate);
 
 $totalOrders = array_sum(array_column($incomeReport, 'job_orders_count'));
 $totalIncome = array_sum(array_column($incomeReport, 'total_income'));
 $paidIncome = array_sum(array_column($incomeReport, 'paid_income'));
 $pendingIncome = array_sum(array_column($incomeReport, 'pending_income'));
+$totalExpenses = 0;
+foreach ($filteredExpenses as $expenseItem) {
+    $totalExpenses += (float)($expenseItem['amount'] ?? 0);
+}
+$netIncome = $paidIncome - $totalExpenses;
 
 if (($_GET['export'] ?? '') === 'excel') {
     $db = Database::getInstance();
@@ -100,15 +235,33 @@ if (($_GET['export'] ?? '') === 'excel') {
 
     echo "<div class='section'>1. Executive Summary</div>";
     echo "<table>";
-    echo "<tr><th>Total Job Orders</th><th>Total Income (PHP)</th><th>Paid Income (PHP)</th><th>Pending Income (PHP)</th></tr>";
+    echo "<tr><th>Total Job Orders</th><th>Total Income (PHP)</th><th>Paid Income (PHP)</th><th>Expenses (PHP)</th><th>Net Income (PHP)</th><th>Pending Income (PHP)</th></tr>";
     echo "<tr>";
     echo "<td class='text-right'>" . number_format($totalOrders) . "</td>";
     echo "<td class='text-right'>" . number_format((float)$totalIncome, 2) . "</td>";
     echo "<td class='text-right'>" . number_format((float)$paidIncome, 2) . "</td>";
+    echo "<td class='text-right'>" . number_format((float)$totalExpenses, 2) . "</td>";
+    echo "<td class='text-right'>" . number_format((float)$netIncome, 2) . "</td>";
     echo "<td class='text-right'>" . number_format((float)$pendingIncome, 2) . "</td>";
     echo "</tr></table>";
 
-    echo "<div class='section'>2. Job Orders Details</div>";
+    echo "<div class='section'>2. Expenses Log</div>";
+    echo "<table><tr><th>Date</th><th>Description</th><th>Entered By</th><th class='text-right'>Amount (PHP)</th></tr>";
+    if (empty($filteredExpenses)) {
+        echo "<tr><td colspan='4'>No expenses recorded for this range</td></tr>";
+    } else {
+        foreach ($filteredExpenses as $expenseRow) {
+            echo "<tr>";
+            echo "<td>" . escape($expenseRow['expense_date'] ?? '—') . "</td>";
+            echo "<td>" . escape($expenseRow['description'] ?? '—') . "</td>";
+            echo "<td>" . escape($expenseRow['created_by'] ?? 'System') . "</td>";
+            echo "<td class='text-right'>" . number_format((float)($expenseRow['amount'] ?? 0), 2) . "</td>";
+            echo "</tr>";
+        }
+    }
+    echo "</table>";
+
+    echo "<div class='section'>3. Job Orders Details</div>";
     echo "<table><tr>";
     echo "<th>JO #</th><th>Date</th><th>Customer</th><th>Phone</th><th>Vehicle</th><th>Plate</th><th>Status</th><th>Payment Status</th><th class='text-right'>Total (PHP)</th><th class='text-right'>Paid (PHP)</th><th class='text-right'>Pending (PHP)</th>";
     echo "</tr>";
@@ -148,7 +301,7 @@ if (($_GET['export'] ?? '') === 'excel') {
     }
     echo "</table>";
 
-    echo "<div class='section'>3. Income Trend</div>";
+    echo "<div class='section'>4. Income Trend</div>";
     echo "<table><tr><th>Date</th><th class='text-right'>Job Orders</th><th class='text-right'>Total Income (PHP)</th><th class='text-right'>Paid Income (PHP)</th><th class='text-right'>Pending Income (PHP)</th></tr>";
     if (empty($incomeReport)) {
         echo "<tr><td colspan='5'>No data for this range</td></tr>";
@@ -165,7 +318,7 @@ if (($_GET['export'] ?? '') === 'excel') {
     }
     echo "</table>";
 
-    echo "<div class='section'>4. Service Type Revenue</div>";
+    echo "<div class='section'>5. Service Type Revenue</div>";
     echo "<table><tr><th>Service Type</th><th class='text-right'>Orders</th><th class='text-right'>Revenue (PHP)</th></tr>";
     if (empty($serviceStats)) {
         echo "<tr><td colspan='3'>No data for this range</td></tr>";
@@ -180,7 +333,7 @@ if (($_GET['export'] ?? '') === 'excel') {
     }
     echo "</table>";
 
-    echo "<div class='section'>5. Payment Method Breakdown</div>";
+    echo "<div class='section'>6. Payment Method Breakdown</div>";
     echo "<table><tr><th>Method</th><th class='text-right'>Orders</th><th class='text-right'>Amount (PHP)</th></tr>";
     if (empty($paymentMethods)) {
         echo "<tr><td colspan='3'>No payment data for this range</td></tr>";
@@ -195,7 +348,7 @@ if (($_GET['export'] ?? '') === 'excel') {
     }
     echo "</table>";
 
-    echo "<div class='section'>6. Job Order Status Summary</div>";
+    echo "<div class='section'>7. Job Order Status Summary</div>";
     echo "<table><tr><th>Status</th><th class='text-right'>Count</th><th class='text-right'>Total (PHP)</th></tr>";
     if (empty($statusSummary)) {
         echo "<tr><td colspan='3'>No status summary available</td></tr>";
@@ -210,7 +363,7 @@ if (($_GET['export'] ?? '') === 'excel') {
     }
     echo "</table>";
 
-    echo "<div class='section'>7. Payment Status Summary</div>";
+    echo "<div class='section'>8. Payment Status Summary</div>";
     echo "<table><tr><th>Payment Status</th><th class='text-right'>Orders</th><th class='text-right'>Total (PHP)</th></tr>";
     if (empty($paymentSummary)) {
         echo "<tr><td colspan='3'>No payment summary available</td></tr>";
@@ -225,7 +378,7 @@ if (($_GET['export'] ?? '') === 'excel') {
     }
     echo "</table>";
 
-    echo "<div class='section'>8. Top Customers</div>";
+    echo "<div class='section'>9. Top Customers</div>";
     echo "<table><tr><th>Customer</th><th>Phone</th><th class='text-right'>Visits</th><th class='text-right'>Spent (PHP)</th></tr>";
     if (empty($topCustomers)) {
         echo "<tr><td colspan='4'>No customer activity yet</td></tr>";
@@ -241,7 +394,7 @@ if (($_GET['export'] ?? '') === 'excel') {
     }
     echo "</table>";
 
-    echo "<div class='section'>9. Recent Activity</div>";
+    echo "<div class='section'>10. Recent Activity</div>";
     echo "<table><tr><th>Action</th><th>Description</th><th>User</th><th>Date</th></tr>";
     if (empty($recentActivity)) {
         echo "<tr><td colspan='4'>No recent activity found</td></tr>";
@@ -263,6 +416,58 @@ if (($_GET['export'] ?? '') === 'excel') {
 
 include __DIR__ . '/../partials/header.php';
 ?>
+
+<style>
+.report-table-wrap {
+    overflow-x: auto;
+    overflow-y: visible;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.report-table-wrap::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+}
+
+.report-table {
+    margin-bottom: 0;
+    min-width: 420px;
+}
+
+.report-table th,
+.report-table td {
+    padding: 7px 9px;
+    vertical-align: middle;
+}
+
+.report-table th {
+    white-space: nowrap;
+}
+
+.report-table td {
+    white-space: normal;
+}
+
+.report-table th.text-end,
+.report-table td.text-end {
+    white-space: nowrap;
+    min-width: 88px;
+}
+
+@media (max-width: 768px) {
+    .report-table {
+        min-width: 400px;
+    }
+
+    .report-table th,
+    .report-table td {
+        font-size: 11px;
+        padding: 7px 8px;
+    }
+}
+</style>
 
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
@@ -286,36 +491,113 @@ include __DIR__ . '/../partials/header.php';
 </div>
 
 <div class="row g-4 mb-4">
-    <div class="col-md-3">
-        <div class="card h-100">
-            <div class="card-body">
-                <p class="text-muted mb-1 small">Report Period</p>
-                <h5 class="mb-0"><?php echo escape($dateFrom); ?> — <?php echo escape($dateTo); ?></h5>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card h-100">
-            <div class="card-body">
-                <p class="text-muted mb-1 small">Job Orders</p>
-                <h3 class="mb-0"><?php echo number_format($totalOrders); ?></h3>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card h-100">
-            <div class="card-body">
-                <p class="text-muted mb-1 small">Total Income</p>
-                <h3 class="mb-0">₱ <?php echo number_format($totalIncome, 2); ?></h3>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
+    <div class="col-lg-4 col-md-12">
         <div class="card h-100">
             <div class="card-body">
                 <p class="text-muted mb-1 small">Paid / Pending</p>
-                <h5 class="mb-0">₱ <?php echo number_format($paidIncome, 2); ?> / ₱ <?php echo number_format($pendingIncome, 2); ?></h5>
+                <h4 class="mb-0"><?php echo number_format($paidIncome, 2); ?>/<?php echo number_format($pendingIncome, 2); ?></h4>
             </div>
+        </div>
+    </div>
+    <div class="col-lg-4 col-md-12">
+        <div class="card h-100">
+            <div class="card-body">
+                <p class="text-muted mb-1 small">Revenue / Expenses</p>
+                <h4 class="mb-0"><?php echo number_format($totalIncome, 2); ?>/<?php echo number_format($totalExpenses, 2); ?></h4>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4 col-md-12">
+        <div class="card h-100 border-secondary bg-light">
+            <div class="card-body">
+                <p class="text-muted mb-1 small">Net Income</p>
+                <h3 class="mb-0">₱ <?php echo number_format($netIncome, 2); ?></h3>
+                <small class="text-muted">Period: <?php echo escape($dateFrom); ?> — <?php echo escape($dateTo); ?> | JO: <?php echo number_format($totalOrders); ?></small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <div>
+                <h5 class="card-title mb-0">Add Expense</h5>
+                <p class="text-muted small mb-0">Record expenses separately for transparent net-income reporting.</p>
+            </div>
+        </div>
+        <form method="POST" class="row g-2 align-items-end">
+            <?php echo csrfField(); ?>
+            <input type="hidden" name="action" value="add_expense">
+            <input type="hidden" name="from" value="<?php echo escape($dateFrom); ?>">
+            <input type="hidden" name="to" value="<?php echo escape($dateTo); ?>">
+            <div class="col-lg-2 col-md-4">
+                <label class="form-label">Date</label>
+                <input type="date" class="form-control" name="expense_date" value="<?php echo escape($dateTo); ?>" required>
+            </div>
+            <div class="col-lg-2 col-md-4">
+                <label class="form-label">Amount</label>
+                <input type="number" class="form-control" name="expense_amount" min="0.01" step="0.01" required>
+            </div>
+            <div class="col-lg-6 col-md-8">
+                <label class="form-label">Description</label>
+                <input type="text" class="form-control" name="expense_notes" maxlength="180">
+            </div>
+            <div class="col-lg-2 col-md-4">
+                <button type="submit" class="btn btn-dark w-100">Add Expense</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <div>
+                <h5 class="card-title mb-0">Expenses Transparency Log</h5>
+                <p class="text-muted small mb-0">All recorded expenses for the selected report period.</p>
+            </div>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-sm align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Description</th>
+                        <th>Entered By</th>
+                        <th class="text-end">Amount</th>
+                        <?php if ($canManageExpenses): ?>
+                            <th class="text-end">Action</th>
+                        <?php endif; ?>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php if (empty($filteredExpenses)): ?>
+                        <tr><td colspan="<?php echo $canManageExpenses ? '5' : '4'; ?>" class="text-center text-muted">No expenses recorded for this date range</td></tr>
+                    <?php else: ?>
+                        <?php foreach ($filteredExpenses as $expenseRow): ?>
+                            <tr>
+                                <td><?php echo escape($expenseRow['expense_date'] ?? '—'); ?></td>
+                                <td><?php echo escape($expenseRow['description'] ?? '—'); ?></td>
+                                <td><?php echo escape($expenseRow['created_by'] ?? 'System'); ?></td>
+                                <td class="text-end">₱ <?php echo number_format((float)($expenseRow['amount'] ?? 0), 2); ?></td>
+                                <?php if ($canManageExpenses): ?>
+                                    <td class="text-end">
+                                        <form method="POST" class="d-inline" onsubmit="return confirmExpenseDelete(this);">
+                                            <?php echo csrfField(); ?>
+                                            <input type="hidden" name="action" value="delete_expense">
+                                            <input type="hidden" name="from" value="<?php echo escape($dateFrom); ?>">
+                                            <input type="hidden" name="to" value="<?php echo escape($dateTo); ?>">
+                                            <input type="hidden" name="expense_id" value="<?php echo escape($expenseRow['id'] ?? ''); ?>">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                                        </form>
+                                    </td>
+                                <?php endif; ?>
+                            </tr>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                </tbody>
+            </table>
         </div>
     </div>
 </div>
@@ -339,8 +621,8 @@ include __DIR__ . '/../partials/header.php';
         <div class="card h-100">
             <div class="card-body">
                 <h5 class="card-title">Service Type Revenue</h5>
-                <div class="table-responsive">
-                    <table class="table table-sm align-middle mb-0">
+                <div class="table-responsive report-table-wrap">
+                    <table class="table table-sm align-middle mb-0 report-table">
                         <thead>
                             <tr>
                                 <th>Service Type</th>
@@ -371,8 +653,8 @@ include __DIR__ . '/../partials/header.php';
         <div class="card h-100">
             <div class="card-body">
                 <h5 class="card-title">Payment Method Breakdown</h5>
-                <div class="table-responsive">
-                    <table class="table table-sm align-middle mb-0">
+                <div class="table-responsive report-table-wrap">
+                    <table class="table table-sm align-middle mb-0 report-table">
                         <thead>
                             <tr>
                                 <th>Method</th>
@@ -400,13 +682,13 @@ include __DIR__ . '/../partials/header.php';
     </div>
 </div>
 
-<div class="row g-4 mb-4">
+<div class="row g-4 mb-4" id="recent-activity">
     <div class="col-lg-6">
         <div class="card h-100">
             <div class="card-body">
                 <h5 class="card-title">Job Order Status Summary</h5>
-                <div class="table-responsive">
-                    <table class="table table-sm align-middle mb-0">
+                <div class="table-responsive report-table-wrap">
+                    <table class="table table-sm align-middle mb-0 report-table">
                         <thead>
                             <tr>
                                 <th>Status</th>
@@ -436,8 +718,8 @@ include __DIR__ . '/../partials/header.php';
         <div class="card h-100">
             <div class="card-body">
                 <h5 class="card-title">Top Customers</h5>
-                <div class="table-responsive">
-                    <table class="table table-sm align-middle mb-0">
+                <div class="table-responsive report-table-wrap">
+                    <table class="table table-sm align-middle mb-0 report-table">
                         <thead>
                             <tr>
                                 <th>Customer</th>
@@ -470,8 +752,8 @@ include __DIR__ . '/../partials/header.php';
         <div class="card h-100">
             <div class="card-body">
                 <h5 class="card-title">Payment Status Summary</h5>
-                <div class="table-responsive">
-                    <table class="table table-sm align-middle mb-0">
+                <div class="table-responsive report-table-wrap">
+                    <table class="table table-sm align-middle mb-0 report-table">
                         <thead>
                             <tr>
                                 <th>Payment Status</th>
@@ -503,8 +785,10 @@ include __DIR__ . '/../partials/header.php';
     <div class="col-lg-12">
         <div class="card h-100">
             <div class="card-body">
-                <h5 class="card-title">Recent Activity</h5>
-                <div class="table-responsive">
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                    <h5 class="card-title mb-0">Recent Activity</h5>
+                </div>
+                <div class="table-responsive" style="max-height:360px;overflow-y:auto;">
                     <table class="table table-sm align-middle mb-0">
                         <thead>
                             <tr>
@@ -535,6 +819,25 @@ include __DIR__ . '/../partials/header.php';
         </div>
     </div>
 </div>
+
+<script>
+(function() {
+    window.confirmExpenseDelete = function(form) {
+        appConfirm('Delete this expense entry?', {
+            title: 'Delete Expense',
+            confirmText: 'Delete',
+            cancelText: 'Cancel',
+            variant: 'danger'
+        }).then(function(confirmed) {
+            if (confirmed && form) {
+                form.submit();
+            }
+        });
+
+        return false;
+    };
+})();
+</script>
 
 <script>
 (function() {

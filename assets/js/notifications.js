@@ -4,7 +4,7 @@
  */
 
 const NotificationManager = {
-  apiUrl: "/project/theautodoksystem/api/notifications.php",
+  apiUrl: `${window.APP_URL || ""}/api/notifications.php`,
   pollInterval: 30000, // Poll every 30 seconds
   pollTimer: null,
 
@@ -24,8 +24,9 @@ const NotificationManager = {
   async autoCleanOldNotifications() {
     try {
       await fetch(this.apiUrl, {
-        method: "DELETE",
+        method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
         body: JSON.stringify({ action: "auto_clear_old" }),
       });
     } catch (error) {
@@ -60,10 +61,15 @@ const NotificationManager = {
    */
   async loadUnreadCount() {
     try {
-      const response = await fetch(`${this.apiUrl}?action=unread_count`);
+      const response = await fetch(`${this.apiUrl}?action=unread_count`, {
+        credentials: "same-origin",
+      });
+      if (!response.ok) {
+        return;
+      }
       const data = await response.json();
 
-      if (data.success) {
+      if (data && data.success) {
         this.updateBadge(data.count);
       }
     } catch (error) {
@@ -78,11 +84,35 @@ const NotificationManager = {
     const bellDot = document.querySelector(".bell-dot");
     if (bellDot) {
       if (count > 0) {
-        bellDot.style.display = "block";
-        bellDot.setAttribute("data-count", count);
+        bellDot.style.display = "flex";
+        bellDot.setAttribute("data-count", String(count));
+        bellDot.textContent = count > 99 ? "99+" : String(count);
       } else {
         bellDot.style.display = "none";
+        bellDot.removeAttribute("data-count");
+        bellDot.textContent = "";
       }
+    }
+  },
+
+  /**
+   * Show latest action result in toast when available
+   */
+  notifyResult(message, type = "info") {
+    if (typeof showToast === "function") {
+      showToast(message, type);
+    }
+  },
+
+  /**
+   * Immediately reflect a cleared/marked state in the current UI
+   */
+  applyAllClearedUI() {
+    this.updateBadge(0);
+    const listContainer = document.getElementById("notificationList");
+    if (listContainer) {
+      listContainer.innerHTML =
+        '<div class="notification-empty"><i class="bi bi-bell-slash"></i> No new notifications</div>';
     }
   },
 
@@ -176,10 +206,18 @@ const NotificationManager = {
     if (!listContainer) return;
 
     try {
-      const response = await fetch(`${this.apiUrl}?action=unread&limit=10`);
-      const data = await response.json();
+      const response = await fetch(`${this.apiUrl}?action=all&limit=10`, {
+        credentials: "same-origin",
+      });
+      const raw = await response.text();
+      let data = null;
+      try {
+        data = JSON.parse(raw);
+      } catch (_e) {
+        data = null;
+      }
 
-      if (data.success) {
+      if (response.ok && data && data.success) {
         this.renderNotifications(data.notifications);
       } else {
         listContainer.innerHTML =
@@ -207,9 +245,6 @@ const NotificationManager = {
 
     listContainer.innerHTML = notifications
       .map((notif) => {
-        const markButton = notif.is_dynamic
-          ? ""
-          : `<button class="btn-mark-read" onclick="event.stopPropagation();NotificationManager.markAsRead('${notif.id}')" title="Dismiss"><i class="bi bi-x"></i></button>`;
         const clickHandler = notif.is_dynamic
           ? ""
           : `onclick="NotificationManager.markAsRead('${notif.id}')"`;
@@ -222,9 +257,6 @@ const NotificationManager = {
                         <div class="notification-title">${this.escapeHtml(notif.title)}</div>
                         <div class="notification-message">${this.escapeHtml(notif.message)}</div>
                         <div class="notification-time">${this.formatTime(notif.created_at)}</div>
-                    </div>
-                    <div class="notification-actions">
-                        ${markButton}
                     </div>
                 </div>
             `;
@@ -252,37 +284,21 @@ const NotificationManager = {
    * Mark notification as read — removes it from the list immediately
    */
   async markAsRead(notificationId) {
-    // Remove from UI immediately
-    const item = document.querySelector(
-      `.notification-item[data-id="${notificationId}"]`,
-    );
-    if (item) {
-      item.style.transition = "opacity 0.2s, max-height 0.3s";
-      item.style.opacity = "0";
-      item.style.overflow = "hidden";
-      item.style.maxHeight = item.offsetHeight + "px";
-      setTimeout(() => {
-        item.style.maxHeight = "0";
-        item.style.padding = "0";
-        item.style.margin = "0";
-        setTimeout(() => {
-          item.remove();
-          this.checkEmpty();
-        }, 300);
-      }, 200);
-    }
-
     try {
       const response = await fetch(this.apiUrl, {
-        method: "PUT",
+        method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
         body: JSON.stringify({
           action: "mark_read",
           notification_id: notificationId,
         }),
       });
       const data = await response.json();
-      if (data.success) this.loadUnreadCount();
+      if (data.success) {
+        this.loadUnreadCount();
+        this.loadNotifications();
+      }
     } catch (error) {
       console.error("Error marking notification as read:", error);
     }
@@ -305,18 +321,32 @@ const NotificationManager = {
   async markAllAsRead() {
     try {
       const response = await fetch(this.apiUrl, {
-        method: "PUT",
+        method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
         body: JSON.stringify({ action: "mark_all_read" }),
       });
 
-      const data = await response.json();
-      if (data.success) {
+      let data = null;
+      try {
+        data = await response.json();
+      } catch (_error) {
+        data = null;
+      }
+
+      if (data && data.success) {
+        this.updateBadge(0);
+        await this.loadNotifications();
+      } else {
+        this.notifyResult(data?.message || "Failed to mark all notifications as read", "error");
         this.loadUnreadCount();
         this.loadNotifications();
       }
     } catch (error) {
       console.error("Error marking all as read:", error);
+      this.notifyResult("Error marking all notifications as read", "error");
+      this.loadUnreadCount();
+      this.loadNotifications();
     }
   },
 
@@ -324,6 +354,11 @@ const NotificationManager = {
    * Clear all notifications
    */
   async clearAllNotifications() {
+    const dropdown = document.getElementById("notificationDropdown");
+    if (dropdown) {
+      dropdown.classList.remove("show");
+    }
+
     const confirmed = await appConfirm(
       "Are you sure you want to clear all notifications?",
       {
@@ -339,18 +374,32 @@ const NotificationManager = {
 
     try {
       const response = await fetch(this.apiUrl, {
-        method: "DELETE",
+        method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
         body: JSON.stringify({ action: "delete_all" }),
       });
 
-      const data = await response.json();
-      if (data.success) {
+      let data = null;
+      try {
+        data = await response.json();
+      } catch (_error) {
+        data = null;
+      }
+
+      if (data && data.success) {
+        this.applyAllClearedUI();
+        this.updateBadge(0);
+      } else {
+        this.notifyResult(data?.message || "Failed to clear notifications", "error");
         this.loadUnreadCount();
         this.loadNotifications();
       }
     } catch (error) {
       console.error("Error clearing notifications:", error);
+      this.notifyResult("Error clearing notifications", "error");
+      this.loadUnreadCount();
+      this.loadNotifications();
     }
   },
 
@@ -402,10 +451,18 @@ const NotificationManager = {
     if (!listContainer) return;
 
     try {
-      const response = await fetch(`${this.apiUrl}?action=all&limit=50`);
-      const data = await response.json();
+      const response = await fetch(`${this.apiUrl}?action=all&limit=50`, {
+        credentials: "same-origin",
+      });
+      const raw = await response.text();
+      let data = null;
+      try {
+        data = JSON.parse(raw);
+      } catch (_e) {
+        data = null;
+      }
 
-      if (data.success) {
+      if (response.ok && data && data.success) {
         this.renderNotifications(data.notifications);
       } else {
         listContainer.innerHTML =

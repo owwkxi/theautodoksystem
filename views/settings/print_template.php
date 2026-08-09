@@ -10,7 +10,9 @@ requireLogin();
 requireAnyRole(['admin', 'cashier']);
 
 $pageTitle = 'Print Template Settings';
+$hideTopbarLogo = true;
 $current = getPrintTemplateSettings();
+$activeShop = getActiveShopOption();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save_print_template') {
     try {
@@ -28,7 +30,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save_
         ];
 
         if (!empty($_FILES['logo_image']['name'])) {
-            $upload = uploadFile($_FILES['logo_image'], ['jpg', 'jpeg', 'png', 'webp', 'gif'], MAX_FILE_SIZE);
+            $upload = uploadImage($_FILES['logo_image'], MAX_FILE_SIZE);
             if ($upload['success']) {
                 $payload['logo_url'] = $upload['url'];
             } else {
@@ -40,6 +42,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save_
             throw new Exception('Failed to save print template settings.');
         }
 
+        $current = array_merge($current, $payload);
         setMessage('Print preview template updated successfully.', 'success');
         redirect(APP_URL . '/views/settings/print_template.php');
     } catch (Exception $e) {
@@ -70,6 +73,7 @@ include __DIR__ . '/../partials/header.php';
         <div>
             <h4 class="mb-0">Print Template Settings</h4>
             <p class="text-muted mb-0">Edit image/logo and print preview template used by Job Order and Estimate printouts.</p>
+            <p class="mb-0 mt-1"><span class="badge bg-secondary-subtle text-dark border">Shop: <?php echo escape($activeShop['name'] ?? APP_NAME); ?></span></p>
         </div>
         <a href="<?php echo APP_URL; ?>/views/settings/index.php" class="btn btn-outline-secondary btn-sm">
             <i class="bi bi-arrow-left"></i> Back to Settings

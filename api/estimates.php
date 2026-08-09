@@ -138,7 +138,10 @@ try {
 
         case 'DELETE':
             if (!$id) throw new Exception('Estimate ID is required');
-            if ($currentUserRole !== 'admin') {
+            $input = json_decode(file_get_contents('php://input'), true) ?: [];
+            $convertedCleanup = !empty($input['converted_cleanup']);
+
+            if ($currentUserRole !== 'admin' && !$convertedCleanup) {
                 throw new Exception('Only admins can delete estimates');
             }
             $est = $db->fetch("SELECT estimate_number FROM job_estimates WHERE id = ?", [$id]);

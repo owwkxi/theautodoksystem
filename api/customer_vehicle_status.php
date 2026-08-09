@@ -6,7 +6,6 @@
 
 define('APP_ACCESS', true);
 require_once __DIR__ . '/../includes/config.php';
-require_once __DIR__ . '/../includes/Database.php';
 require_once __DIR__ . '/../includes/functions.php';
 
 header('Content-Type: application/json');
@@ -28,10 +27,19 @@ try {
         exit;
     }
 
-    $db = Database::getInstance();
+    $requestedShop = resolveShopOption($_GET['shop_key'] ?? '');
+    $shopDbName = $requestedShop['db_name'] ?? DB_NAME;
+
+    $dsn = "mysql:host=" . DB_HOST . ";dbname=" . $shopDbName . ";charset=" . DB_CHARSET;
+    $pdo = new PDO($dsn, DB_USER, DB_PASS, [
+        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+        PDO::ATTR_EMULATE_PREPARES => false,
+    ]);
+
     $like = '%' . $query . '%';
 
-    $rows = $db->fetchAll(
+    $stmt = $pdo->prepare(
         "SELECT jo.job_order_number,
                 jo.status,
                 jo.created_at,
@@ -47,9 +55,10 @@ try {
             OR c.full_name LIKE ?
             OR v.plate_number LIKE ?
          ORDER BY jo.updated_at DESC, jo.created_at DESC
-         LIMIT 20",
-        [$like, $like, $like]
+         LIMIT 20"
     );
+    $stmt->execute([$like, $like, $like]);
+    $rows = $stmt->fetchAll();
 
     echo json_encode([
         'success' => true,

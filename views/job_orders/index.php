@@ -79,7 +79,7 @@ include __DIR__ . '/../partials/header.php';
 <!-- Job Orders Table -->
 <div class="card">
     <div class="card-body p-0">
-        <div class="table-responsive">
+        <div class="table-responsive table-responsive-actions">
             <table class="table table-hover mb-0">
                 <thead>
                     <tr>
@@ -133,7 +133,7 @@ include __DIR__ . '/../partials/header.php';
                             </td>
                             <td><?php echo formatDate($job['created_at']); ?></td>
                             <td>
-                                <div class="btn-group btn-group-sm">
+                                <div class="btn-group btn-group-sm d-none d-md-inline-flex">
                                     <a href="<?php echo APP_URL; ?>/views/job_orders/view.php?id=<?php echo $job['id']; ?>" 
                                        class="btn btn-outline-primary" title="View">
                                         <i class="bi bi-eye"></i>
@@ -148,6 +148,30 @@ include __DIR__ . '/../partials/header.php';
                                         <i class="bi bi-trash"></i>
                                     </button>
                                     <?php endif; ?>
+                                </div>
+                                <div class="dropdown action-dropdown d-inline-flex d-md-none">
+                                    <button class="btn btn-sm action-menu-btn dropdown-toggle" type="button" id="jobActionsMobile<?php echo $job['id']; ?>" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Job order actions">
+                                        <i class="bi bi-three-dots-vertical"></i>
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="jobActionsMobile<?php echo $job['id']; ?>">
+                                        <li>
+                                            <a class="dropdown-item" href="<?php echo APP_URL; ?>/views/job_orders/view.php?id=<?php echo $job['id']; ?>">
+                                                <i class="bi bi-eye me-2"></i>View
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a class="dropdown-item" href="<?php echo APP_URL; ?>/views/job_orders/edit.php?id=<?php echo $job['id']; ?>">
+                                                <i class="bi bi-pencil me-2"></i>Edit
+                                            </a>
+                                        </li>
+                                        <?php if (hasRole('admin')): ?>
+                                        <li>
+                                            <button type="button" class="dropdown-item text-danger" onclick="deleteJobOrder(<?php echo $job['id']; ?>)">
+                                                <i class="bi bi-trash me-2"></i>Delete
+                                            </button>
+                                        </li>
+                                        <?php endif; ?>
+                                    </ul>
                                 </div>
                             </td>
                         </tr>

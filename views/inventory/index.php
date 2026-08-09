@@ -60,16 +60,46 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_GET['action'])) {
         } elseif ($action === 'stock_in') {
             $id  = (int)$_POST['product_id'];
             $qty = (int)$_POST['quantity'];
+            $productStmt = $db->prepare("SELECT product_name FROM products WHERE id = ?");
+            $productStmt->execute([$id]);
+            $productRow = $productStmt->fetch(PDO::FETCH_ASSOC);
             $db->prepare("UPDATE products SET quantity = quantity + ? WHERE id=?")->execute([$qty,$id]);
             $db->prepare("INSERT INTO inventory_transactions (product_id,transaction_type,quantity,notes,created_by) VALUES (?,?,?,?,?)")->execute([$id,'stock_in',$qty,sanitize($_POST['notes']??''),$_SESSION['user_id']]);
+          $actorName = sanitize($_SESSION['full_name'] ?? $_SESSION['username'] ?? 'Staff');
+          $productName = sanitize($productRow['product_name'] ?? ('Product #' . $id));
+          notifyRoles(
+            'system',
+            'Inventory Stock In',
+            buildNotificationMessageTemplate($actorName, 'added stock', $productName, 'Quantity: +' . $qty),
+            ['admin', 'cashier'],
+            [
+              'reference_type' => 'inventory_transaction',
+              'reference_id' => $id,
+            ]
+          );
             echo json_encode(['success'=>true,'message'=>'Stock added']);
         } elseif ($action === 'stock_out') {
             $id  = (int)$_POST['product_id'];
             $qty = (int)$_POST['quantity'];
-            $cur = $db->query("SELECT quantity FROM products WHERE id=$id")->fetch()['quantity'];
+            $productStmt = $db->prepare("SELECT product_name, quantity FROM products WHERE id = ?");
+            $productStmt->execute([$id]);
+            $productRow = $productStmt->fetch(PDO::FETCH_ASSOC);
+            $cur = (int)($productRow['quantity'] ?? 0);
             if ($qty > $cur) { echo json_encode(['success'=>false,'message'=>'Insufficient stock']); exit; }
             $db->prepare("UPDATE products SET quantity = quantity - ? WHERE id=?")->execute([$qty,$id]);
             $db->prepare("INSERT INTO inventory_transactions (product_id,transaction_type,quantity,notes,created_by) VALUES (?,?,?,?,?)")->execute([$id,'stock_out',$qty,sanitize($_POST['notes']??''),$_SESSION['user_id']]);
+          $actorName = sanitize($_SESSION['full_name'] ?? $_SESSION['username'] ?? 'Staff');
+          $productName = sanitize($productRow['product_name'] ?? ('Product #' . $id));
+          notifyRoles(
+            'system',
+            'Inventory Stock Out',
+            buildNotificationMessageTemplate($actorName, 'deducted stock', $productName, 'Quantity: -' . $qty),
+            ['admin', 'cashier'],
+            [
+              'reference_type' => 'inventory_transaction',
+              'reference_id' => $id,
+            ]
+          );
             echo json_encode(['success'=>true,'message'=>'Stock removed']);
         } elseif ($action === 'add_category') {
             $db->prepare("INSERT INTO product_categories (category_name,description,status) VALUES (?,?,?)")->execute([sanitize($_POST['category_name']),sanitize($_POST['description']??''),sanitize($_POST['status']??'active')]);
@@ -132,27 +162,141 @@ $recentTx = $db->query("SELECT it.*, p.product_name FROM inventory_transactions 
 include __DIR__ . '/../partials/header.php';
 ?>
 
+<style>
+.inventory-list-wrap {
+  overflow-x: auto;
+  overflow-y: visible;
+  -webkit-overflow-scrolling: touch;
+}
+
+.inventory-list-table {
+  margin-bottom: 0;
+  table-layout: auto;
+}
+
+.inventory-list-table th,
+.inventory-list-table td {
+  white-space: nowrap;
+}
+
+.inventory-products-table {
+  min-width: 980px;
+}
+
+.inventory-categories-table {
+  min-width: 560px;
+}
+
+.inventory-suppliers-table {
+  min-width: 760px;
+}
+
+.inventory-transactions-table {
+  min-width: 700px;
+}
+
+.inventory-main-tabs {
+  border-bottom-color: #e6e6e6;
+}
+
+.inventory-main-tabs .nav-link {
+  border: 1px solid transparent;
+  border-radius: 10px 10px 0 0;
+  padding: 8px 12px;
+  font-weight: 500;
+}
+
+.inventory-main-tabs .nav-link.active {
+  border: 1px solid #d7d7d7 !important;
+  border-bottom: 2px solid #111 !important;
+  background: #fff !important;
+}
+
+@media (max-width: 768px) {
+  .inventory-main-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 10px !important;
+  }
+
+  .inventory-main-tabs .nav-item {
+    flex: 0 0 calc(50% - 3px);
+    max-width: calc(50% - 3px);
+  }
+
+  .inventory-main-tabs .nav-link {
+    width: 100%;
+    text-align: center;
+    white-space: normal;
+    border-radius: 10px;
+    font-size: 13px;
+    padding: 8px 10px;
+  }
+
+  .inventory-stats-row {
+    margin-bottom: 10px !important;
+  }
+
+  .inventory-stats-row .inventory-stat-col {
+    flex: 0 0 50%;
+    max-width: 50%;
+    padding-left: 4px;
+    padding-right: 4px;
+    margin-bottom: 6px;
+  }
+
+  .inventory-stats-row .card-body {
+    padding: 10px 8px !important;
+  }
+
+  .inventory-stats-row .text-muted.small {
+    font-size: 11px !important;
+    margin-bottom: 3px !important;
+  }
+
+  .inventory-stats-row .fs-4 {
+    font-size: 1.5rem !important;
+    line-height: 1.1;
+  }
+
+  .inventory-stats-row .fs-5 {
+    font-size: 1.15rem !important;
+    line-height: 1.1;
+  }
+
+  .inventory-list-wrap::-webkit-scrollbar {
+    height: 8px;
+  }
+
+  .inventory-list-wrap::-webkit-scrollbar-thumb {
+    background: #c5c8cc;
+    border-radius: 8px;
+  }
+}
+</style>
+
 <!-- Stats row -->
-<div class="row g-3 mb-4">
-  <div class="col-6 col-md-3">
+<div class="row g-2 mb-4 inventory-stats-row">
+  <div class="col-6 col-md-3 inventory-stat-col">
     <div class="card text-center h-100"><div class="card-body py-3">
       <div class="text-muted small mb-1">Total Products</div>
       <div class="fw-bold fs-4"><?php echo $totalProducts; ?></div>
     </div></div>
   </div>
-  <div class="col-6 col-md-3">
+  <div class="col-6 col-md-3 inventory-stat-col">
     <div class="card text-center h-100"><div class="card-body py-3">
       <div class="text-muted small mb-1">Low Stock</div>
       <div class="fw-bold fs-4 text-warning"><?php echo $lowStock; ?></div>
     </div></div>
   </div>
-  <div class="col-6 col-md-3">
+  <div class="col-6 col-md-3 inventory-stat-col">
     <div class="card text-center h-100"><div class="card-body py-3">
       <div class="text-muted small mb-1">Out of Stock</div>
       <div class="fw-bold fs-4 text-danger"><?php echo $outOfStock; ?></div>
     </div></div>
   </div>
-  <div class="col-6 col-md-3">
+  <div class="col-6 col-md-3 inventory-stat-col">
     <div class="card text-center h-100"><div class="card-body py-3">
       <div class="text-muted small mb-1">Inventory Value</div>
       <div class="fw-bold fs-5">₱<?php echo number_format($totalValue, 2); ?></div>
@@ -161,7 +305,7 @@ include __DIR__ . '/../partials/header.php';
 </div>
 
 <!-- Tabs -->
-<ul class="nav nav-tabs mb-3">
+<ul class="nav nav-tabs mb-3 inventory-main-tabs">
   <?php foreach (['products'=>'<i class="bi bi-box-seam"></i> Products','categories'=>'<i class="bi bi-tag"></i> Categories','suppliers'=>'<i class="bi bi-truck"></i> Suppliers','transactions'=>'<i class="bi bi-arrow-left-right"></i> Transactions'] as $t=>$label): ?>
   <li class="nav-item">
     <a class="nav-link <?php echo $tab===$t?'active':''; ?>" href="?tab=<?php echo $t; ?>"
@@ -203,8 +347,8 @@ include __DIR__ . '/../partials/header.php';
   <?php if (empty($products)): ?>
     <div class="text-center py-5"><i class="bi bi-box-seam" style="font-size:3rem;color:#ccc;"></i><p class="text-muted mt-3">No products found</p></div>
   <?php else: ?>
-  <div class="table-responsive">
-    <table class="table table-hover mb-0" style="font-size:13px;">
+  <div class="table-responsive table-responsive-actions inventory-list-wrap">
+    <table class="table table-hover inventory-list-table inventory-products-table" style="font-size:13px;">
       <thead style="background:#f8f8f8;">
         <tr><th class="px-3">Code</th><th>Product Name</th><th>Category</th><th>Brand</th><th>Cost</th><th>Selling</th><th>Stock</th><th>Min</th><th>Status</th><th>Actions</th></tr>
       </thead>
@@ -232,13 +376,26 @@ include __DIR__ . '/../partials/header.php';
           <td><?php echo $p['min_stock_level']; ?></td>
           <td><span class="badge bg-<?php echo $p['status']==='active'?'success':'secondary'; ?>"><?php echo ucfirst($p['status']); ?></span></td>
           <td>
-            <div class="btn-group btn-group-sm">
+            <div class="btn-group btn-group-sm d-none d-md-inline-flex">
               <button class="btn btn-outline-success py-0 px-2" onclick="openStockIn(<?php echo $p['id']; ?>,'<?php echo addslashes(escape($p['product_name'])); ?>',<?php echo $p['quantity']; ?>)" title="Stock In"><i class="bi bi-plus-lg"></i></button>
               <button class="btn btn-outline-warning py-0 px-2" onclick="openStockOut(<?php echo $p['id']; ?>,'<?php echo addslashes(escape($p['product_name'])); ?>',<?php echo $p['quantity']; ?>)" title="Stock Out"><i class="bi bi-dash-lg"></i></button>
               <button class="btn btn-outline-dark py-0 px-2" onclick="openEditProduct(<?php echo htmlspecialchars(json_encode($p),ENT_QUOTES); ?>)" title="Edit"><i class="bi bi-pencil"></i></button>
               <?php if (!$isCashier): ?>
               <button class="btn btn-outline-danger py-0 px-2" onclick="deleteProduct(<?php echo $p['id']; ?>)" title="Delete"><i class="bi bi-trash"></i></button>
               <?php endif; ?>
+            </div>
+            <div class="dropdown action-dropdown d-inline-flex d-md-none">
+              <button class="btn btn-sm action-menu-btn dropdown-toggle" type="button" id="productActionsMobile<?php echo $p['id']; ?>" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Product actions">
+                <i class="bi bi-three-dots-vertical"></i>
+              </button>
+              <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="productActionsMobile<?php echo $p['id']; ?>">
+                <li><button type="button" class="dropdown-item" onclick="openStockIn(<?php echo $p['id']; ?>,'<?php echo addslashes(escape($p['product_name'])); ?>',<?php echo $p['quantity']; ?>)"><i class="bi bi-plus-lg me-2"></i>Stock In</button></li>
+                <li><button type="button" class="dropdown-item" onclick="openStockOut(<?php echo $p['id']; ?>,'<?php echo addslashes(escape($p['product_name'])); ?>',<?php echo $p['quantity']; ?>)"><i class="bi bi-dash-lg me-2"></i>Stock Out</button></li>
+                <li><button type="button" class="dropdown-item" onclick="openEditProduct(<?php echo htmlspecialchars(json_encode($p),ENT_QUOTES); ?>)"><i class="bi bi-pencil me-2"></i>Edit</button></li>
+                <?php if (!$isCashier): ?>
+                <li><button type="button" class="dropdown-item text-danger" onclick="deleteProduct(<?php echo $p['id']; ?>)"><i class="bi bi-trash me-2"></i>Delete</button></li>
+                <?php endif; ?>
+              </ul>
             </div>
           </td>
         </tr>
@@ -255,27 +412,40 @@ include __DIR__ . '/../partials/header.php';
   <button class="btn btn-sm btn-dark" onclick="openAddCategory()"><i class="bi bi-plus-circle"></i> Add Category</button>
 </div>
 <div class="card"><div class="card-body p-0">
-  <table class="table table-hover mb-0" style="font-size:13px;">
-    <thead style="background:#f8f8f8;"><tr><th class="px-3">Category Name</th><th>Description</th><th>Status</th><th>Actions</th></tr></thead>
-    <tbody>
-    <?php foreach ($categories as $c): ?>
-      <tr>
-        <td class="px-3 fw-semibold"><?php echo escape($c['category_name']); ?></td>
-        <td><small class="text-muted"><?php echo escape($c['description']??'—'); ?></small></td>
-        <td><span class="badge bg-<?php echo $c['status']==='active'?'success':'secondary'; ?>"><?php echo ucfirst($c['status']); ?></span></td>
-        <td>
-          <div class="btn-group btn-group-sm">
-            <button class="btn btn-outline-dark py-0 px-2" onclick="openEditCategory(<?php echo $c['id']; ?>,'<?php echo addslashes(escape($c['category_name'])); ?>','<?php echo addslashes(escape($c['description']??'')); ?>','<?php echo $c['status']; ?>')"><i class="bi bi-pencil"></i></button>
-            <?php if (!$isCashier): ?>
-            <button class="btn btn-outline-danger py-0 px-2" onclick="deleteCategory(<?php echo $c['id']; ?>)"><i class="bi bi-trash"></i></button>
-            <?php endif; ?>
-          </div>
-        </td>
-      </tr>
-    <?php endforeach; ?>
-    <?php if (empty($categories)): ?><tr><td colspan="4" class="text-center py-4 text-muted">No categories yet</td></tr><?php endif; ?>
-    </tbody>
-  </table>
+  <div class="table-responsive table-responsive-actions inventory-list-wrap">
+    <table class="table table-hover inventory-list-table inventory-categories-table" style="font-size:13px;">
+      <thead style="background:#f8f8f8;"><tr><th class="px-3">Category Name</th><th>Description</th><th>Status</th><th>Actions</th></tr></thead>
+      <tbody>
+      <?php foreach ($categories as $c): ?>
+        <tr>
+          <td class="px-3 fw-semibold"><?php echo escape($c['category_name']); ?></td>
+          <td><small class="text-muted"><?php echo escape($c['description']??'—'); ?></small></td>
+          <td><span class="badge bg-<?php echo $c['status']==='active'?'success':'secondary'; ?>"><?php echo ucfirst($c['status']); ?></span></td>
+          <td>
+            <div class="btn-group btn-group-sm d-none d-md-inline-flex">
+              <button class="btn btn-outline-dark py-0 px-2" onclick="openEditCategory(<?php echo $c['id']; ?>,'<?php echo addslashes(escape($c['category_name'])); ?>','<?php echo addslashes(escape($c['description']??'')); ?>','<?php echo $c['status']; ?>')"><i class="bi bi-pencil"></i></button>
+              <?php if (!$isCashier): ?>
+              <button class="btn btn-outline-danger py-0 px-2" onclick="deleteCategory(<?php echo $c['id']; ?>)"><i class="bi bi-trash"></i></button>
+              <?php endif; ?>
+            </div>
+            <div class="dropdown action-dropdown d-inline-flex d-md-none">
+              <button class="btn btn-sm action-menu-btn dropdown-toggle" type="button" id="categoryActionsMobile<?php echo $c['id']; ?>" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Category actions">
+                <i class="bi bi-three-dots-vertical"></i>
+              </button>
+              <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="categoryActionsMobile<?php echo $c['id']; ?>">
+                <li><button type="button" class="dropdown-item" onclick="openEditCategory(<?php echo $c['id']; ?>,'<?php echo addslashes(escape($c['category_name'])); ?>','<?php echo addslashes(escape($c['description']??'')); ?>','<?php echo $c['status']; ?>')"><i class="bi bi-pencil me-2"></i>Edit</button></li>
+                <?php if (!$isCashier): ?>
+                <li><button type="button" class="dropdown-item text-danger" onclick="deleteCategory(<?php echo $c['id']; ?>)"><i class="bi bi-trash me-2"></i>Delete</button></li>
+                <?php endif; ?>
+              </ul>
+            </div>
+          </td>
+        </tr>
+      <?php endforeach; ?>
+      <?php if (empty($categories)): ?><tr><td colspan="4" class="text-center py-4 text-muted">No categories yet</td></tr><?php endif; ?>
+      </tbody>
+    </table>
+  </div>
 </div></div>
 <?php endif; ?>
 
@@ -284,49 +454,64 @@ include __DIR__ . '/../partials/header.php';
   <button class="btn btn-sm btn-dark" onclick="openAddSupplier()"><i class="bi bi-plus-circle"></i> Add Supplier</button>
 </div>
 <div class="card"><div class="card-body p-0">
-  <table class="table table-hover mb-0" style="font-size:13px;">
-    <thead style="background:#f8f8f8;"><tr><th class="px-3">Supplier Name</th><th>Contact Person</th><th>Phone</th><th>Email</th><th>Status</th><th>Actions</th></tr></thead>
-    <tbody>
-    <?php foreach ($suppliers as $s): ?>
-      <tr>
-        <td class="px-3 fw-semibold"><?php echo escape($s['supplier_name']); ?></td>
-        <td><?php echo escape($s['contact_person']??'—'); ?></td>
-        <td><?php echo escape($s['phone']??'—'); ?></td>
-        <td><?php echo escape($s['email']??'—'); ?></td>
-        <td><span class="badge bg-<?php echo $s['status']==='active'?'success':'secondary'; ?>"><?php echo ucfirst($s['status']); ?></span></td>
-        <td>
-          <div class="btn-group btn-group-sm">
-            <button class="btn btn-outline-dark py-0 px-2" onclick="openEditSupplier(<?php echo htmlspecialchars(json_encode($s),ENT_QUOTES); ?>)"><i class="bi bi-pencil"></i></button>
-            <?php if (!$isCashier): ?>
-            <button class="btn btn-outline-danger py-0 px-2" onclick="deleteSupplier(<?php echo $s['id']; ?>)"><i class="bi bi-trash"></i></button>
-            <?php endif; ?>
-          </div>
-        </td>
-      </tr>
-    <?php endforeach; ?>
-    <?php if (empty($suppliers)): ?><tr><td colspan="6" class="text-center py-4 text-muted">No suppliers yet</td></tr><?php endif; ?>
-    </tbody>
-  </table>
+  <div class="table-responsive table-responsive-actions inventory-list-wrap">
+    <table class="table table-hover inventory-list-table inventory-suppliers-table" style="font-size:13px;">
+      <thead style="background:#f8f8f8;"><tr><th class="px-3">Supplier Name</th><th>Contact Person</th><th>Phone</th><th>Email</th><th>Status</th><th>Actions</th></tr></thead>
+      <tbody>
+      <?php foreach ($suppliers as $s): ?>
+        <tr>
+          <td class="px-3 fw-semibold"><?php echo escape($s['supplier_name']); ?></td>
+          <td><?php echo escape($s['contact_person']??'—'); ?></td>
+          <td><?php echo escape($s['phone']??'—'); ?></td>
+          <td><?php echo escape($s['email']??'—'); ?></td>
+          <td><span class="badge bg-<?php echo $s['status']==='active'?'success':'secondary'; ?>"><?php echo ucfirst($s['status']); ?></span></td>
+          <td>
+            <div class="btn-group btn-group-sm d-none d-md-inline-flex">
+              <button class="btn btn-outline-dark py-0 px-2" onclick="openEditSupplier(<?php echo htmlspecialchars(json_encode($s),ENT_QUOTES); ?>)"><i class="bi bi-pencil"></i></button>
+              <?php if (!$isCashier): ?>
+              <button class="btn btn-outline-danger py-0 px-2" onclick="deleteSupplier(<?php echo $s['id']; ?>)"><i class="bi bi-trash"></i></button>
+              <?php endif; ?>
+            </div>
+            <div class="dropdown action-dropdown d-inline-flex d-md-none">
+              <button class="btn btn-sm action-menu-btn dropdown-toggle" type="button" id="supplierActionsMobile<?php echo $s['id']; ?>" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Supplier actions">
+                <i class="bi bi-three-dots-vertical"></i>
+              </button>
+              <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="supplierActionsMobile<?php echo $s['id']; ?>">
+                <li><button type="button" class="dropdown-item" onclick="openEditSupplier(<?php echo htmlspecialchars(json_encode($s),ENT_QUOTES); ?>)"><i class="bi bi-pencil me-2"></i>Edit</button></li>
+                <?php if (!$isCashier): ?>
+                <li><button type="button" class="dropdown-item text-danger" onclick="deleteSupplier(<?php echo $s['id']; ?>)"><i class="bi bi-trash me-2"></i>Delete</button></li>
+                <?php endif; ?>
+              </ul>
+            </div>
+          </td>
+        </tr>
+      <?php endforeach; ?>
+      <?php if (empty($suppliers)): ?><tr><td colspan="6" class="text-center py-4 text-muted">No suppliers yet</td></tr><?php endif; ?>
+      </tbody>
+    </table>
+  </div>
 </div></div>
 <?php endif; ?>
 
 <?php if ($tab === 'transactions'): ?>
 <div class="card"><div class="card-body p-0">
-  <table class="table table-hover mb-0" style="font-size:13px;">
-    <thead style="background:#f8f8f8;"><tr><th class="px-3">Product</th><th>Type</th><th>Qty</th><th>Notes</th><th>Date</th></tr></thead>
-    <tbody>
-    <?php foreach ($recentTx as $tx): ?>
-      <tr>
-        <td class="px-3"><?php echo escape($tx['product_name']??'—'); ?></td>
-        <td><span class="badge bg-<?php echo $tx['transaction_type']==='stock_in'?'success':($tx['transaction_type']==='stock_out'?'warning':'secondary'); ?>"><?php echo ucfirst(str_replace('_',' ',$tx['transaction_type'])); ?></span></td>
-        <td class="fw-bold <?php echo $tx['transaction_type']==='stock_in'?'text-success':'text-warning'; ?>"><?php echo ($tx['transaction_type']==='stock_in'?'+':'-').$tx['quantity']; ?></td>
-        <td><small class="text-muted"><?php echo escape($tx['notes']??'—'); ?></small></td>
-        <td><?php echo date('M d, Y h:i A', strtotime($tx['created_at'])); ?></td>
-      </tr>
-    <?php endforeach; ?>
-    <?php if (empty($recentTx)): ?><tr><td colspan="5" class="text-center py-4 text-muted">No transactions yet</td></tr><?php endif; ?>
-    </tbody>
-  </table>
+  <div class="table-responsive table-responsive-actions inventory-list-wrap">
+    <table class="table table-hover inventory-list-table inventory-transactions-table" style="font-size:13px;">
+      <thead style="background:#f8f8f8;"><tr><th class="px-3">Product</th><th>Type</th><th>Qty</th><th>Notes</th><th>Date</th></tr></thead>
+      <tbody>
+      <?php foreach ($recentTx as $tx): ?>
+        <tr>
+          <td class="px-3"><?php echo escape($tx['product_name']??'—'); ?></td>
+          <td><span class="badge bg-<?php echo $tx['transaction_type']==='stock_in'?'success':($tx['transaction_type']==='stock_out'?'warning':'secondary'); ?>"><?php echo ucfirst(str_replace('_',' ',$tx['transaction_type'])); ?></span></td>
+          <td class="fw-bold <?php echo $tx['transaction_type']==='stock_in'?'text-success':'text-warning'; ?>"><?php echo ($tx['transaction_type']==='stock_in'?'+':'-').$tx['quantity']; ?></td>
+          <td><small class="text-muted"><?php echo escape($tx['notes']??'—'); ?></small></td>
+          <td><?php echo date('M d, Y h:i A', strtotime($tx['created_at'])); ?></td>
+        </tr>
+      <?php endforeach; ?>
+      <?php if (empty($recentTx)): ?><tr><td colspan="5" class="text-center py-4 text-muted">No transactions yet</td></tr><?php endif; ?>
+      </tbody>
+    </table>
+  </div>
 </div></div>
 <?php endif; ?>
 

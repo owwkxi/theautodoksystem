@@ -126,9 +126,137 @@ function getDefaultPrintTemplateSettings() {
     ];
 }
 
-function getPrintTemplateSettings() {
+function getDefaultSystemBrandingSettings() {
+    return [
+        'system_logo_url' => APP_URL . '/assets/images/logo.png',
+    ];
+}
+
+function getActiveShopOption($shopKey = null) {
+    if (function_exists('resolveShopOption')) {
+        $candidate = $shopKey;
+        if ($candidate === null || $candidate === '') {
+            $candidate = $_SESSION['shop_key'] ?? '';
+        }
+        return resolveShopOption($candidate);
+    }
+
+    return [
+        'key' => 'default',
+        'name' => APP_NAME,
+        'db_name' => DB_NAME,
+    ];
+}
+
+function getScopedSettingsFilePath($baseFilename, $shopKey = null) {
+    $shop = getActiveShopOption($shopKey);
+    $shopKey = strtolower((string)($shop['key'] ?? 'default'));
+    $shopKey = preg_replace('/[^a-z0-9_-]/', '_', $shopKey);
+    if ($shopKey === '' || $shopKey === null) {
+        $shopKey = 'default';
+    }
+
+    return UPLOAD_PATH . $baseFilename . '_' . $shopKey . '.json';
+}
+
+function getSystemBrandingSettingsFilePath($shopKey = null) {
+    return getScopedSettingsFilePath('system_branding_settings', $shopKey);
+}
+
+function getLegacySystemBrandingSettingsFilePath() {
+    return UPLOAD_PATH . 'system_branding_settings.json';
+}
+
+function getSystemBrandingSettings($shopKey = null) {
+    $defaults = getDefaultSystemBrandingSettings();
+    $filePath = getSystemBrandingSettingsFilePath($shopKey);
+
+    if (!file_exists($filePath)) {
+        $legacyPath = getLegacySystemBrandingSettingsFilePath();
+        if ($legacyPath !== $filePath && file_exists($legacyPath)) {
+            $filePath = $legacyPath;
+        }
+    }
+
+    if (!file_exists($filePath)) {
+        return $defaults;
+    }
+
+    $raw = file_get_contents($filePath);
+    if ($raw === false || trim($raw) === '') {
+        return $defaults;
+    }
+
+    $decoded = json_decode($raw, true);
+    if (!is_array($decoded)) {
+        return $defaults;
+    }
+
+    return array_merge($defaults, $decoded);
+}
+
+function saveSystemBrandingSettings($settings) {
+    $defaults = getDefaultSystemBrandingSettings();
+    $merged = array_merge($defaults, (array)$settings);
+
+    $normalized = [];
+    foreach ($defaults as $key => $defaultValue) {
+        $normalized[$key] = trim((string)($merged[$key] ?? $defaultValue));
+        if ($normalized[$key] === '') {
+            $normalized[$key] = $defaultValue;
+        }
+    }
+
+    if (!is_dir(UPLOAD_PATH) && !mkdir(UPLOAD_PATH, 0755, true) && !is_dir(UPLOAD_PATH)) {
+        return false;
+    }
+
+    if (!is_writable(UPLOAD_PATH)) {
+        return false;
+    }
+
+    $filePath = getSystemBrandingSettingsFilePath();
+    $json = json_encode($normalized, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    if ($json === false) {
+        return false;
+    }
+
+    if (file_exists($filePath) && !is_writable($filePath)) {
+        @unlink($filePath);
+    }
+
+    $tmpPath = $filePath . '.tmp';
+    if (file_put_contents($tmpPath, $json, LOCK_EX) === false) {
+        return false;
+    }
+
+    @chmod($tmpPath, 0664);
+    if (!@rename($tmpPath, $filePath)) {
+        @unlink($tmpPath);
+        return false;
+    }
+
+    return true;
+}
+
+function getPrintTemplateSettingsFilePath($shopKey = null) {
+    return getScopedSettingsFilePath('print_template_settings', $shopKey);
+}
+
+function getLegacyPrintTemplateSettingsFilePath() {
+    return UPLOAD_PATH . 'print_template_settings.json';
+}
+
+function getPrintTemplateSettings($shopKey = null) {
     $defaults = getDefaultPrintTemplateSettings();
-    $filePath = UPLOAD_PATH . 'print_template_settings.json';
+    $filePath = getPrintTemplateSettingsFilePath($shopKey);
+
+    if (!file_exists($filePath)) {
+        $legacyPath = getLegacyPrintTemplateSettingsFilePath();
+        if ($legacyPath !== $filePath && file_exists($legacyPath)) {
+            $filePath = $legacyPath;
+        }
+    }
 
     if (!file_exists($filePath)) {
         return $defaults;
@@ -167,13 +295,254 @@ function savePrintTemplateSettings($settings) {
         return false;
     }
 
-    $filePath = UPLOAD_PATH . 'print_template_settings.json';
+    $filePath = getPrintTemplateSettingsFilePath();
     $json = json_encode($normalized, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     if ($json === false) {
         return false;
     }
 
-    return file_put_contents($filePath, $json) !== false;
+    // If the file exists but is not writable (common when ownership changed),
+    // write a temp file and replace the target atomically.
+    if (file_exists($filePath) && !is_writable($filePath)) {
+        @unlink($filePath);
+    }
+
+    $tmpPath = $filePath . '.tmp';
+    if (file_put_contents($tmpPath, $json, LOCK_EX) === false) {
+        return false;
+    }
+
+    @chmod($tmpPath, 0664);
+    if (!@rename($tmpPath, $filePath)) {
+        @unlink($tmpPath);
+        return false;
+    }
+
+    return true;
+}
+
+function getReportExpensesFilePath() {
+    return UPLOAD_PATH . 'report_expenses.json';
+}
+
+function getReportExpenses() {
+    $filePath = getReportExpensesFilePath();
+    if (!file_exists($filePath)) {
+        return [];
+    }
+
+    $raw = file_get_contents($filePath);
+    if ($raw === false || trim($raw) === '') {
+        return [];
+    }
+
+    $decoded = json_decode($raw, true);
+    return is_array($decoded) ? $decoded : [];
+}
+
+function saveReportExpenses($expenses) {
+    if (!is_dir(UPLOAD_PATH) && !mkdir(UPLOAD_PATH, 0755, true) && !is_dir(UPLOAD_PATH)) {
+        return false;
+    }
+
+    if (!is_writable(UPLOAD_PATH)) {
+        return false;
+    }
+
+    $filePath = getReportExpensesFilePath();
+    $json = json_encode(array_values((array)$expenses), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    if ($json === false) {
+        return false;
+    }
+
+    if (file_exists($filePath) && !is_writable($filePath)) {
+        @unlink($filePath);
+    }
+
+    $tmpPath = $filePath . '.tmp';
+    if (file_put_contents($tmpPath, $json, LOCK_EX) === false) {
+        return false;
+    }
+
+    @chmod($tmpPath, 0664);
+    if (!@rename($tmpPath, $filePath)) {
+        @unlink($tmpPath);
+        return false;
+    }
+
+    return true;
+}
+
+function addReportExpense($expenseData) {
+    $amount = (float)($expenseData['amount'] ?? 0);
+    if ($amount <= 0) {
+        return false;
+    }
+
+    $expenseDate = (string)($expenseData['expense_date'] ?? date('Y-m-d'));
+    $timestamp = strtotime($expenseDate);
+    if ($timestamp === false) {
+        $expenseDate = date('Y-m-d');
+    } else {
+        $expenseDate = date('Y-m-d', $timestamp);
+    }
+
+    $expenses = getReportExpenses();
+    $expenses[] = [
+        'id' => uniqid('exp_', true),
+        'expense_date' => $expenseDate,
+        'category' => trim((string)($expenseData['category'] ?? 'General')),
+        'description' => trim((string)($expenseData['description'] ?? '')),
+        'amount' => round($amount, 2),
+        'created_by' => trim((string)($expenseData['created_by'] ?? 'System')),
+        'created_at' => date('Y-m-d H:i:s')
+    ];
+
+    return saveReportExpenses($expenses);
+}
+
+function buildNotificationMessageTemplate($actorName, $action, $subject, $details = '') {
+    $actor = trim((string)$actorName);
+    $verb = trim((string)$action);
+    $target = trim((string)$subject);
+    $extra = trim((string)$details);
+
+    $base = trim($actor . ' ' . $verb . ' ' . $target);
+    if ($base === '') {
+        return '';
+    }
+
+    if ($extra !== '') {
+        return $base . ' (' . $extra . ').';
+    }
+
+    return $base . '.';
+}
+
+function notifyRoles($type, $title, $message, $roles = [], $options = []) {
+    try {
+        $db = Database::getInstance();
+
+        $type = trim((string)$type);
+        $allowedTypes = ['job_assigned', 'job_status', 'payment', 'low_stock', 'system', 'staff_update', 'account_update'];
+        if (!in_array($type, $allowedTypes, true)) {
+            $type = 'system';
+        }
+
+        $title = trim((string)$title);
+        $message = trim((string)$message);
+        if ($title === '' || $message === '') {
+            return false;
+        }
+
+        $normalizedRoles = array_values(array_unique(array_filter(array_map('normalizeRole', (array)$roles))));
+        if (empty($normalizedRoles)) {
+            return false;
+        }
+
+        $excludeUserId = isset($options['exclude_user_id']) ? (int)$options['exclude_user_id'] : 0;
+        $referenceType = trim((string)($options['reference_type'] ?? ''));
+        $referenceId = isset($options['reference_id']) && $options['reference_id'] !== null
+            ? (int)$options['reference_id']
+            : null;
+
+        $isTypeAllowedForRole = static function ($role, $notificationType) {
+            $role = normalizeRole($role);
+
+            $allowedByRole = [
+                'admin' => ['job_assigned', 'job_status', 'payment', 'low_stock', 'system', 'staff_update', 'account_update'],
+                'cashier' => ['job_assigned', 'job_status', 'payment', 'low_stock', 'system', 'staff_update', 'account_update'],
+                'service_adviser' => ['job_assigned', 'job_status', 'payment', 'system'],
+                'chief_mechanic' => ['job_assigned', 'job_status', 'system'],
+                'technician' => ['job_assigned', 'job_status'],
+            ];
+
+            if (!isset($allowedByRole[$role])) {
+                return false;
+            }
+
+            return in_array($notificationType, $allowedByRole[$role], true);
+        };
+
+        $isTechnicianAssignedToJo = static function ($dbInstance, $technicianId, $jobOrderId) {
+            if ($technicianId <= 0 || $jobOrderId <= 0) {
+                return false;
+            }
+
+            $row = $dbInstance->fetch(
+                "SELECT 1 AS assigned FROM job_order_technicians WHERE technician_id = ? AND job_order_id = ? LIMIT 1",
+                [(int)$technicianId, (int)$jobOrderId]
+            );
+
+            return !empty($row);
+        };
+
+        $recipientMap = []; // [user_id => role]
+
+        $staffPlaceholders = implode(',', array_fill(0, count($normalizedRoles), '?'));
+        $staffRows = $db->fetchAll(
+            "SELECT id, role FROM staff WHERE status='active' AND role IN ($staffPlaceholders)",
+            $normalizedRoles
+        );
+        foreach ($staffRows as $row) {
+            $sid = (int)($row['id'] ?? 0);
+            if ($sid > 0) {
+                $recipientMap[$sid] = normalizeRole($row['role'] ?? '');
+            }
+        }
+
+        if (in_array('admin', $normalizedRoles, true)) {
+            $adminUsers = $db->fetchAll("SELECT id, role FROM users WHERE status='active' AND role='admin'");
+            foreach ($adminUsers as $row) {
+                $uid = (int)($row['id'] ?? 0);
+                if ($uid > 0) {
+                    $recipientMap[$uid] = normalizeRole($row['role'] ?? 'admin');
+                }
+            }
+        }
+
+        $recipientIds = array_values(array_filter(array_keys($recipientMap), static function ($id) use ($excludeUserId) {
+            return (int)$id > 0 && (int)$id !== $excludeUserId;
+        }));
+
+        if (empty($recipientIds)) {
+            return true;
+        }
+
+        foreach ($recipientIds as $recipientId) {
+            $recipientRole = normalizeRole($recipientMap[$recipientId] ?? '');
+            if (!$isTypeAllowedForRole($recipientRole, $type)) {
+                continue;
+            }
+
+            if (
+                $recipientRole === 'technician'
+                && $referenceType === 'job_order'
+                && $referenceId !== null
+                && !$isTechnicianAssignedToJo($db, (int)$recipientId, (int)$referenceId)
+            ) {
+                continue;
+            }
+
+            $db->query(
+                "INSERT INTO notifications (user_id, type, title, message, reference_type, reference_id, is_read)
+                 VALUES (?, ?, ?, ?, ?, ?, 0)",
+                [
+                    (int)$recipientId,
+                    $type,
+                    $title,
+                    $message,
+                    $referenceType !== '' ? $referenceType : null,
+                    $referenceId,
+                ]
+            );
+        }
+
+        return true;
+    } catch (Throwable $e) {
+        error_log('notifyRoles error: ' . $e->getMessage());
+        return false;
+    }
 }
 
 function timeAgo($datetime) {
@@ -215,7 +584,20 @@ function uploadFile($file, $allowedTypes = ALLOWED_FILE_TYPES, $maxSize = MAX_FI
     }
 
     if ($file['error'] !== UPLOAD_ERR_OK) {
-        return ['success' => false, 'message' => 'File upload error'];
+        $uploadErrorMessages = [
+            UPLOAD_ERR_INI_SIZE   => 'The uploaded file exceeds the server upload_max_filesize limit.',
+            UPLOAD_ERR_FORM_SIZE  => 'The uploaded file exceeds the form MAX_FILE_SIZE limit.',
+            UPLOAD_ERR_PARTIAL    => 'The file was only partially uploaded. Please try again.',
+            UPLOAD_ERR_NO_FILE    => 'No file was uploaded.',
+            UPLOAD_ERR_NO_TMP_DIR => 'Missing temporary upload directory on server.',
+            UPLOAD_ERR_CANT_WRITE => 'Failed to write uploaded file to disk.',
+            UPLOAD_ERR_EXTENSION  => 'A server extension stopped the file upload.'
+        ];
+        return ['success' => false, 'message' => $uploadErrorMessages[$file['error']] ?? 'File upload error'];
+    }
+
+    if (empty($file['tmp_name']) || !is_uploaded_file($file['tmp_name'])) {
+        return ['success' => false, 'message' => 'Invalid temporary upload file'];
     }
 
     if ($file['size'] > $maxSize) {
@@ -223,7 +605,8 @@ function uploadFile($file, $allowedTypes = ALLOWED_FILE_TYPES, $maxSize = MAX_FI
     }
 
     $extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
-    if (!in_array($extension, $allowedTypes)) {
+    $normalizedAllowed = array_map('strtolower', (array)$allowedTypes);
+    if (!in_array($extension, $normalizedAllowed, true)) {
         return ['success' => false, 'message' => 'File type not allowed'];
     }
 
@@ -243,6 +626,8 @@ function uploadFile($file, $allowedTypes = ALLOWED_FILE_TYPES, $maxSize = MAX_FI
     if (!move_uploaded_file($file['tmp_name'], $destination)) {
         return ['success' => false, 'message' => 'Failed to move uploaded file'];
     }
+
+    @chmod($destination, 0644);
 
     return ['success' => true, 'filename' => $filename, 'url' => UPLOAD_URL . $filename];
 }

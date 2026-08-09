@@ -23,11 +23,11 @@ $canManageCatalog = hasAnyRole(['admin', 'cashier']);
 $canDeleteRecords = hasRole('admin');
 $canCreateJobOrder = hasAnyRole(['admin', 'cashier']);
 $canEditJobOrder = hasAnyRole(['admin', 'cashier']);
-$canEditJoStatus = hasAnyRole(['admin', 'cashier', 'service_adviser']);
-$canStartJoTimer = hasAnyRole(['admin', 'cashier', 'chief_mechanic', 'service_adviser']);
-$canStopJoTimer = hasAnyRole(['admin', 'cashier', 'technician', 'chief_mechanic', 'service_adviser']);
+$canEditJoStatus = hasAnyRole(['admin', 'cashier', 'service_adviser', 'chief_mechanic']);
+$canStartJoTimer = hasAnyRole(['admin', 'cashier', 'service_adviser']);
+$canStopJoTimer = hasAnyRole(['admin', 'cashier', 'technician', 'service_adviser']);
 $canDoneJoTimer = hasAnyRole(['admin', 'cashier', 'technician']);
-$activeJobOrderStatuses = ['pending', 'ongoing', 'under_inspection', 'returned_for_revision'];
+$activeJobOrderStatuses = ['pending', 'ongoing', 'under_inspection', 'car_washing', 'returned_for_revision'];
 
 // Job-order-only roles can only access the job_orders tab
 if ($isJobOrdersOnlyRole && ($_GET['tab'] ?? 'job_orders') !== 'job_orders') {
@@ -312,11 +312,6 @@ if ($activeTab === 'job_orders') {
             $joParams[] = $techStaffId;
         }
 
-        if ($isChiefMechanic || $isServiceAdviser) {
-            $joWhere .= " AND jo.status IN (" . implode(',', array_fill(0, count($activeJobOrderStatuses), '?')) . ")";
-            $joParams = array_merge($joParams, $activeJobOrderStatuses);
-        }
-
         if ($joSearch) {
             $joWhere .= " AND (jo.job_order_number LIKE ? OR c.full_name LIKE ? OR v.plate_number LIKE ?)";
             $joParams = array_merge($joParams, ["%$joSearch%", "%$joSearch%", "%$joSearch%"]);
@@ -351,7 +346,7 @@ if ($activeTab === 'estimates') {
     try {
         $dbConn   = Database::getInstance()->getConnection();
         $estSearch = $_GET['est_search'] ?? '';
-        $estSql    = "SELECT * FROM job_estimates WHERE 1=1";
+        $estSql    = "SELECT * FROM job_estimates WHERE status <> 'converted'";
         $estParams = [];
         if ($estSearch) {
             $estSql   .= " AND (estimate_number LIKE ? OR vehicle_plate LIKE ? OR vehicle_make LIKE ?)";
@@ -464,6 +459,9 @@ include_once '../partials/header.php';
 .jo-row-under-inspection td {
     background-color: #fdeaea !important;
 }
+.jo-row-car-washing td {
+    background-color: #fff7db !important;
+}
 .stats-card-row {
     display: flex;
     flex-wrap: wrap;
@@ -551,30 +549,268 @@ include_once '../partials/header.php';
     border-color: #8f959e !important;
     box-shadow: 0 0 0 0.2rem rgba(143, 149, 158, 0.25) !important;
 }
+
+@media (max-width: 768px) {
+    .stats-card-col {
+        flex: 1 1 100%;
+        max-width: 100%;
+        min-width: 0;
+    }
+
+    .stats-card .card-body h2 {
+        font-size: 24px;
+    }
+
+    .jo-record-card {
+        align-items: flex-start !important;
+        gap: 8px;
+    }
+
+    .jo-record-card .btn {
+        min-height: 32px;
+        font-size: 11px !important;
+        padding: 4px 8px !important;
+    }
+
+    #createJobOrderModal .modal-body,
+    #editJobOrderModal .modal-body,
+    #jobEstimateModal .modal-body {
+        padding: 12px !important;
+    }
+
+    #createJobOrderModal .card-body,
+    #editJobOrderModal .card-body,
+    #jobEstimateModal .card-body {
+        padding: 10px !important;
+    }
+
+    #createJobOrderModal .card-header,
+    #editJobOrderModal .card-header,
+    #jobEstimateModal .card-header {
+        padding: 8px 10px !important;
+    }
+
+    #createJobOrderModal .col-4,
+    #jobEstimateModal .col-4,
+    #editJobOrderModal .col-4 {
+        width: 100%;
+    }
+
+    #createJobOrderModal .d-flex.gap-1,
+    #jobEstimateModal .d-flex.gap-1 {
+        flex-wrap: wrap;
+    }
+
+    #jo_product_qty,
+    #est_product_qty {
+        width: 100% !important;
+    }
+
+    #joSelectedItems,
+    #editJoSelectedItems,
+    #estSelectedItemsList,
+    #joProductsList,
+    #estProductsList {
+        max-height: 180px !important;
+    }
+
+    .table-responsive-actions {
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .table-responsive-actions table,
+    .table-responsive table {
+        min-width: 760px;
+    }
+
+    .actions-desktop {
+        display: none !important;
+    }
+
+    .actions-mobile {
+        display: inline-flex !important;
+    }
+}
+
+@media (max-width: 576px) {
+    .stats-card {
+        min-height: 90px;
+    }
+
+    #createJobOrderModal .modal-footer,
+    #editJobOrderModal .modal-footer,
+    #jobEstimateModal .modal-footer {
+        padding: 10px !important;
+        gap: 8px;
+    }
+
+    #createJobOrderModal .modal-footer .btn,
+    #editJobOrderModal .modal-footer .btn,
+    #jobEstimateModal .modal-footer .btn {
+        width: 100%;
+    }
+}
+
+.actions-mobile {
+    display: none;
+}
+
+.actions-mobile .dropdown-toggle::after {
+    display: none;
+}
+
+.services-mgmt-shell .sm-header {
+    align-items: center;
+}
+
+.services-mgmt-shell .sm-action-btn {
+    min-width: 180px;
+    border-radius: 10px;
+    font-weight: 600;
+}
+
+.services-mgmt-shell .sm-main-tabs {
+    gap: 8px;
+    border-bottom-color: #e6e6e6;
+}
+
+.services-mgmt-shell .sm-main-tabs .nav-link {
+    border: 1px solid transparent;
+    border-radius: 10px 10px 0 0;
+    padding: 9px 14px;
+    font-weight: 500;
+}
+
+.services-mgmt-shell .sm-main-tabs .nav-link.active {
+    border: 1px solid #d7d7d7 !important;
+    border-bottom: 2px solid #111 !important;
+    background: #fff !important;
+}
+
+.services-mgmt-shell .sm-filter-card .card-body {
+    padding: 14px;
+}
+
+.services-mgmt-shell .sm-filter-form .btn,
+.services-mgmt-shell .sm-filter-form .form-control,
+.services-mgmt-shell .sm-filter-form .form-select {
+    min-height: 38px;
+}
+
+@media (max-width: 768px) {
+    .services-mgmt-shell {
+        padding-left: 0;
+        padding-right: 0;
+    }
+
+    .services-mgmt-shell .sm-header {
+        gap: 10px;
+        margin-bottom: 12px !important;
+    }
+
+    .services-mgmt-shell .sm-action-col {
+        text-align: left !important;
+    }
+
+    .services-mgmt-shell .sm-action-btn {
+        width: 100%;
+        min-width: 0;
+    }
+
+    .services-mgmt-shell .stats-card-row {
+        gap: 8px;
+        margin-bottom: 12px !important;
+        flex-wrap: nowrap;
+        overflow: hidden;
+        overflow-y: hidden;
+        justify-content: flex-start;
+    }
+
+    .services-mgmt-shell .stats-card-col {
+        flex: 1 1 0;
+        max-width: none;
+        min-width: 0;
+    }
+
+    .services-mgmt-shell .stats-card {
+        min-height: 76px;
+        border-radius: 14px;
+    }
+
+    .services-mgmt-shell .stats-card .card-body {
+        padding: 10px 8px;
+    }
+
+    .services-mgmt-shell .stats-card .card-body h6 {
+        font-size: 10px !important;
+        margin-bottom: 2px !important;
+    }
+
+    .services-mgmt-shell .stats-card .card-body h2 {
+        font-size: 18px;
+    }
+
+    .services-mgmt-shell .sm-main-tabs {
+        flex-wrap: wrap;
+        overflow: visible;
+        gap: 6px;
+        padding-bottom: 0;
+        margin-bottom: 10px !important;
+    }
+
+    .services-mgmt-shell .sm-main-tabs .nav-item {
+        flex: 0 0 calc(50% - 4px);
+        max-width: calc(50% - 4px);
+    }
+
+    .services-mgmt-shell .sm-main-tabs .nav-link {
+        white-space: normal;
+        width: 100%;
+        text-align: center;
+        border-radius: 10px;
+        padding: 8px 12px;
+        font-size: 13px;
+    }
+
+    .services-mgmt-shell .sm-filter-card .card-body {
+        padding: 12px;
+    }
+
+    .services-mgmt-shell .sm-filter-form {
+        row-gap: 8px;
+    }
+
+    .services-mgmt-shell .sm-filter-form .col-md-4,
+    .services-mgmt-shell .sm-filter-form .col-md-3,
+    .services-mgmt-shell .sm-filter-form .col-md-2 {
+        width: 100%;
+    }
+}
 </style>
 
-<div class="container-fluid">
+<div class="container-fluid services-mgmt-shell">
     <!-- Header -->
-    <div class="row mb-3">
-        <div class="col-md-6">
+    <div class="row mb-3 sm-header">
+        <div class="col-md-6 sm-title-col">
             <h4 style="color: #000;">Services Management</h4>
             <p class="mb-0" style="color: #666;">Manage individual services and PMS bundles</p>
         </div>
-        <div class="col-md-6 text-end">
+        <div class="col-md-6 text-end sm-action-col">
             <?php if ($activeTab === 'services'): ?>
-                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addServiceModal">
+                <button type="button" class="btn btn-primary sm-action-btn" data-bs-toggle="modal" data-bs-target="#addServiceModal">
                     <i class="bi bi-plus-circle"></i> Add Service
                 </button>
             <?php elseif ($activeTab === 'bundles'): ?>
-                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addBundleModal">
+                <button type="button" class="btn btn-primary sm-action-btn" data-bs-toggle="modal" data-bs-target="#addBundleModal">
                     <i class="bi bi-plus-circle"></i> Add Bundle
                 </button>
             <?php elseif ($activeTab === 'job_orders' && $canCreateJobOrder): ?>
-                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createJobOrderModal">
+                <button type="button" class="btn btn-primary sm-action-btn" data-bs-toggle="modal" data-bs-target="#createJobOrderModal">
                     <i class="bi bi-plus-circle"></i> Create Job Order
                 </button>
             <?php elseif ($activeTab === 'estimates' && $canManageCatalog): ?>
-                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#jobEstimateModal">
+                <button type="button" class="btn btn-primary sm-action-btn" data-bs-toggle="modal" data-bs-target="#jobEstimateModal">
                     <i class="bi bi-calculator"></i> New Estimate
                 </button>
             <?php endif; ?>
@@ -612,7 +848,7 @@ include_once '../partials/header.php';
     <?php endif; ?>
 
     <!-- Tabs -->
-    <ul class="nav nav-tabs mb-3">
+    <ul class="nav nav-tabs mb-3 sm-main-tabs">
         <li class="nav-item">
             <a class="nav-link <?php echo $activeTab === 'job_orders' ? 'active' : ''; ?>" 
                href="?tab=job_orders"
@@ -647,9 +883,9 @@ include_once '../partials/header.php';
 
     <!-- Search and Filter -->
     <?php if ($activeTab === 'services' || $activeTab === 'bundles'): ?>
-    <div class="card mb-3">
+    <div class="card mb-3 sm-filter-card">
         <div class="card-body">
-            <form method="GET" class="row g-3">
+            <form method="GET" class="row g-3 sm-filter-form">
                 <input type="hidden" name="tab" value="<?php echo escape($activeTab); ?>">
                 <div class="col-md-4">
                     <input type="text" name="search" class="form-control" 
@@ -718,9 +954,22 @@ include_once '../partials/header.php';
                                         </span>
                                     </td>
                                     <td>
-                                        <div class="dropdown action-dropdown">
+                                        <div class="btn-group btn-group-sm actions-desktop">
+                                            <button type="button" class="btn btn-outline-dark py-0 px-2" onclick="editService(<?php echo $service['id']; ?>, '<?php echo addslashes(escape($service['service_name'])); ?>', '<?php echo addslashes(escape($service['service_code'])); ?>', '<?php echo addslashes(escape($service['description'] ?? '')); ?>', <?php echo $service['service_price']; ?>, <?php echo $service['labor_cost']; ?>, '<?php echo $service['status']; ?>')" title="Edit">
+                                                <i class="bi bi-pencil"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-outline-secondary py-0 px-2" onclick="toggleStatus('service', <?php echo $service['id']; ?>)" title="<?php echo $service['status'] === 'active' ? 'Deactivate' : 'Activate'; ?>">
+                                                <i class="bi bi-arrow-repeat"></i>
+                                            </button>
+                                            <?php if ($canDeleteRecords): ?>
+                                            <button type="button" class="btn btn-outline-danger py-0 px-2" onclick="deleteItem('service', <?php echo $service['id']; ?>)" title="Delete">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                            <?php endif; ?>
+                                        </div>
+                                        <div class="dropdown action-dropdown actions-mobile">
                                             <button class="btn btn-sm action-menu-btn dropdown-toggle" type="button" id="actionDropdownService<?php echo $service['id']; ?>" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Service actions">
-                                                <i class="bi bi-three-dots"></i>
+                                                <i class="bi bi-three-dots-vertical"></i>
                                                 <span class="visually-hidden">Service actions</span>
                                             </button>
                                             <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="actionDropdownService<?php echo $service['id']; ?>">
@@ -832,7 +1081,7 @@ include_once '../partials/header.php';
                     <div class="col-md-3">
                         <select name="jo_status" class="form-select form-select-sm">
                             <option value="">All Status</option>
-                            <?php foreach (['pending','ongoing','under_inspection','completed','released','returned_for_revision','cancelled'] as $s): ?>
+                            <?php foreach (['pending','ongoing','under_inspection','car_washing','completed','released','returned_for_revision','cancelled'] as $s): ?>
                             <option value="<?php echo $s; ?>" <?php echo (($_GET['jo_status'] ?? '') === $s) ? 'selected' : ''; ?>>
                                 <?php echo ucfirst(str_replace('_',' ',$s)); ?>
                             </option>
@@ -896,14 +1145,14 @@ include_once '../partials/header.php';
                                 $payColors = ['pending'=>'secondary','partial'=>'warning','paid'=>'success'];
                                 $pc = $payColors[$jo['payment_status']] ?? 'secondary';
                                 $rowTimerBase = (int)($jo['status_timer_seconds'] ?? 0);
-                                $rowTimerRunning = in_array($jo['status'], ['ongoing', 'under_inspection'], true) && !empty($jo['status_timer_started_at']);
+                                $rowTimerRunning = in_array($jo['status'], ['ongoing', 'under_inspection', 'returned_for_revision'], true) && !empty($jo['status_timer_started_at']);
                                 if ($rowTimerRunning) {
                                     $rowTimerBase += max(0, time() - strtotime($jo['status_timer_started_at']));
                                 }
-                                $rowTimerVisible = in_array($jo['status'], ['ongoing', 'under_inspection', 'completed'], true);
+                                $rowTimerVisible = in_array($jo['status'], ['ongoing', 'under_inspection', 'returned_for_revision', 'completed'], true);
                                 $rowTimerLocked = $jo['status'] === 'completed';
                             ?>
-                            <tr id="jo-row-<?php echo $jo['id']; ?>" class="<?php echo $jo['status'] === 'under_inspection' ? 'jo-row-under-inspection' : ''; ?>">
+                            <tr id="jo-row-<?php echo $jo['id']; ?>" class="<?php echo $jo['status'] === 'under_inspection' ? 'jo-row-under-inspection' : ($jo['status'] === 'car_washing' ? 'jo-row-car-washing' : ''); ?>">
                                 <td class="px-3 fw-bold"><?php echo escape($jo['job_order_number']); ?></td>
                                 <td>
                                     <div><?php echo escape($jo['customer_name']); ?></div>
@@ -921,8 +1170,35 @@ include_once '../partials/header.php';
                                         data-prev="<?php echo $jo['status']; ?>"
                                         <?php if (!$canEditJoStatus): ?>disabled<?php endif; ?>
                                         onchange="updateJoStatusInline(<?php echo $jo['id']; ?>, this.value, this)">
-                                        <?php foreach (['pending','ongoing','under_inspection','completed','released','returned_for_revision','cancelled'] as $statusOption): ?>
-                                        <option value="<?php echo $statusOption; ?>" <?php echo $jo['status'] === $statusOption ? 'selected' : ''; ?>>
+                                        <?php foreach (['pending','ongoing','under_inspection','car_washing','completed','released','returned_for_revision','cancelled'] as $statusOption): ?>
+                                        <?php
+                                            $isBlockedForServiceAdviser = $isServiceAdviser
+                                                && $jo['status'] === 'completed'
+                                                && in_array($statusOption, ['pending','ongoing','under_inspection','car_washing','cancelled'], true);
+                                            $isBlockedForChiefMechanic = $isChiefMechanic
+                                                && $jo['status'] === 'completed'
+                                                && in_array($statusOption, ['pending','ongoing','under_inspection','car_washing','cancelled'], true);
+
+                                            $isReleasedBackflowBlockedForServiceAdviser = $isServiceAdviser
+                                                && $jo['status'] === 'released'
+                                                && in_array($statusOption, ['pending','ongoing','under_inspection','car_washing','completed','cancelled'], true);
+                                            $isReleasedBackflowBlockedForChiefMechanic = $isChiefMechanic
+                                                && $jo['status'] === 'released'
+                                                && in_array($statusOption, ['pending','ongoing','under_inspection','car_washing','completed','cancelled'], true);
+
+                                            $isCancelledFullyLockedForServiceAdviser = $isServiceAdviser
+                                                && $jo['status'] === 'cancelled';
+                                            $isCancelledFullyLockedForChiefMechanic = $isChiefMechanic
+                                                && $jo['status'] === 'cancelled';
+
+                                            $isOptionBlocked = $isBlockedForServiceAdviser
+                                                || $isBlockedForChiefMechanic
+                                                || $isReleasedBackflowBlockedForServiceAdviser
+                                                || $isReleasedBackflowBlockedForChiefMechanic
+                                                || $isCancelledFullyLockedForServiceAdviser
+                                                || $isCancelledFullyLockedForChiefMechanic;
+                                        ?>
+                                        <option value="<?php echo $statusOption; ?>" <?php echo $jo['status'] === $statusOption ? 'selected' : ''; ?> <?php echo $isOptionBlocked ? 'disabled' : ''; ?>>
                                             <?php echo ucfirst(str_replace('_', ' ', $statusOption)); ?>
                                         </option>
                                         <?php endforeach; ?>
@@ -974,7 +1250,7 @@ include_once '../partials/header.php';
                                     </div>
                                 </td>
                                 <td>
-                                    <div class="btn-group btn-group-sm">
+                                    <div class="btn-group btn-group-sm actions-desktop">
                                         <!-- View — always visible -->
                                         <button class="btn btn-outline-secondary py-0 px-2" onclick="viewJobOrder(<?php echo $jo['id']; ?>)" title="View">
                                             <i class="bi bi-eye"></i>
@@ -992,6 +1268,37 @@ include_once '../partials/header.php';
                                         </button>
                                         <?php endif; ?>
                                         <?php endif; ?>
+                                    </div>
+                                    <div class="dropdown action-dropdown actions-mobile">
+                                        <button class="btn btn-sm action-menu-btn dropdown-toggle" type="button" id="joActionsMobile<?php echo $jo['id']; ?>" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Job order actions">
+                                            <i class="bi bi-three-dots-vertical"></i>
+                                        </button>
+                                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="joActionsMobile<?php echo $jo['id']; ?>">
+                                            <li>
+                                                <button type="button" class="dropdown-item" onclick="viewJobOrder(<?php echo $jo['id']; ?>)">
+                                                    <i class="bi bi-eye me-2"></i>View
+                                                </button>
+                                            </li>
+                                            <?php if ($canEditJobOrder): ?>
+                                            <li>
+                                                <button type="button" class="dropdown-item" onclick="editJobOrder(<?php echo $jo['id']; ?>)">
+                                                    <i class="bi bi-pencil me-2"></i>Edit
+                                                </button>
+                                            </li>
+                                            <li>
+                                                <button type="button" class="dropdown-item" onclick="printJobOrder(<?php echo $jo['id']; ?>)">
+                                                    <i class="bi bi-printer me-2"></i>Print
+                                                </button>
+                                            </li>
+                                            <?php if (hasRole('admin')): ?>
+                                            <li>
+                                                <button type="button" class="dropdown-item text-danger" onclick="deleteJobOrder(<?php echo $jo['id']; ?>)">
+                                                    <i class="bi bi-trash me-2"></i>Delete
+                                                </button>
+                                            </li>
+                                            <?php endif; ?>
+                                            <?php endif; ?>
+                                        </ul>
                                     </div>
                                 </td>
                             </tr>
@@ -1014,8 +1321,13 @@ include_once '../partials/header.php';
             if (!row) return;
             if (status === 'under_inspection') {
                 row.classList.add('jo-row-under-inspection');
+                row.classList.remove('jo-row-car-washing');
+            } else if (status === 'car_washing') {
+                row.classList.add('jo-row-car-washing');
+                row.classList.remove('jo-row-under-inspection');
             } else {
                 row.classList.remove('jo-row-under-inspection');
+                row.classList.remove('jo-row-car-washing');
             }
         }
 
@@ -1062,7 +1374,9 @@ include_once '../partials/header.php';
                 const timerEl = document.getElementById('jo-status-timer-' + id);
                 const timerWrapEl = document.getElementById('jo-status-timer-wrap-' + id);
                 if (timerEl && timerWrapEl) {
-                    const isRunningStatus = status === 'ongoing' || status === 'under_inspection';
+                    const isRunningStatus = typeof d?.data?.status_timer_is_running !== 'undefined'
+                        ? !!d.data.status_timer_is_running
+                        : (status === 'ongoing' || status === 'under_inspection' || status === 'returned_for_revision');
                     const isCompleted = status === 'completed';
 
                     timerEl.dataset.running = isRunningStatus ? '1' : '0';
@@ -1267,12 +1581,15 @@ include_once '../partials/header.php';
                                 </td>
                                 <td><?php echo date('M d, Y', strtotime($est['created_at'])); ?></td>
                                 <td>
-                                    <div class="btn-group btn-group-sm">
+                                    <div class="btn-group btn-group-sm actions-desktop">
                                         <button class="btn btn-outline-secondary py-0 px-2" onclick="viewEstimate(<?php echo $est['id']; ?>)" title="View">
                                             <i class="bi bi-eye"></i>
                                         </button>
                                         <button class="btn btn-outline-dark py-0 px-2" onclick="editEstimate(<?php echo $est['id']; ?>)" title="Edit">
                                             <i class="bi bi-pencil"></i>
+                                        </button>
+                                        <button class="btn btn-outline-success py-0 px-2" onclick="convertEstimateById(<?php echo $est['id']; ?>)" title="Convert to Job Order">
+                                            <i class="bi bi-arrow-right-circle"></i>
                                         </button>
                                         <button class="btn btn-outline-primary py-0 px-2" onclick="printEstimate(<?php echo $est['id']; ?>)" title="Print">
                                             <i class="bi bi-printer"></i>
@@ -1282,6 +1599,40 @@ include_once '../partials/header.php';
                                             <i class="bi bi-trash"></i>
                                         </button>
                                         <?php endif; ?>
+                                    </div>
+                                    <div class="dropdown action-dropdown actions-mobile">
+                                        <button class="btn btn-sm action-menu-btn dropdown-toggle" type="button" id="jeActionsMobile<?php echo $est['id']; ?>" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Estimate actions">
+                                            <i class="bi bi-three-dots-vertical"></i>
+                                        </button>
+                                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="jeActionsMobile<?php echo $est['id']; ?>">
+                                            <li>
+                                                <button type="button" class="dropdown-item" onclick="viewEstimate(<?php echo $est['id']; ?>)">
+                                                    <i class="bi bi-eye me-2"></i>View
+                                                </button>
+                                            </li>
+                                            <li>
+                                                <button type="button" class="dropdown-item" onclick="editEstimate(<?php echo $est['id']; ?>)">
+                                                    <i class="bi bi-pencil me-2"></i>Edit
+                                                </button>
+                                            </li>
+                                            <li>
+                                                <button type="button" class="dropdown-item text-success" onclick="convertEstimateById(<?php echo $est['id']; ?>)">
+                                                    <i class="bi bi-arrow-right-circle me-2"></i>Convert to Job Order
+                                                </button>
+                                            </li>
+                                            <li>
+                                                <button type="button" class="dropdown-item" onclick="printEstimate(<?php echo $est['id']; ?>)">
+                                                    <i class="bi bi-printer me-2"></i>Print
+                                                </button>
+                                            </li>
+                                            <?php if ($canDeleteRecords): ?>
+                                            <li>
+                                                <button type="button" class="dropdown-item text-danger" onclick="deleteEstimate(<?php echo $est['id']; ?>)">
+                                                    <i class="bi bi-trash me-2"></i>Delete
+                                                </button>
+                                            </li>
+                                            <?php endif; ?>
+                                        </ul>
                                     </div>
                                 </td>
                             </tr>
@@ -1602,27 +1953,27 @@ include_once '../partials/header.php';
                                 <div class="row g-2">
                                     <div class="col-4">
                                         <label class="form-label form-label-sm">Make / Brand</label>
-                                        <input type="text" class="form-control form-control-sm" id="jo_vehicle_make" placeholder="Toyota">
+                                        <input type="text" class="form-control form-control-sm" id="jo_vehicle_make">
                                     </div>
                                     <div class="col-4">
                                         <label class="form-label form-label-sm">Model</label>
-                                        <input type="text" class="form-control form-control-sm" id="jo_vehicle_model" placeholder="Vios">
+                                        <input type="text" class="form-control form-control-sm" id="jo_vehicle_model">
                                     </div>
                                     <div class="col-4">
                                         <label class="form-label form-label-sm">Year</label>
-                                        <input type="text" class="form-control form-control-sm" id="jo_vehicle_year" placeholder="2022">
+                                        <input type="text" class="form-control form-control-sm" id="jo_vehicle_year">
                                     </div>
                                     <div class="col-4">
                                         <label class="form-label form-label-sm">Plate Number</label>
-                                        <input type="text" class="form-control form-control-sm" id="jo_vehicle_plate" placeholder="ABC 1234">
+                                        <input type="text" class="form-control form-control-sm" id="jo_vehicle_plate">
                                     </div>
                                     <div class="col-4">
                                         <label class="form-label form-label-sm">Color</label>
-                                        <input type="text" class="form-control form-control-sm" id="jo_vehicle_color" placeholder="White">
+                                        <input type="text" class="form-control form-control-sm" id="jo_vehicle_color">
                                     </div>
                                     <div class="col-4">
                                         <label class="form-label form-label-sm">Mileage (km)</label>
-                                        <input type="text" class="form-control form-control-sm" id="jo_vehicle_mileage" placeholder="50000">
+                                        <input type="text" class="form-control form-control-sm" id="jo_vehicle_mileage">
                                     </div>
                                 </div>
                             </div>
@@ -1704,26 +2055,28 @@ include_once '../partials/header.php';
                                 <h6 class="mb-0" style="font-weight:600;"><i class="bi bi-box-seam me-1"></i>Products</h6>
                             </div>
                             <div class="card-body" style="padding:15px;">
-                                <div class="d-flex gap-1 mb-1">
-                                    <select class="form-select form-select-sm" id="jo_product_select" style="flex:1;">
-                                        <option value="">— Select product —</option>
+                                <div style="max-height:220px;overflow-y:auto;border:1px solid #e0e0e0;border-radius:6px;padding:10px;background:#f9f9f9;">
+                                    <?php if (empty($allInventoryProducts)): ?>
+                                        <p class="text-muted text-center small py-3 mb-0">No products in inventory.</p>
+                                    <?php else: ?>
                                         <?php foreach ($allInventoryProducts as $prod): ?>
-                                        <option value="<?php echo $prod['id']; ?>"
-                                            data-name="<?php echo addslashes(escape($prod['product_name'])); ?>"
-                                            data-price="<?php echo $prod['selling_price']; ?>"
-                                            data-stock="<?php echo $prod['quantity']; ?>"
-                                            data-code="<?php echo escape($prod['product_code']); ?>">
-                                            <?php echo escape($prod['product_name']); ?> — ₱<?php echo number_format($prod['selling_price'], 2); ?> (<?php echo $prod['quantity']; ?> in stock)
-                                        </option>
+                                        <div class="d-flex align-items-center justify-content-between py-1 px-2 mb-1 bg-white rounded jo-record-card">
+                                            <div>
+                                                <strong style="font-size:13px;"><?php echo escape($prod['product_name']); ?></strong>
+                                                <small class="text-muted d-block"><?php echo escape($prod['product_code']); ?> • <?php echo (int)$prod['quantity']; ?> in stock</small>
+                                            </div>
+                                            <div class="d-flex align-items-center gap-2">
+                                                <span style="font-size:13px;font-weight:600;min-width:72px;text-align:right;"><?php echo formatCurrency($prod['selling_price']); ?></span>
+                                                <input type="number" class="form-control form-control-sm text-center" id="jo_prod_qty_<?php echo (int)$prod['id']; ?>" value="1" min="1" style="width:55px;">
+                                                <button type="button" class="btn btn-sm btn-dark py-0 px-2" style="font-size:12px;"
+                                                    onclick="joAddProduct(<?php echo (int)$prod['id']; ?>, '<?php echo addslashes(escape($prod['product_name'])); ?>', <?php echo (float)$prod['selling_price']; ?>, '<?php echo addslashes(escape($prod['product_code'])); ?>', <?php echo (int)$prod['quantity']; ?>, 'jo_prod_qty_<?php echo (int)$prod['id']; ?>')">
+                                                    <i class="bi bi-plus"></i> Add
+                                                </button>
+                                            </div>
+                                        </div>
                                         <?php endforeach; ?>
-                                        <?php if (empty($allInventoryProducts)): ?>
-                                        <option disabled>No products in inventory</option>
-                                        <?php endif; ?>
-                                    </select>
-                                    <input type="number" id="jo_product_qty" class="form-control form-control-sm text-center" value="1" min="1" style="width:55px;">
-                                    <button type="button" class="btn btn-sm btn-dark px-2" onclick="joAddProduct()"><i class="bi bi-plus"></i></button>
+                                    <?php endif; ?>
                                 </div>
-                                <div id="joProductsList" style="max-height:130px;overflow-y:auto;"></div>
                             </div>
                         </div>
 
@@ -1939,27 +2292,27 @@ include_once '../partials/header.php';
                                 <div class="row g-2">
                                     <div class="col-4">
                                         <label class="form-label form-label-sm">Make / Brand</label>
-                                        <input type="text" class="form-control form-control-sm" id="je_vehicle_make" placeholder="Toyota">
+                                        <input type="text" class="form-control form-control-sm" id="je_vehicle_make">
                                     </div>
                                     <div class="col-4">
                                         <label class="form-label form-label-sm">Model</label>
-                                        <input type="text" class="form-control form-control-sm" id="je_vehicle_model" placeholder="Vios">
+                                        <input type="text" class="form-control form-control-sm" id="je_vehicle_model">
                                     </div>
                                     <div class="col-4">
                                         <label class="form-label form-label-sm">Year</label>
-                                        <input type="text" class="form-control form-control-sm" id="je_vehicle_year" placeholder="2022">
+                                        <input type="text" class="form-control form-control-sm" id="je_vehicle_year">
                                     </div>
                                     <div class="col-4">
                                         <label class="form-label form-label-sm">Plate Number</label>
-                                        <input type="text" class="form-control form-control-sm" id="je_vehicle_plate" placeholder="ABC 1234">
+                                        <input type="text" class="form-control form-control-sm" id="je_vehicle_plate">
                                     </div>
                                     <div class="col-4">
                                         <label class="form-label form-label-sm">Color</label>
-                                        <input type="text" class="form-control form-control-sm" id="je_vehicle_color" placeholder="White">
+                                        <input type="text" class="form-control form-control-sm" id="je_vehicle_color">
                                     </div>
                                     <div class="col-4">
                                         <label class="form-label form-label-sm">Mileage (km)</label>
-                                        <input type="text" class="form-control form-control-sm" id="je_vehicle_mileage" placeholder="50000">
+                                        <input type="text" class="form-control form-control-sm" id="je_vehicle_mileage">
                                     </div>
                                 </div>
                             </div>
@@ -2035,31 +2388,31 @@ include_once '../partials/header.php';
                     <div class="col-12">
                         <div class="card mb-3" style="border:1.5px solid #e0e0e0;">
                             <div class="card-header" style="background:#fff;border-bottom:1.5px solid #e0e0e0;padding:10px 15px;">
-                                <h6 class="mb-0" style="font-weight:600;"><i class="bi bi-box-seam me-1"></i>Product</h6>
+                                <h6 class="mb-0" style="font-weight:600;"><i class="bi bi-box-seam me-1"></i>Products</h6>
                             </div>
                             <div class="card-body">
-                                <div class="mb-3 mb-md-0">
-                                    <label class="form-label form-label-sm fw-semibold" style="color:#000;">Add Product</label>
-                                    <div class="d-flex gap-1 mb-1">
-                                        <select class="form-select form-select-sm" id="est_product_select" style="flex:1;">
-                                            <option value="">— Select product —</option>
-                                            <?php foreach ($allInventoryProducts as $prod): ?>
-                                            <option value="<?php echo $prod['id']; ?>"
-                                                data-name="<?php echo addslashes(escape($prod['product_name'])); ?>"
-                                                data-price="<?php echo $prod['selling_price']; ?>"
-                                                data-stock="<?php echo $prod['quantity']; ?>">
-                                                <?php echo escape($prod['product_name']); ?> — ₱<?php echo number_format($prod['selling_price'], 2); ?> (<?php echo $prod['quantity']; ?> in stock)
-                                            </option>
-                                            <?php endforeach; ?>
-                                            <?php if (empty($allInventoryProducts)): ?>
-                                            <option disabled>No products in inventory</option>
-                                            <?php endif; ?>
-                                        </select>
-                                        <input type="number" id="est_product_qty" class="form-control form-control-sm text-center" value="1" min="1" style="width:55px;">
-                                        <button type="button" class="btn btn-sm btn-dark px-2" onclick="estAddProduct()"><i class="bi bi-plus"></i></button>
+                                <div style="max-height:220px;overflow-y:auto;border:1px solid #e0e0e0;border-radius:6px;padding:10px;background:#f9f9f9;">
+                                    <?php if (empty($allInventoryProducts)): ?>
+                                        <p class="text-muted text-center small py-3 mb-0">No products in inventory.</p>
+                                    <?php else: ?>
+                                        <?php foreach ($allInventoryProducts as $prod): ?>
+                                        <div class="d-flex align-items-center justify-content-between py-1 px-2 mb-1 bg-white rounded jo-record-card">
+                                            <div>
+                                                <strong style="font-size:13px;"><?php echo escape($prod['product_name']); ?></strong>
+                                                <small class="text-muted d-block"><?php echo escape($prod['product_code']); ?> • <?php echo (int)$prod['quantity']; ?> in stock</small>
+                                            </div>
+                                            <div class="d-flex align-items-center gap-2">
+                                                <span style="font-size:13px;font-weight:600;min-width:72px;text-align:right;"><?php echo formatCurrency($prod['selling_price']); ?></span>
+                                                <input type="number" class="form-control form-control-sm text-center" id="est_prod_qty_<?php echo (int)$prod['id']; ?>" value="1" min="1" style="width:55px;">
+                                                <button type="button" class="btn btn-sm btn-dark py-0 px-2" style="font-size:12px;"
+                                                    onclick="estAddProduct(<?php echo (int)$prod['id']; ?>, '<?php echo addslashes(escape($prod['product_name'])); ?>', <?php echo (float)$prod['selling_price']; ?>, <?php echo (int)$prod['quantity']; ?>, 'est_prod_qty_<?php echo (int)$prod['id']; ?>')">
+                                                    <i class="bi bi-plus"></i> Add
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <?php endforeach; ?>
+                                    <?php endif; ?>
                                     </div>
-                                    <div id="estProductsList" style="max-height:120px;overflow-y:auto;"></div>
-                                </div>
                             </div>
                         </div>
                     </div>
@@ -2114,7 +2467,21 @@ include_once '../partials/header.php';
 
 <script>
 const csrfToken = '<?php echo generateCSRFToken(); ?>';
-const printTemplateSettings = <?php echo json_encode($printTemplateSettings, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
+const canOverridePaidPaymentStatus = <?php echo hasAnyRole(['admin', 'system_administrator']) ? 'true' : 'false'; ?>;
+let printTemplateSettings = <?php echo json_encode($printTemplateSettings, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
+
+async function refreshPrintTemplateSettings() {
+    try {
+        const response = await fetch(`${APP_URL}/api/print_template.php`);
+        if (!response.ok) return;
+        const data = await response.json();
+        if (data && typeof data === 'object') {
+            printTemplateSettings = { ...printTemplateSettings, ...data };
+        }
+    } catch (e) {
+        console.warn('Unable to refresh print template settings', e);
+    }
+}
 
 function applyPrintTemplate(template, vars) {
     let output = String(template || '');
@@ -2151,6 +2518,35 @@ function getPrintFooterHtml() {
     });
 }
 
+async function waitForPrintAssets(areaId, timeoutMs = 3000) {
+    const area = document.getElementById(areaId);
+    if (!area) return;
+
+    const images = Array.from(area.querySelectorAll('img'));
+    if (!images.length) return;
+
+    const waits = images.map((img) => {
+        if (img.complete && img.naturalWidth > 0) {
+            return Promise.resolve();
+        }
+
+        return new Promise((resolve) => {
+            let done = false;
+            const finish = () => {
+                if (done) return;
+                done = true;
+                resolve();
+            };
+
+            img.addEventListener('load', finish, { once: true });
+            img.addEventListener('error', finish, { once: true });
+            setTimeout(finish, timeoutMs);
+        });
+    });
+
+    await Promise.all(waits);
+}
+
 /* ═══════════════════════════════════════════
    JOB ORDER MODAL LOGIC
 ═══════════════════════════════════════════ */
@@ -2158,6 +2554,22 @@ let joItems    = [];   // { id, type, name, basePrice, labor, price, qty }
 let joProducts = [];   // { id, name, code, price, qty }
 let joEditingId = null;
 let joEditingStatus = 'pending';
+let joPaymentStatusLocked = false;
+
+function applyJoPaymentStatusEditRule(paymentStatus) {
+    const payStatusSelect = document.getElementById('jo_payment_status');
+    if (!payStatusSelect) return;
+
+    joPaymentStatusLocked = paymentStatus === 'paid' && !canOverridePaidPaymentStatus;
+    payStatusSelect.disabled = joPaymentStatusLocked;
+    if (joPaymentStatusLocked) {
+        payStatusSelect.value = 'paid';
+        payStatusSelect.title = 'Only Admin/System Administrator can change payment status for paid job orders.';
+    } else {
+        payStatusSelect.title = '';
+    }
+    joTogglePartial();
+}
 
 function joSetMode(isEdit, jobOrderNumber = '') {
     const title = document.getElementById('createJobOrderModalLabel');
@@ -2174,33 +2586,29 @@ function joSetMode(isEdit, jobOrderNumber = '') {
 }
 
 /* ── Product picker ── */
-function joAddProduct() {
-    const sel   = document.getElementById('jo_product_select');
-    const qty   = parseInt(document.getElementById('jo_product_qty').value) || 1;
-    const opt   = sel.options[sel.selectedIndex];
-    if (!sel.value) return;
+function joAddProduct(id, name, price, code = '', stock = 0, qtyInputId = null) {
+    const qtyInput = qtyInputId ? document.getElementById(qtyInputId) : document.getElementById('jo_product_qty');
+    const qty = Math.max(1, parseInt(qtyInput?.value || '1', 10) || 1);
+    const parsedId = parseInt(id, 10);
+    const parsedPrice = parseFloat(price || 0) || 0;
+    if (!parsedId || !name) return;
 
-    const id    = parseInt(sel.value);
-    const name  = opt.dataset.name;
-    const price = parseFloat(opt.dataset.price);
-    const stock = parseInt(opt.dataset.stock);
-    const code  = opt.dataset.code;
-
-    const existing = joProducts.find(p => p.id === id);
+    const existing = joProducts.find(p => p.id === parsedId);
     if (existing) {
         existing.qty += qty;
     } else {
-        joProducts.push({ id, name, code, price, qty });
+        joProducts.push({ id: parsedId, name, code, price: parsedPrice, qty });
     }
-    sel.value = '';
-    document.getElementById('jo_product_qty').value = 1;
+    if (qtyInput) qtyInput.value = 1;
     joRenderProducts();
+    joRenderItems();
     joCalc();
 }
 
 function joRemoveProduct(idx) {
     joProducts.splice(idx, 1);
     joRenderProducts();
+    joRenderItems();
     joCalc();
 }
 
@@ -2208,11 +2616,13 @@ function joChangeProductQty(idx, val) {
     const qty = parseInt(val);
     if (qty < 1) { joRemoveProduct(idx); return; }
     joProducts[idx].qty = qty;
+    joRenderItems();
     joCalc();
 }
 
 function joRenderProducts() {
     const container = document.getElementById('joProductsList');
+    if (!container) return;
     if (joProducts.length === 0) {
         container.innerHTML = '<p class="text-muted small text-center py-2 mb-0">No products added.</p>';
         return;
@@ -2291,13 +2701,13 @@ function joRenderItems() {
     const emptyMsg  = document.getElementById('joEmptyMsg');
     const countBadge = document.getElementById('joItemCount');
 
-    if (joItems.length === 0) {
+    if (joItems.length === 0 && joProducts.length === 0) {
         container.innerHTML = '<p class="text-muted text-center small py-4 mb-0" id="joEmptyMsg">No items added yet.</p>';
         countBadge.textContent = '0';
         return;
     }
 
-    countBadge.textContent = joItems.length;
+    countBadge.textContent = joItems.length + joProducts.length;
     let html = '';
     joItems.forEach((item, idx) => {
         const unitPrice = (item.basePrice || 0) + (item.labor || 0);
@@ -2335,6 +2745,34 @@ function joRenderItems() {
             </div>
         </div>`;
     });
+
+    joProducts.forEach((product, idx) => {
+        const lineTotal = (product.price * product.qty).toFixed(2);
+        html += `
+        <div class="px-3 py-2" style="border-bottom:1px solid #f0f0f0;">
+            <div class="d-flex align-items-start justify-content-between gap-2">
+                <div style="flex:1;min-width:0;">
+                    <div class="text-truncate" style="font-size:12px;font-weight:600;">${product.name}</div>
+                    <div class="d-flex align-items-center gap-1 mt-1 flex-wrap" style="row-gap:4px;">
+                        <small class="text-muted">Product${product.code ? ` • ${product.code}` : ''}</small>
+                        <small class="text-muted">•</small>
+                        <small class="text-muted">₱${parseFloat(product.price).toFixed(2)} each</small>
+                        <div class="d-flex align-items-center gap-1" style="min-width:0;">
+                            <small class="text-muted">Qty</small>
+                            <input type="number" class="form-control form-control-sm text-center" value="${product.qty}" min="1" style="width:42px;min-width:42px;font-size:11px;padding:0.2rem 0.3rem;" onchange="joChangeProductQty(${idx}, this.value)">
+                        </div>
+                    </div>
+                </div>
+                <div class="d-flex align-items-center gap-2 ms-2">
+                    <span style="font-size:13px;font-weight:700;min-width:74px;text-align:center;">₱${lineTotal}</span>
+                    <button type="button" class="btn btn-sm btn-outline-danger p-1" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;" onclick="joRemoveProduct(${idx})">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                </div>
+            </div>
+        </div>`;
+    });
+
     container.innerHTML = html;
 }
 
@@ -2435,7 +2873,7 @@ function joSave() {
         discount_value:   document.getElementById('jo_discount_value').value,
         parts_cost:       joProducts.reduce((s, p) => s + p.price * p.qty, 0),
         payment_method:   document.getElementById('jo_payment_method').value,
-        payment_status:   document.getElementById('jo_payment_status').value,
+        payment_status:   joPaymentStatusLocked ? 'paid' : document.getElementById('jo_payment_status').value,
         partial_amount:   parseFloat(document.getElementById('jo_partial_amount').value) || 0,
         notes:            document.getElementById('jo_notes').value.trim(),
         items:            joItems.map(item => ({
@@ -2464,12 +2902,22 @@ function joSave() {
     .then(r => r.json())
     .then(data => {
         if (data.success) {
-            alert(isEditMode
-                ? 'Job order updated successfully.'
-                : ('Job order created: ' + data.data.job_order_number));
-            bootstrap.Modal.getInstance(document.getElementById('createJobOrderModal')).hide();
-            joReset();
-            location.reload();
+            const finishConversion = () => {
+                alert(isEditMode
+                    ? 'Job order updated successfully.'
+                    : ('Job order created: ' + data.data.job_order_number));
+                bootstrap.Modal.getInstance(document.getElementById('createJobOrderModal')).hide();
+                joReset();
+                location.reload();
+            };
+
+            if (!isEditMode && jeSourceEstimateId) {
+                deleteEstimateAfterConversion(jeSourceEstimateId)
+                    .catch(() => {})
+                    .finally(finishConversion);
+            } else {
+                finishConversion();
+            }
         } else {
             alert('Error: ' + data.message);
         }
@@ -2480,6 +2928,7 @@ function joSave() {
 function joReset() {
     joEditingId = null;
     joEditingStatus = 'pending';
+    joPaymentStatusLocked = false;
     joItems = [];
     joProducts = [];
     joRenderItems();
@@ -2490,10 +2939,16 @@ function joReset() {
     joUpdateTechnicianIndicator();
     document.getElementById('joPartialRow').style.display = 'none';
     document.getElementById('joRemainingBalance').textContent = '₱0.00';
+    const payStatusSelect = document.getElementById('jo_payment_status');
+    if (payStatusSelect) {
+        payStatusSelect.disabled = false;
+        payStatusSelect.title = '';
+    }
     joSetMode(false);
 }
 
-function joPrintPreview() {
+async function joPrintPreview() {
+    await refreshPrintTemplateSettings();
     const name    = document.getElementById('jo_customer_name').value.trim() || '—';
     const phone   = document.getElementById('jo_customer_phone').value.trim() || '—';
     const email   = document.getElementById('jo_customer_email').value.trim() || '—';
@@ -2652,6 +3107,7 @@ function joPrintPreview() {
     </div>`;
 
     document.getElementById('joPrintArea').style.display = 'block';
+    await waitForPrintAssets('joPrintArea');
     window.print();
     document.getElementById('joPrintArea').style.display = 'none';
 }
@@ -2698,8 +3154,14 @@ function jeConvertToJo() {
 
         alert('Estimate saved: ' + data.data.estimate_number + '. You can now complete conversion to Job Order.');
 
-        joItems = payload.services.map(item => ({ ...item }));
-        joProducts = payload.products.map(product => ({ ...product }));
+        joItems = payload.services.map(normalizeEstimateItemToJo);
+        joProducts = payload.products.map(product => ({
+            id: product.id || 0,
+            name: product.name || '',
+            code: product.code || '',
+            price: parseFloat(product.price || 0) || 0,
+            qty: parseInt(product.qty || 1, 10) || 1
+        }));
 
         document.getElementById('jo_vehicle_make').value = payload.vehicle_make;
         document.getElementById('jo_vehicle_model').value = payload.vehicle_model;
@@ -2721,7 +3183,19 @@ function jeConvertToJo() {
     .catch(() => alert('Network error. Please try again.'));
 }
 
-function jePrintPreview() {
+function convertEstimateById(id) {
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('viewEstimateModal')).hide();
+    fetch(APP_URL + '/api/estimates.php?id=' + id)
+        .then(r => r.json())
+        .then(res => {
+            if (!res.success) { alert(res.message); return; }
+            convertEstimateToJo(res.data);
+        })
+        .catch(() => alert('Failed to load estimate.'));
+}
+
+async function jePrintPreview() {
+    await refreshPrintTemplateSettings();
     const make    = document.getElementById('je_vehicle_make').value.trim() || '—';
     const model   = document.getElementById('je_vehicle_model').value.trim() || '—';
     const year    = document.getElementById('je_vehicle_year').value.trim() || '—';
@@ -2733,11 +3207,12 @@ function jePrintPreview() {
     const serviceRows = selectedServices.map((item, index) => {
         const name = item.name || 'Service';
         const price = parseFloat(item.price) || 0;
+        const qty = parseInt(item.qty || 1, 10) || 1;
         return `
             <tr>
                 <td style="padding:4px 8px;border:1px solid #ccc;text-align:center;">${index + 1}</td>
                 <td style="padding:4px 8px;border:1px solid #ccc;">${name}</td>
-                <td style="padding:4px 8px;border:1px solid #ccc;text-align:center;">1</td>
+                <td style="padding:4px 8px;border:1px solid #ccc;text-align:center;">${qty}</td>
                 <td style="padding:4px 8px;border:1px solid #ccc;text-align:right;">₱${price.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}</td>
             </tr>`;
     }).join('');
@@ -2813,6 +3288,7 @@ function jePrintPreview() {
     </div>`;
 
     document.getElementById('jePrintArea').style.display = 'block';
+    await waitForPrintAssets('jePrintArea');
     window.print();
     document.getElementById('jePrintArea').style.display = 'none';
 }
@@ -2822,26 +3298,28 @@ document.getElementById('createJobOrderModal').addEventListener('hidden.bs.modal
 
 // Estimate calculator
 let estProducts = []; // { id, name, price, qty }
+let estItemQuantities = {}; // { "type-id": qty }
 let savedEstimate = null;
+let jeSourceEstimateId = null;
 
-function estAddProduct() {
-    const sel   = document.getElementById('est_product_select');
-    const qty   = parseInt(document.getElementById('est_product_qty').value) || 1;
-    const opt   = sel.options[sel.selectedIndex];
-    if (!sel.value) return;
+function estimateItemKey(type, id) {
+    return `${type || 'service'}-${parseInt(id, 10) || 0}`;
+}
 
-    const id    = parseInt(sel.value);
-    const name  = opt.dataset.name;
-    const price = parseFloat(opt.dataset.price);
+function estAddProduct(id, name, price, stock = 0, qtyInputId = null) {
+    const qtyInput = qtyInputId ? document.getElementById(qtyInputId) : document.getElementById('est_product_qty');
+    const qty = Math.max(1, parseInt(qtyInput?.value || '1', 10) || 1);
+    const parsedId = parseInt(id, 10);
+    const parsedPrice = parseFloat(price || 0) || 0;
+    if (!parsedId || !name) return;
 
-    const existing = estProducts.find(p => p.id === id);
+    const existing = estProducts.find(p => p.id === parsedId);
     if (existing) {
         existing.qty += qty;
     } else {
-        estProducts.push({ id, name, price, qty });
+        estProducts.push({ id: parsedId, name, price: parsedPrice, qty });
     }
-    sel.value = '';
-    document.getElementById('est_product_qty').value = 1;
+    if (qtyInput) qtyInput.value = 1;
     estRenderProducts();
     calculateEstimate();
 }
@@ -2861,6 +3339,7 @@ function estChangeProductQty(idx, val) {
 
 function estRenderProducts() {
     const container = document.getElementById('estProductsList');
+    if (!container) return;
     if (estProducts.length === 0) {
         container.innerHTML = '<p class="text-muted small text-center py-2 mb-0">No products added.</p>';
         return;
@@ -2888,13 +3367,36 @@ function estRenderProducts() {
 }
 
 function getEstimateSelectedItems() {
-    return Array.from(document.querySelectorAll('.estimate-item:checked')).map((checkbox) => ({
-        id: parseInt(checkbox.dataset.id, 10),
-        type: checkbox.dataset.type || 'service',
-        name: checkbox.dataset.name || 'Item',
-        price: parseFloat(checkbox.dataset.price) || 0,
-        qty: 1
-    }));
+    return Array.from(document.querySelectorAll('.estimate-item:checked')).map((checkbox) => {
+        const id = parseInt(checkbox.dataset.id, 10);
+        const type = checkbox.dataset.type || 'service';
+        const key = estimateItemKey(type, id);
+        const qty = Math.max(1, parseInt(estItemQuantities[key] || 1, 10) || 1);
+
+        return {
+            id,
+            type,
+            name: checkbox.dataset.name || 'Item',
+            price: parseFloat(checkbox.dataset.price) || 0,
+            qty
+        };
+    });
+}
+
+function estChangeSelectedServiceQty(type, id, val) {
+    const key = estimateItemKey(type, id);
+    estItemQuantities[key] = Math.max(1, parseInt(val, 10) || 1);
+    if (typeof window.calculateEstimate === 'function') {
+        window.calculateEstimate();
+    }
+}
+
+function estRemoveSelectedService(type, id) {
+    const checkbox = document.querySelector(`.estimate-item[data-type="${type}"][data-id="${id}"]`);
+    if (checkbox) {
+        checkbox.checked = false;
+        checkbox.dispatchEvent(new Event('change'));
+    }
 }
 
 function estRenderSelectedItems() {
@@ -2915,21 +3417,44 @@ function estRenderSelectedItems() {
         return;
     }
 
-    const labelMap = {
-        service: 'Service',
-        bundle: 'Bundle',
-        product: 'Product'
-    };
+    container.innerHTML = allItems.map((item, index) => {
+        const unitPrice = parseFloat(item.price || 0);
+        const qty = Math.max(1, parseInt(item.qty || 1, 10) || 1);
+        const lineTotal = (unitPrice * qty).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        const isProduct = item.type === 'product';
+        const productIndex = index - selectedServicesAndBundles.length;
+        const removeAction = isProduct
+            ? `estRemoveProduct(${productIndex})`
+            : `estRemoveSelectedService('${item.type}', ${item.id})`;
+        const qtyAction = isProduct
+            ? `estChangeProductQty(${productIndex}, this.value)`
+            : `estChangeSelectedServiceQty('${item.type}', ${item.id}, this.value)`;
+        const itemLabel = isProduct ? 'Product' : (item.type === 'bundle' ? 'Bundle' : 'Service');
 
-    container.innerHTML = allItems.map((item) => `
-        <div class="d-flex justify-content-between align-items-center py-1 border-bottom" style="border-color:#f0f0f0 !important;font-size:12px;">
-            <div style="min-width:0;">
-                <strong class="d-block text-truncate">${item.name}</strong>
-                <small class="text-muted">${labelMap[item.type] || 'Item'}${item.qty > 1 ? ` • Qty: ${item.qty}` : ''}</small>
+        return `
+        <div class="px-3 py-2" style="border-bottom:1px solid #f0f0f0;">
+            <div class="d-flex align-items-start justify-content-between gap-2">
+                <div style="flex:1;min-width:0;">
+                    <div class="text-truncate" style="font-size:12px;font-weight:600;">${item.name}</div>
+                    <div class="d-flex align-items-center gap-1 mt-1 flex-wrap" style="row-gap:4px;">
+                        <small class="text-muted">${itemLabel}</small>
+                        <small class="text-muted">•</small>
+                        <small class="text-muted">₱${unitPrice.toFixed(2)} each</small>
+                        <div class="d-flex align-items-center gap-1" style="min-width:0;">
+                            <small class="text-muted">Qty</small>
+                            <input type="number" class="form-control form-control-sm text-center" value="${qty}" min="1" style="width:42px;min-width:42px;font-size:11px;padding:0.2rem 0.3rem;" onchange="${qtyAction}">
+                        </div>
+                    </div>
+                </div>
+                <div class="d-flex align-items-center gap-2 ms-2">
+                    <span style="font-size:13px;font-weight:700;min-width:74px;text-align:center;">₱${lineTotal}</span>
+                    <button type="button" class="btn btn-sm btn-outline-danger p-1" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;" onclick="${removeAction}">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                </div>
             </div>
-            <span class="fw-semibold ms-2">₱${(parseFloat(item.price || 0) * parseInt(item.qty || 1, 10)).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}</span>
-        </div>
-    `).join('');
+        </div>`;
+    }).join('');
 }
 
 function buildEstimatePayload() {
@@ -2961,16 +3486,45 @@ function saveEstimateRecord(payload) {
     }).then(r => r.json());
 }
 
+function deleteEstimateAfterConversion(estimateId) {
+    if (!estimateId) {
+        return Promise.resolve({ success: true });
+    }
+
+    return fetch(APP_URL + '/api/estimates.php?id=' + estimateId, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            csrf_token: csrfToken,
+            converted_cleanup: true
+        })
+    }).then(r => r.json());
+}
+
+function normalizeEstimateItemToJo(item) {
+    const price = parseFloat(item?.price ?? item?.base_price ?? item?.service_price ?? item?.unit_price ?? 0) || 0;
+    const labor = parseFloat(item?.labor ?? item?.labor_cost ?? 0) || 0;
+    const qty = parseInt(item?.qty ?? item?.quantity ?? 1, 10) || 1;
+
+    return {
+        type: item?.type || 'service',
+        id: item?.id || 0,
+        name: item?.name || '',
+        basePrice: price,
+        labor,
+        price: price + labor,
+        qty
+    };
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     const estimateCheckboxes = document.querySelectorAll('.estimate-item');
 
     function calculateEstimate() {
-        let servicesTotal = 0;
-        estimateCheckboxes.forEach(checkbox => {
-            if (checkbox.checked) {
-                servicesTotal += parseFloat(checkbox.dataset.price);
-            }
-        });
+        const selectedServices = getEstimateSelectedItems();
+        let servicesTotal = selectedServices.reduce((sum, item) => {
+            return sum + ((parseFloat(item.price) || 0) * (parseInt(item.qty || 1, 10) || 1));
+        }, 0);
 
         const productsTotal = estProducts.reduce((s, p) => s + p.price * p.qty, 0);
         const grandTotal    = servicesTotal + productsTotal;
@@ -2987,12 +3541,23 @@ document.addEventListener('DOMContentLoaded', function() {
     window.calculateEstimate = calculateEstimate;
 
     estimateCheckboxes.forEach(checkbox => {
-        checkbox.addEventListener('change', calculateEstimate);
+        checkbox.addEventListener('change', function() {
+            const key = estimateItemKey(checkbox.dataset.type, checkbox.dataset.id);
+            if (checkbox.checked) {
+                if (!estItemQuantities[key]) {
+                    estItemQuantities[key] = 1;
+                }
+            } else {
+                delete estItemQuantities[key];
+            }
+            calculateEstimate();
+        });
     });
 
     // reset products when modal closes
     document.getElementById('jobEstimateModal').addEventListener('hidden.bs.modal', function() {
         estProducts = [];
+        estItemQuantities = {};
         estRenderProducts();
         estimateCheckboxes.forEach(cb => cb.checked = false);
         calculateEstimate();
@@ -3366,12 +3931,12 @@ function saveEditBundle() {
                 </div>
                 <div class="card-body" style="padding:15px;">
                   <div class="row g-2">
-                    <div class="col-4"><label class="form-label form-label-sm">Make / Brand</label><input type="text" class="form-control form-control-sm" id="editJoMake" placeholder="Toyota"></div>
-                    <div class="col-4"><label class="form-label form-label-sm">Model</label><input type="text" class="form-control form-control-sm" id="editJoModel" placeholder="Vios"></div>
-                    <div class="col-4"><label class="form-label form-label-sm">Year</label><input type="text" class="form-control form-control-sm" id="editJoYear" placeholder="2022"></div>
-                    <div class="col-4"><label class="form-label form-label-sm">Plate Number</label><input type="text" class="form-control form-control-sm" id="editJoPlate" placeholder="ABC 1234"></div>
-                    <div class="col-4"><label class="form-label form-label-sm">Color</label><input type="text" class="form-control form-control-sm" id="editJoColor" placeholder="White"></div>
-                    <div class="col-4"><label class="form-label form-label-sm">Mileage (km)</label><input type="text" class="form-control form-control-sm" id="editJoMileage" placeholder="50000"></div>
+                    <div class="col-4"><label class="form-label form-label-sm">Make / Brand</label><input type="text" class="form-control form-control-sm" id="editJoMake"></div>
+                    <div class="col-4"><label class="form-label form-label-sm">Model</label><input type="text" class="form-control form-control-sm" id="editJoModel"></div>
+                    <div class="col-4"><label class="form-label form-label-sm">Year</label><input type="text" class="form-control form-control-sm" id="editJoYear"></div>
+                    <div class="col-4"><label class="form-label form-label-sm">Plate Number</label><input type="text" class="form-control form-control-sm" id="editJoPlate"></div>
+                    <div class="col-4"><label class="form-label form-label-sm">Color</label><input type="text" class="form-control form-control-sm" id="editJoColor"></div>
+                    <div class="col-4"><label class="form-label form-label-sm">Mileage (km)</label><input type="text" class="form-control form-control-sm" id="editJoMileage"></div>
                   </div>
                 </div>
               </div>
@@ -3632,7 +4197,7 @@ function viewJobOrder(id) {
             if (!res.success) { document.getElementById('viewJoBody').innerHTML = '<p class="text-danger p-3">'+res.message+'</p>'; return; }
             const d   = res.data;
             const fmt = v => '₱' + parseFloat(v||0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,',');
-            const statusBadge = {pending:'secondary',ongoing:'primary',under_inspection:'info',completed:'success',released:'success',returned_for_revision:'danger',cancelled:'danger'};
+            const statusBadge = {pending:'secondary',ongoing:'primary',under_inspection:'info',car_washing:'warning',completed:'success',released:'success',returned_for_revision:'danger',cancelled:'danger'};
             const payBadge    = {pending:'secondary',partial:'warning',paid:'success'};
             const date = d.created_at ? new Date(d.created_at).toLocaleDateString('en-PH',{year:'numeric',month:'long',day:'numeric'}) : '—';
             const assignedTechnicians = Array.isArray(d.technicians) && d.technicians.length
@@ -3835,6 +4400,7 @@ function editJobOrder(id) {
             document.getElementById('jo_vehicle_mileage').value  = d.vehicle_mileage   || '';
             document.getElementById('jo_payment_method').value   = d.payment_method    || 'cash';
             document.getElementById('jo_payment_status').value   = d.payment_status    || 'pending';
+            applyJoPaymentStatusEditRule(d.payment_status || 'pending');
             document.getElementById('jo_notes').value            = d.notes             || '';
             const statusAliases = {
                 for_approval: 'under_inspection',
@@ -3941,10 +4507,11 @@ function saveEditJobOrder() {
 </script>
 
 <script>
-function printJobOrder(id) {
+async function printJobOrder(id) {
+    await refreshPrintTemplateSettings();
     fetch(APP_URL + '/api/job_orders.php?id=' + id)
         .then(r => r.json())
-        .then(res => {
+        .then(async (res) => {
             if (!res.success) { alert(res.message); return; }
             const d    = res.data;
             const fmt  = n => '₱' + parseFloat(n||0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
@@ -4085,6 +4652,7 @@ function printJobOrder(id) {
     </div>`;
 
             document.getElementById('joPrintArea').style.display = 'block';
+            await waitForPrintAssets('joPrintArea');
             window.print();
             document.getElementById('joPrintArea').style.display = 'none';
         })
@@ -4188,10 +4756,11 @@ function saveEditEstimate() {
 </script>
 
 <script>
-function printEstimate(id) {
+async function printEstimate(id) {
+    await refreshPrintTemplateSettings();
     fetch(APP_URL + '/api/estimates.php?id=' + id)
         .then(r => r.json())
-        .then(res => {
+        .then(async (res) => {
             if (!res.success) { alert(res.message); return; }
             const d   = res.data;
             const fmt = v => '₱' + parseFloat(v||0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,',');
@@ -4265,6 +4834,7 @@ function printEstimate(id) {
                             ${getPrintFooterHtml()}
             </div>`;
             document.getElementById('jePrintArea').style.display = 'block';
+            await waitForPrintAssets('jePrintArea');
             window.print();
             document.getElementById('jePrintArea').style.display = 'none';
         })
@@ -4282,22 +4852,18 @@ function convertEstimateToJo(d) {
     try { services = JSON.parse(d.services_json || '[]'); } catch(e) {}
     try { products = JSON.parse(d.products_json || '[]'); } catch(e) {}
 
+    jeSourceEstimateId = d.id || null;
+
     // Load services into joItems
-    joItems = services.map(s => ({
-        type:  'service',
-        id:    s.id    || 0,
-        name:  s.name  || '',
-        price: parseFloat(s.price) || 0,
-        qty:   parseInt(s.qty)     || 1
-    }));
+    joItems = services.map(normalizeEstimateItemToJo);
 
     // Load products into joProducts
     joProducts = products.map(p => ({
         id:    p.id    || 0,
         name:  p.name  || '',
         code:  p.code  || '',
-        price: parseFloat(p.price) || 0,
-        qty:   parseInt(p.qty)     || 1
+        price: parseFloat(p.price ?? p.unit_price ?? 0) || 0,
+        qty:   parseInt(p.qty ?? p.quantity ?? 1, 10) || 1
     }));
 
     // Pre-fill vehicle fields

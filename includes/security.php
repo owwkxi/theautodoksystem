@@ -265,8 +265,8 @@ function isValidColumnName($columnName) {
  * Validate image file
  */
 function isValidImage($file) {
-    $allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
-    $allowedExtensions = ['jpg', 'jpeg', 'png', 'gif'];
+    $allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/x-webp'];
+    $allowedExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
     
     // Check MIME type
     $finfo = finfo_open(FILEINFO_MIME_TYPE);
@@ -296,8 +296,25 @@ function isValidImage($file) {
  * Upload image with validation
  */
 function uploadImage($file, $maxSize = 2097152) { // 2MB default
-    if (!isset($file) || $file['error'] !== UPLOAD_ERR_OK) {
+    if (!isset($file) || !isset($file['error'])) {
         return ['success' => false, 'message' => 'No file uploaded or upload error'];
+    }
+
+    if ($file['error'] !== UPLOAD_ERR_OK) {
+        $uploadErrorMessages = [
+            UPLOAD_ERR_INI_SIZE   => 'The uploaded file exceeds the server upload_max_filesize limit.',
+            UPLOAD_ERR_FORM_SIZE  => 'The uploaded file exceeds the form MAX_FILE_SIZE limit.',
+            UPLOAD_ERR_PARTIAL    => 'The file was only partially uploaded. Please try again.',
+            UPLOAD_ERR_NO_FILE    => 'No file was uploaded.',
+            UPLOAD_ERR_NO_TMP_DIR => 'Missing temporary upload directory on server.',
+            UPLOAD_ERR_CANT_WRITE => 'Failed to write uploaded file to disk.',
+            UPLOAD_ERR_EXTENSION  => 'A server extension stopped the file upload.'
+        ];
+        return ['success' => false, 'message' => $uploadErrorMessages[$file['error']] ?? 'File upload error'];
+    }
+
+    if (empty($file['tmp_name']) || !is_uploaded_file($file['tmp_name'])) {
+        return ['success' => false, 'message' => 'Invalid temporary upload file'];
     }
     
     // Check file size
@@ -314,9 +331,18 @@ function uploadImage($file, $maxSize = 2097152) { // 2MB default
     $extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
     $filename = uniqid() . '_' . time() . '.' . $extension;
     $destination = UPLOAD_PATH . $filename;
+
+    if (!is_dir(UPLOAD_PATH) && !mkdir(UPLOAD_PATH, 0755, true) && !is_dir(UPLOAD_PATH)) {
+        return ['success' => false, 'message' => 'Upload directory is not writable'];
+    }
+
+    if (!is_writable(UPLOAD_PATH)) {
+        return ['success' => false, 'message' => 'Upload directory is not writable'];
+    }
     
     // Move uploaded file
     if (move_uploaded_file($file['tmp_name'], $destination)) {
+        @chmod($destination, 0644);
         return [
             'success' => true,
             'filename' => $filename,

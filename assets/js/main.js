@@ -67,7 +67,7 @@ function appConfirm(message, options = {}) {
                     <div class="modal-content border-0 shadow">
                         <div class="modal-header">
                             <h5 class="modal-title" id="appConfirmTitle">Confirm Action</h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            <button type="button" class="app-confirm-close" data-bs-dismiss="modal" aria-label="Close">&times;</button>
                         </div>
                         <div class="modal-body">
                             <p class="mb-0" id="appConfirmMessage"></p>
@@ -218,7 +218,9 @@ function showToast(message, type = 'info') {
         <div id="${toastId}" class="toast ${bgClass} text-white border-0 shadow" role="alert" data-bs-delay="3500" aria-live="assertive" aria-atomic="true" style="min-width:280px;max-width:380px;">
             <div class="toast-header ${bgClass} text-white">
                 <strong class="me-auto">Notification</strong>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+                <button type="button" class="toast-close" data-bs-dismiss="toast" aria-label="Close">
+                    <i class="bi bi-x-lg"></i>
+                </button>
             </div>
             <div class="toast-body">
                 ${message}

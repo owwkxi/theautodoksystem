@@ -10,11 +10,13 @@ $isServiceAdviser = $userRole === 'service_adviser';
 $isJobOrderOnlyRole = $isTechnician || $isChiefMechanic || $isServiceAdviser;
 $isAdminOrCashier = hasAnyRole(['admin', 'cashier']);
 $canOpenStaffManagement = hasAnyRole(['admin', 'cashier', 'chief_mechanic', 'service_adviser']);
+$brandingSettings = function_exists('getSystemBrandingSettings') ? getSystemBrandingSettings() : [];
+$systemLogoUrl = $brandingSettings['system_logo_url'] ?? (APP_URL . '/assets/images/logo.png');
 ?>
 <div class="sidebar">
 
     <div class="sidebar-brand">
-        <img src="<?php echo APP_URL; ?>/assets/images/logo.png" alt="The Autodok Logo" class="sidebar-logo">
+        <img src="<?php echo escape($systemLogoUrl); ?>" alt="The Autodok Logo" class="sidebar-logo" onerror="this.onerror=null;this.src='<?php echo APP_URL; ?>/assets/images/logo.png';">
         <div class="sidebar-brand-text">
             <div class="sidebar-brand-name">The Autodok</div>
             <div class="sidebar-brand-sub">Automotive Care Services</div>
@@ -27,7 +29,7 @@ $canOpenStaffManagement = hasAnyRole(['admin', 'cashier', 'chief_mechanic', 'ser
     </div>
 
     <nav class="sidebar-nav">
-        <?php if (!$isTechnician): ?>
+        <?php if (!$isTechnician && !$isServiceAdviser && !$isChiefMechanic): ?>
         <a href="<?php echo APP_URL; ?>/views/dashboard/index.php"
            class="nav-item <?php echo strpos($p, '/dashboard/') !== false ? 'active' : ''; ?>">
             <i class="bi bi-grid-fill"></i>
@@ -36,13 +38,13 @@ $canOpenStaffManagement = hasAnyRole(['admin', 'cashier', 'chief_mechanic', 'ser
         <?php endif; ?>
 
         <?php if ($isJobOrderOnlyRole): ?>
-        <a href="<?php echo APP_URL; ?>/views/services/manage.php"
+        <a href="<?php echo APP_URL; ?>/views/services/manage.php?tab=job_orders"
            class="nav-item <?php echo strpos($p, '/services/') !== false ? 'active' : ''; ?>">
             <i class="bi bi-wrench"></i>
             <span>Job Orders</span>
         </a>
         <?php else: ?>
-        <a href="<?php echo APP_URL; ?>/views/services/manage.php"
+        <a href="<?php echo APP_URL; ?>/views/services/manage.php?tab=job_orders"
            class="nav-item <?php echo strpos($p, '/services/') !== false ? 'active' : ''; ?>">
             <i class="bi bi-wrench"></i>
             <span>Services</span>

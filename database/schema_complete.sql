@@ -11,10 +11,10 @@ SET time_zone = '+00:00';
 SET sql_mode = 'STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION';
 SET FOREIGN_KEY_CHECKS = 0;
 
-CREATE DATABASE IF NOT EXISTS autodok_db
+CREATE DATABASE IF NOT EXISTS autodok_prime_auto_services_db
   DEFAULT CHARACTER SET utf8mb4
   COLLATE utf8mb4_unicode_ci;
-USE autodok_db;
+USE autodok_prime_auto_services_db;
 
 -- ============================================================================
 -- DROP TABLES (dependency-safe reverse order)
@@ -354,7 +354,7 @@ CREATE TABLE job_orders (
   customer_id INT UNSIGNED NOT NULL,
   vehicle_id INT UNSIGNED NOT NULL,
   service_adviser_id INT UNSIGNED DEFAULT NULL,
-  status ENUM('pending','ongoing','under_inspection','completed','released','returned_for_revision','cancelled') NOT NULL DEFAULT 'pending',
+  status ENUM('pending','ongoing','under_inspection','car_washing','completed','released','returned_for_revision','cancelled') NOT NULL DEFAULT 'pending',
   priority ENUM('low','normal','high','urgent') NOT NULL DEFAULT 'normal',
   subtotal DECIMAL(10,2) NOT NULL DEFAULT 0.00,
   labor_total DECIMAL(10,2) NOT NULL DEFAULT 0.00,

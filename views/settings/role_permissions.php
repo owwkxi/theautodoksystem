@@ -47,7 +47,7 @@ $rules = [
     ],
     [
         'feature' => 'View active job orders',
-        'description' => 'Active statuses are pending, ongoing, under inspection, returned for revision.',
+        'description' => 'Active statuses are pending, ongoing, under inspection, car washing, and returned for revision.',
         'allowed' => ['admin', 'cashier', 'chief_mechanic', 'service_adviser', 'technician'],
     ],
     [

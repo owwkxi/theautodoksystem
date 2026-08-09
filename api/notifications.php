@@ -32,8 +32,8 @@ try {
             if (isset($_GET['action'])) {
                 switch ($_GET['action']) {
                     case 'unread_count':
-                        // Get unread count for stored notifications only
-                        $count = $notification->getUnreadCount($userId);
+                        // Get unread count including dynamic alerts
+                        $count = $notification->getUnreadCountWithDynamic($userId);
                         echo json_encode([
                             'success' => true,
                             'count' => $count
@@ -73,6 +73,74 @@ try {
                     'success' => true,
                     'notifications' => $notifications
                 ]);
+            }
+            break;
+
+        case 'POST':
+            // Fallback action endpoint (more compatible than PUT/DELETE on some hosts)
+            $jsonData = json_decode(file_get_contents('php://input'), true);
+            $postAction = $_POST['action'] ?? ($jsonData['action'] ?? null);
+            $postNotificationId = $_POST['notification_id'] ?? ($jsonData['notification_id'] ?? null);
+
+            if (!$postAction) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => 'Action required']);
+                break;
+            }
+
+            switch ($postAction) {
+                case 'mark_read':
+                    if ($postNotificationId) {
+                        if (strpos((string)$postNotificationId, 'dyn_') === 0) {
+                            $result = $notification->dismissDynamicById($userId, (string)$postNotificationId);
+                        } else {
+                            $result = $notification->markAsRead($postNotificationId, $userId);
+                        }
+                        echo json_encode([
+                            'success' => $result,
+                            'message' => $result ? 'Notification marked as read' : 'Failed to mark as read'
+                        ]);
+                    } else {
+                        http_response_code(400);
+                        echo json_encode(['success' => false, 'message' => 'Notification ID required']);
+                    }
+                    break;
+
+                case 'mark_all_read':
+                    $result = $notification->markAllAsRead($userId);
+                    echo json_encode([
+                        'success' => $result,
+                        'message' => $result ? 'All notifications marked as read' : 'Failed to mark all as read'
+                    ]);
+                    break;
+
+                case 'delete_all_read':
+                    $result = $notification->deleteAllRead($userId);
+                    echo json_encode([
+                        'success' => $result,
+                        'message' => $result ? 'All read notifications deleted' : 'Failed to delete notifications'
+                    ]);
+                    break;
+
+                case 'delete_all':
+                    $result = $notification->deleteAll($userId);
+                    echo json_encode([
+                        'success' => $result,
+                        'message' => $result ? 'All notifications deleted' : 'Failed to delete notifications'
+                    ]);
+                    break;
+
+                case 'auto_clear_old':
+                    $result = $notification->deleteOlderThan($userId, 30);
+                    echo json_encode([
+                        'success' => $result,
+                        'message' => $result ? 'Old notifications cleared' : 'Failed to clear old notifications'
+                    ]);
+                    break;
+
+                default:
+                    http_response_code(400);
+                    echo json_encode(['success' => false, 'message' => 'Invalid action']);
             }
             break;
 

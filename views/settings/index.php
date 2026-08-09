@@ -26,9 +26,23 @@ include __DIR__ . '/../partials/header.php';
             <div class="card h-100">
                 <div class="card-body d-flex flex-column">
                     <h6 class="mb-2"><i class="bi bi-printer me-2"></i>Print Template</h6>
-                    <p class="text-muted small mb-3">Edit print header, footer, logo, and preview template used in Job Order and Estimate printouts.</p>
+                    <p class="text-muted small mb-3">Edit print header/footer branding and preview template used in Job Order and Estimate printouts.</p>
                     <div class="mt-auto">
                         <a href="<?php echo APP_URL; ?>/views/settings/print_template.php" class="btn btn-dark btn-sm">
+                            <i class="bi bi-pencil-square"></i> Open Editor
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-lg-4">
+            <div class="card h-100">
+                <div class="card-body d-flex flex-column">
+                    <h6 class="mb-2"><i class="bi bi-image me-2"></i>System Logo</h6>
+                    <p class="text-muted small mb-3">Manage logo used in sidebar, top bar, login page, and browser tab icon.</p>
+                    <div class="mt-auto">
+                        <a href="<?php echo APP_URL; ?>/views/settings/system_logo.php" class="btn btn-dark btn-sm">
                             <i class="bi bi-pencil-square"></i> Open Editor
                         </a>
                     </div>

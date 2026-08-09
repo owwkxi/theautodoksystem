@@ -21,15 +21,15 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 $currentUserId   = $_SESSION['user_id'];
-$currentUserRole = $_SESSION['user_role'] ?? 'admin';
+$currentUserRole = normalizeRole($_SESSION['user_role'] ?? 'admin');
 $method          = $_SERVER['REQUEST_METHOD'];
 $id              = $_GET['id'] ?? null;
 
 $response = ['success' => false, 'message' => '', 'data' => null];
 
-$allowedJoStatuses = ['pending', 'ongoing', 'under_inspection', 'completed', 'released', 'returned_for_revision', 'cancelled'];
-$runningJoStatuses = ['ongoing', 'under_inspection'];
-$activeJoStatuses = ['pending', 'ongoing', 'under_inspection', 'returned_for_revision'];
+$allowedJoStatuses = ['pending', 'ongoing', 'under_inspection', 'car_washing', 'completed', 'released', 'returned_for_revision', 'cancelled'];
+$runningJoStatuses = ['ongoing', 'under_inspection', 'returned_for_revision'];
+$activeJoStatuses = ['pending', 'ongoing', 'under_inspection', 'car_washing', 'returned_for_revision'];
 
 $normalizeJoStatus = static function ($status) {
     $clean = sanitize((string)$status);
@@ -53,8 +53,8 @@ $canViewJobOrder = static function ($db, $jobOrderId, $jobOrderStatus, $role, $u
         return true;
     }
 
-    if ($role === 'chief_mechanic' || $role === 'service_adviser') {
-        return in_array($jobOrderStatus, $activeJoStatuses, true);
+    if ($role === 'service_adviser' || $role === 'chief_mechanic') {
+        return true;
     }
 
     if ($role === 'technician') {
@@ -401,6 +401,18 @@ try {
 
             logActivity($currentUserId, 'create_job_order', "Created job order #{$joNumber}");
 
+            $actorName = sanitize($_SESSION['full_name'] ?? $_SESSION['username'] ?? 'Staff');
+            notifyRoles(
+                'job_status',
+                'New Job Order Created',
+                buildNotificationMessageTemplate($actorName, 'created', 'job order #' . $joNumber),
+                ['admin', 'cashier', 'service_adviser', 'chief_mechanic', 'technician'],
+                [
+                    'reference_type' => 'job_order',
+                    'reference_id' => (int)$jobOrderId,
+                ]
+            );
+
             $response['success'] = true;
             $response['message'] = 'Job order created successfully';
             $response['data']    = ['id' => $jobOrderId, 'job_order_number' => $joNumber];
@@ -425,6 +437,48 @@ try {
                 [$id]
             );
             if (!$jo) throw new Exception('Job order not found');
+
+            $updateNotes = [];
+            $oldPaymentMethod = (string)($jo['payment_method'] ?? 'cash');
+            $oldPartialAmount = 0.0;
+            $oldPaymentStatus = (string)($jo['payment_status'] ?? 'pending');
+
+            $currentEditSnapshot = $db->fetch(
+                "SELECT c.full_name AS customer_name, c.phone AS customer_phone, c.email AS customer_email, c.address AS customer_address,
+                        v.brand AS vehicle_make, v.model AS vehicle_model, v.year_model AS vehicle_year, v.plate_number AS vehicle_license,
+                        v.color AS vehicle_color, v.mileage AS vehicle_mileage,
+                        jo.partial_amount, jo.notes, jo.payment_method, jo.payment_status
+                 FROM job_orders jo
+                 LEFT JOIN customers c ON jo.customer_id = c.id
+                 LEFT JOIN vehicles v ON jo.vehicle_id = v.id
+                 WHERE jo.id = ?",
+                [$id]
+            );
+            if ($currentEditSnapshot) {
+                $oldPartialAmount = (float)($currentEditSnapshot['partial_amount'] ?? 0);
+            }
+
+            $oldServiceCount = (int)($db->fetch(
+                "SELECT COUNT(*) AS total FROM job_order_services WHERE job_order_id = ?",
+                [$id]
+            )['total'] ?? 0);
+            $oldProductCount = (int)($db->fetch(
+                "SELECT COUNT(*) AS total FROM job_order_products WHERE job_order_id = ?",
+                [$id]
+            )['total'] ?? 0);
+
+            $oldStatus = (string)($jo['status'] ?? 'pending');
+
+            $compareField = static function ($label, $oldValue, $newValue) use (&$updateNotes) {
+                $oldText = trim((string)$oldValue);
+                $newText = trim((string)$newValue);
+                if ($oldText === $newText) {
+                    return;
+                }
+                $oldText = $oldText === '' ? '—' : $oldText;
+                $newText = $newText === '' ? '—' : $newText;
+                $updateNotes[] = "{$label}: {$oldText} → {$newText}";
+            };
 
             // Update customer
             $db->query(
@@ -456,6 +510,23 @@ try {
             $editPartial = (float)($input['partial_amount'] ?? 0);
             if ($editPartial < 0) $editPartial = 0;
 
+            if ($currentEditSnapshot) {
+                $compareField('Customer name', $currentEditSnapshot['customer_name'] ?? '', $input['customer_name'] ?? '');
+                $compareField('Customer phone', $currentEditSnapshot['customer_phone'] ?? '', $input['customer_phone'] ?? '');
+                $compareField('Customer email', $currentEditSnapshot['customer_email'] ?? '', $input['customer_email'] ?? '');
+                $compareField('Customer address', $currentEditSnapshot['customer_address'] ?? '', $input['customer_address'] ?? '');
+                $compareField('Vehicle make', $currentEditSnapshot['vehicle_make'] ?? '', $input['vehicle_make'] ?? '');
+                $compareField('Vehicle model', $currentEditSnapshot['vehicle_model'] ?? '', $input['vehicle_model'] ?? '');
+                $compareField('Vehicle year', $currentEditSnapshot['vehicle_year'] ?? '', $input['vehicle_year'] ?? '');
+                $compareField('Vehicle plate', $currentEditSnapshot['vehicle_license'] ?? '', $input['vehicle_license'] ?? '');
+                $compareField('Vehicle color', $currentEditSnapshot['vehicle_color'] ?? '', $input['vehicle_color'] ?? '');
+                $compareField('Vehicle mileage', $currentEditSnapshot['vehicle_mileage'] ?? '', $input['vehicle_mileage'] ?? '');
+                $compareField('Payment method', $oldPaymentMethod, $input['payment_method'] ?? $oldPaymentMethod);
+                $compareField('Payment status', $oldPaymentStatus, $input['payment_status'] ?? $oldPaymentStatus);
+                $compareField('Partial amount', number_format($oldPartialAmount, 2, '.', ','), number_format($editPartial, 2, '.', ','));
+                $compareField('Notes', $currentEditSnapshot['notes'] ?? '', $input['notes'] ?? '');
+            }
+
             $technicianIds = [];
             if (!empty($input['technician_ids']) && is_array($input['technician_ids'])) {
                 foreach ($input['technician_ids'] as $techId) {
@@ -473,6 +544,11 @@ try {
             $newStatus = $normalizeJoStatus($input['status'] ?? $jo['status'] ?? 'pending');
             if (!in_array($newStatus, $allowedJoStatuses, true)) {
                 $newStatus = 'pending';
+            }
+
+            $requestedPaymentStatus = sanitize($input['payment_status'] ?? $jo['payment_status'] ?? 'pending');
+            if (($jo['payment_status'] ?? '') === 'paid' && $requestedPaymentStatus !== 'paid' && $currentUserRole !== 'admin') {
+                throw new Exception('Only admin/system administrator can change payment status for a paid job order');
             }
 
             $now = date('Y-m-d H:i:s');
@@ -514,7 +590,7 @@ try {
                  WHERE id=?",
                 [
                     $newStatus,
-                    sanitize($input['payment_status'] ?? $jo['payment_status'] ?? 'pending'),
+                    $requestedPaymentStatus,
                     sanitize($input['payment_method'] ?? $jo['payment_method'] ?? 'cash'),
                     $serviceAdviserId,
                     $editPartial,
@@ -613,9 +689,68 @@ try {
                 $discountAmt     = (float)($db->fetch("SELECT discount_amount FROM job_orders WHERE id=?", [$id])['discount_amount'] ?? 0);
                 $newTotal        = max(0, $currentSubtotal + $newPartsCost - $discountAmt);
                 $db->query("UPDATE job_orders SET parts_total=?, total_amount=? WHERE id=?", [$newPartsCost, $newTotal, $id]);
+
+                $newServiceCount = count($input['items']);
+                if ($newServiceCount !== $oldServiceCount) {
+                    $updateNotes[] = "Services/Bundles count: {$oldServiceCount} → {$newServiceCount}";
+                }
+                if ($oldServiceCount === $newServiceCount) {
+                    $updateNotes[] = "Services/Bundles updated";
+                }
+
+                $newProductCount = count($input['products']);
+                if ($newProductCount !== $oldProductCount) {
+                    $updateNotes[] = "Products count: {$oldProductCount} → {$newProductCount}";
+                }
+                if ($oldProductCount === $newProductCount) {
+                    $updateNotes[] = "Products updated";
+                }
             }
 
-            logActivity($currentUserId, 'update_job_order', "Updated job order #{$jo['job_order_number']}");
+            if ($newStatus !== $oldStatus) {
+                $updateNotes[] = "Status: " . ucwords(str_replace('_', ' ', $oldStatus)) . " → " . ucwords(str_replace('_', ' ', $newStatus));
+            }
+
+            if ($requestedPaymentStatus === 'partial' || $editPartial > 0 || $editPartial !== $oldPartialAmount) {
+                $updateNotes[] = "Partial payment: ₱" . number_format($oldPartialAmount, 2) . " → ₱" . number_format($editPartial, 2);
+            }
+
+            $activityDescription = 'Updated job order #' . $jo['job_order_number'];
+            if (!empty($updateNotes)) {
+                $activityDescription .= ': ' . implode('; ', array_values(array_unique($updateNotes)));
+            }
+
+            logActivity($currentUserId, 'update_job_order', $activityDescription);
+
+            if ($newStatus !== $oldStatus) {
+                $statusText = ucwords(str_replace('_', ' ', $newStatus));
+                $actorName = sanitize($_SESSION['full_name'] ?? $_SESSION['username'] ?? 'Staff');
+                notifyRoles(
+                    'job_status',
+                    'Job Order Status Updated',
+                    buildNotificationMessageTemplate($actorName, 'updated', 'job order #' . $jo['job_order_number'], 'Status: ' . $statusText),
+                    ['admin', 'cashier', 'service_adviser', 'chief_mechanic', 'technician'],
+                    [
+                        'reference_type' => 'job_order',
+                        'reference_id' => (int)$id,
+                    ]
+                );
+            }
+
+            if ($requestedPaymentStatus === 'paid' && $oldPaymentStatus !== 'paid') {
+                $actorName = sanitize($_SESSION['full_name'] ?? $_SESSION['username'] ?? 'Staff');
+                notifyRoles(
+                    'payment',
+                    'Job Order Paid',
+                    buildNotificationMessageTemplate($actorName, 'marked as paid', 'job order #' . $jo['job_order_number']),
+                    ['admin', 'cashier', 'service_adviser'],
+                    [
+                        'reference_type' => 'job_order',
+                        'reference_id' => (int)$id,
+                    ]
+                );
+            }
+
             $response['success'] = true;
             $response['message'] = 'Job order updated successfully';
             break;
@@ -637,6 +772,7 @@ try {
                 [$id]
             );
             if (!$jo) throw new Exception('Job order not found');
+            $oldStatus = (string)($jo['status'] ?? 'pending');
             if (!$canViewJobOrder($db, (int)$id, (string)$jo['status'], $currentUserRole, $currentUserId)) {
                 throw new Exception('Insufficient permissions');
             }
@@ -657,9 +793,14 @@ try {
             }
 
             if ($currentUserRole === 'chief_mechanic') {
-                if ($hasStatus || !in_array($timerAction, ['start', 'stop'], true)) {
-                    throw new Exception('Chief mechanic can only start or stop timer');
+                $isStatusOnly = $hasStatus && $timerAction === '';
+                if (!$isStatusOnly) {
+                    throw new Exception('Chief mechanic can only update job order status');
                 }
+            }
+
+            if (in_array($currentUserRole, ['service_adviser', 'chief_mechanic'], true) && ($jo['status'] ?? '') === 'cancelled') {
+                throw new Exception('Cancelled job order is locked for service adviser/chief mechanic.');
             }
 
             if ($currentUserRole === 'technician') {
@@ -680,13 +821,27 @@ try {
                 throw new Exception('Invalid job order status');
             }
 
-            if ($timerAction === 'start' && !in_array($currentUserRole, ['admin', 'cashier', 'chief_mechanic', 'service_adviser'], true)) {
+            if (in_array($currentUserRole, ['service_adviser', 'chief_mechanic'], true) && $hasStatus && ($jo['status'] ?? '') === 'completed') {
+                $blockedAfterCompleted = ['pending', 'ongoing', 'under_inspection', 'car_washing', 'cancelled'];
+                if (in_array($newStatus, $blockedAfterCompleted, true)) {
+                    throw new Exception('After completed, service adviser/chief mechanic cannot move job order back to pending/ongoing/under inspection/car washing.');
+                }
+            }
+
+            if (in_array($currentUserRole, ['service_adviser', 'chief_mechanic'], true) && $hasStatus && ($jo['status'] ?? '') === 'released') {
+                $blockedAfterReleased = ['pending', 'ongoing', 'under_inspection', 'car_washing', 'completed', 'cancelled'];
+                if (in_array($newStatus, $blockedAfterReleased, true)) {
+                    throw new Exception('After released, service adviser/chief mechanic cannot move job order back to pending through completed statuses.');
+                }
+            }
+
+            if ($timerAction === 'start' && !in_array($currentUserRole, ['admin', 'cashier', 'service_adviser'], true)) {
                 throw new Exception('Insufficient permissions');
             }
             if ($timerAction === 'done' && !in_array($currentUserRole, ['admin', 'cashier', 'technician'], true)) {
                 throw new Exception('Insufficient permissions');
             }
-            if ($timerAction === 'stop' && !in_array($currentUserRole, ['admin', 'cashier', 'technician', 'chief_mechanic', 'service_adviser'], true)) {
+            if ($timerAction === 'stop' && !in_array($currentUserRole, ['admin', 'cashier', 'technician', 'service_adviser'], true)) {
                 throw new Exception('Insufficient permissions');
             }
             if ($timerAction !== '' && ($jo['status'] ?? '') === 'completed') {
@@ -766,48 +921,39 @@ try {
             }
 
             if ($timerAction !== '') {
-                logActivity($currentUserId, 'update_job_order_timer', "{$timerAction} timer for job order #{$jo['job_order_number']}");
+                $timerLabel = ucfirst($timerAction);
+                logActivity($currentUserId, 'update_job_order_timer', "{$timerLabel} timer for job order #{$jo['job_order_number']} (elapsed: {$elapsedSeconds}s)");
             } else {
-                logActivity($currentUserId, 'update_job_order_status', "Updated status for job order #{$jo['job_order_number']} to {$newStatus}");
+                $oldStatusText = ucwords(str_replace('_', ' ', $oldStatus));
+                $newStatusText = ucwords(str_replace('_', ' ', $newStatus));
+                logActivity($currentUserId, 'update_job_order_status', "Updated status for job order #{$jo['job_order_number']}: {$oldStatusText} → {$newStatusText}");
             }
 
             if ($timerAction === 'done') {
-                $recipientIds = [];
-
-                $staffRecipients = $db->fetchAll(
-                    "SELECT id FROM staff WHERE status = 'active' AND role IN ('service_adviser', 'cashier', 'admin')"
-                );
-                foreach ($staffRecipients as $row) {
-                    $staffId = (int)($row['id'] ?? 0);
-                    if ($staffId > 0) {
-                        $recipientIds[] = $staffId;
-                    }
-                }
-
-                $adminUsers = $db->fetchAll(
-                    "SELECT id FROM users WHERE status = 'active' AND role = 'admin'"
-                );
-                foreach ($adminUsers as $row) {
-                    $userId = (int)($row['id'] ?? 0);
-                    if ($userId > 0) {
-                        $recipientIds[] = $userId;
-                    }
-                }
-
-                $recipientIds = array_values(array_unique(array_filter($recipientIds, fn($uid) => $uid !== (int)$currentUserId)));
                 $actorName = sanitize($_SESSION['full_name'] ?? $_SESSION['username'] ?? 'Technician');
-                foreach ($recipientIds as $recipientId) {
-                    $db->query(
-                        "INSERT INTO notifications (user_id, type, title, message, reference_type, reference_id, is_read)
-                         VALUES (?, 'job_status', ?, ?, 'job_order', ?, 0)",
-                        [
-                            $recipientId,
-                            'Job Order Ready for Inspection',
-                            "Job order #{$jo['job_order_number']} was marked done by {$actorName} and moved to Under Inspection.",
-                            (int)$id,
-                        ]
-                    );
-                }
+                notifyRoles(
+                    'job_status',
+                    'Job Order Ready for Inspection',
+                    buildNotificationMessageTemplate($actorName, 'marked done', 'job order #' . $jo['job_order_number'], 'Moved to Under Inspection'),
+                    ['admin', 'cashier', 'service_adviser', 'chief_mechanic'],
+                    [
+                        'reference_type' => 'job_order',
+                        'reference_id' => (int)$id,
+                    ]
+                );
+            } elseif ($newStatus !== $oldStatus) {
+                $statusText = ucwords(str_replace('_', ' ', $newStatus));
+                $actorName = sanitize($_SESSION['full_name'] ?? $_SESSION['username'] ?? 'Staff');
+                notifyRoles(
+                    'job_status',
+                    'Job Order Status Updated',
+                    buildNotificationMessageTemplate($actorName, 'updated', 'job order #' . $jo['job_order_number'], 'Status: ' . $statusText),
+                    ['admin', 'cashier', 'service_adviser', 'chief_mechanic', 'technician'],
+                    [
+                        'reference_type' => 'job_order',
+                        'reference_id' => (int)$id,
+                    ]
+                );
             }
 
             $response['success'] = true;
@@ -849,6 +995,18 @@ try {
 
             $db->query("DELETE FROM job_orders WHERE id=?", [$id]);
             logActivity($currentUserId, 'delete_job_order', "Deleted job order #{$jo['job_order_number']}");
+
+            $actorName = sanitize($_SESSION['full_name'] ?? $_SESSION['username'] ?? 'Staff');
+            notifyRoles(
+                'system',
+                'Job Order Deleted',
+                buildNotificationMessageTemplate($actorName, 'deleted', 'job order #' . $jo['job_order_number']),
+                ['admin', 'cashier', 'service_adviser'],
+                [
+                    'reference_type' => 'job_order',
+                    'reference_id' => (int)$id,
+                ]
+            );
 
             $response['success'] = true;
             $response['message'] = 'Job order deleted successfully';

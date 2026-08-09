@@ -37,6 +37,43 @@ $stats = $staffModel->getStats();
 include __DIR__ . '/../partials/header.php';
 ?>
 
+<style>
+@media (max-width: 768px) {
+    .staff-stats-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        overflow: visible;
+        margin-bottom: 10px !important;
+    }
+
+    .staff-stats-row .staff-stat-col {
+        flex: 0 0 calc(50% - 4px);
+        max-width: calc(50% - 4px);
+        min-width: 0;
+        padding-left: 0;
+        padding-right: 0;
+    }
+
+    .staff-stats-row .card-body {
+        padding: 9px;
+    }
+
+    .staff-stats-row .card-body p {
+        font-size: 11px;
+        margin-bottom: 4px !important;
+    }
+
+    .staff-stats-row .card-body h3 {
+        font-size: 22px;
+    }
+
+    .staff-stats-row .card-body i {
+        font-size: 1.55rem !important;
+    }
+}
+</style>
+
 <!-- Page Header -->
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
@@ -51,8 +88,8 @@ include __DIR__ . '/../partials/header.php';
 </div>
 
 <!-- Statistics Cards -->
-<div class="row mb-4">
-    <div class="col-md-3">
+<div class="row mb-4 staff-stats-row">
+    <div class="col-md-3 staff-stat-col">
         <div class="card">
             <div class="card-body">
                 <div class="d-flex align-items-center">
@@ -67,7 +104,7 @@ include __DIR__ . '/../partials/header.php';
             </div>
         </div>
     </div>
-    <div class="col-md-3">
+    <div class="col-md-3 staff-stat-col">
         <div class="card">
             <div class="card-body">
                 <div class="d-flex align-items-center">
@@ -82,7 +119,7 @@ include __DIR__ . '/../partials/header.php';
             </div>
         </div>
     </div>
-    <div class="col-md-3">
+    <div class="col-md-3 staff-stat-col">
         <div class="card">
             <div class="card-body">
                 <div class="d-flex align-items-center">
@@ -97,7 +134,7 @@ include __DIR__ . '/../partials/header.php';
             </div>
         </div>
     </div>
-    <div class="col-md-3">
+    <div class="col-md-3 staff-stat-col">
         <div class="card">
             <div class="card-body">
                 <div class="d-flex align-items-center">
@@ -158,7 +195,7 @@ include __DIR__ . '/../partials/header.php';
 <!-- Staff Table -->
 <div class="card">
     <div class="card-body p-0">
-        <div class="table-responsive">
+        <div class="table-responsive table-responsive-actions">
             <table class="table table-hover mb-0">
                 <thead>
                     <tr>
@@ -220,7 +257,7 @@ include __DIR__ . '/../partials/header.php';
                             </td>
                             <td><?php echo formatDate($staff['created_at']); ?></td>
                             <td>
-                                <div class="btn-group btn-group-sm staff-action-group">
+                                <div class="btn-group btn-group-sm staff-action-group d-none d-md-inline-flex">
                                     <button type="button" class="btn btn-outline-primary btn-icon" 
                                             onclick="viewStaff(<?php echo $staff['id']; ?>)" title="View">
                                         <i class="bi bi-eye"></i>
@@ -244,6 +281,39 @@ include __DIR__ . '/../partials/header.php';
                                         <i class="bi bi-trash"></i>
                                     </button>
                                     <?php endif; ?>
+                                </div>
+                                <div class="dropdown action-dropdown d-inline-flex d-md-none">
+                                    <button class="btn btn-sm action-menu-btn dropdown-toggle" type="button" id="staffActionsMobile<?php echo $staff['id']; ?>" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Staff actions">
+                                        <i class="bi bi-three-dots-vertical"></i>
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="staffActionsMobile<?php echo $staff['id']; ?>">
+                                        <li>
+                                            <button type="button" class="dropdown-item" onclick="viewStaff(<?php echo $staff['id']; ?>)">
+                                                <i class="bi bi-eye me-2"></i>View
+                                            </button>
+                                        </li>
+                                        <?php if ($canManageStaff && !($isCashier && $staff['role'] === 'admin')): ?>
+                                        <li>
+                                            <button type="button" class="dropdown-item" onclick="editStaff(<?php echo $staff['id']; ?>)">
+                                                <i class="bi bi-pencil me-2"></i>Edit
+                                            </button>
+                                        </li>
+                                        <?php endif; ?>
+                                        <?php if ($canManageStaff && !($isCashier && $staff['role'] === 'admin')): ?>
+                                        <li>
+                                            <button type="button" class="dropdown-item" onclick="toggleStatus(<?php echo $staff['id']; ?>, '<?php echo $staff['status']; ?>')">
+                                                <i class="bi bi-<?php echo $staff['status'] === 'active' ? 'x-circle' : 'check-circle'; ?> me-2"></i><?php echo $staff['status'] === 'active' ? 'Deactivate' : 'Activate'; ?>
+                                            </button>
+                                        </li>
+                                        <?php endif; ?>
+                                        <?php if ($canManageStaff && !$isCashier): ?>
+                                        <li>
+                                            <button type="button" class="dropdown-item text-danger" onclick="deleteStaff(<?php echo $staff['id']; ?>)">
+                                                <i class="bi bi-trash me-2"></i>Delete
+                                            </button>
+                                        </li>
+                                        <?php endif; ?>
+                                    </ul>
                                 </div>
                             </td>
                         </tr>

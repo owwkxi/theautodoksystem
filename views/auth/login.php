@@ -11,11 +11,46 @@ if (isLoggedIn()) {
 }
 
 $error = '';
+$shopOptions = getShopOptions();
+$defaultShopKey = isset($shopOptions['autodok_main']) ? 'autodok_main' : (array_key_first($shopOptions) ?: '');
+$selectedShopKey = $_SESSION['shop_key'] ?? $defaultShopKey;
+
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    $requestedShopKey = trim((string)($_GET['shop'] ?? ''));
+    if ($requestedShopKey === '' || !isset($shopOptions[$requestedShopKey])) {
+        $requestedShopKey = $defaultShopKey;
+    }
+
+    $selectedShop = resolveShopOption($requestedShopKey);
+    $_SESSION['shop_key'] = $selectedShop['key'];
+    $_SESSION['shop_name'] = $selectedShop['name'];
+    $_SESSION['shop_db_name'] = $selectedShop['db_name'];
+    $selectedShopKey = $selectedShop['key'];
+} else {
+    $selectedShop = resolveShopOption($_SESSION['shop_key'] ?? $defaultShopKey);
+    $selectedShopKey = $selectedShop['key'] ?? $defaultShopKey;
+}
+
+$shopBrandingByKey = [];
+
+foreach ($shopOptions as $shopKey => $shopMeta) {
+    $branding = function_exists('getSystemBrandingSettings') ? getSystemBrandingSettings($shopKey) : [];
+    $shopBrandingByKey[$shopKey] = [
+        'name' => $shopMeta['name'] ?? APP_NAME,
+        'logo_url' => $branding['system_logo_url'] ?? (APP_URL . '/assets/images/logo.png'),
+    ];
+}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!isset($_POST['csrf_token']) || !verifyCSRFToken($_POST['csrf_token'])) {
         $error = 'Invalid request. Please try again.';
     } else {
+        $postedShop = resolveShopOption($_POST['shop_key'] ?? '');
+        $_SESSION['shop_key'] = $postedShop['key'];
+        $_SESSION['shop_name'] = $postedShop['name'];
+        $_SESSION['shop_db_name'] = $postedShop['db_name'];
+        $selectedShop = $postedShop;
+
         $loginId = sanitize($_POST['login_id'] ?? '');
         $password = $_POST['password'] ?? '';
 
@@ -31,13 +66,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $csrfToken = generateCSRFToken();
+$selectedBranding = $shopBrandingByKey[$selectedShopKey] ?? [];
+$systemLogoUrl = $selectedBranding['logo_url'] ?? (APP_URL . '/assets/images/logo.png');
+$displayShopName = $_SESSION['shop_name'] ?? ($selectedShop['name'] ?? APP_NAME);
+$themeClass = ($selectedShopKey === 'autodok_prime') ? 'theme-prime' : 'theme-main';
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login — <?php echo APP_NAME; ?></title>
+    <title>Login — <?php echo escape($displayShopName); ?></title>
+    <link id="loginFavicon" rel="icon" type="image/png" href="<?php echo escape($systemLogoUrl); ?>">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     <link rel="stylesheet" href="<?php echo APP_URL; ?>/assets/css/style.css?v=<?php echo time(); ?>">
@@ -61,6 +101,15 @@ $csrfToken = generateCSRFToken();
             width: 80px;
             height: 80px;
             display: inline-block;
+        }
+
+        .login-shop-name {
+            margin-top: 8px;
+            font-size: 15px;
+            font-weight: 700;
+            color: #1f1f1f;
+            text-align: center;
+            line-height: 1.3;
         }
 
         .field-label {
@@ -156,6 +205,19 @@ $csrfToken = generateCSRFToken();
         }
 
         .btn-signin:hover { background: #5a5a5a; }
+
+        .shop-select-wrap {
+            margin-bottom: 14px;
+        }
+
+        .shop-select-wrap select {
+            border: 1.5px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 9px 12px;
+            font-size: 13px;
+            color: #333;
+            background: #f7f7f7;
+        }
 
         .login-shell {
             min-height: 100vh;
@@ -260,6 +322,7 @@ $csrfToken = generateCSRFToken();
         .status-pending { background: #ececec; color: #333; }
         .status-ongoing { background: #dce8ff; color: #1147aa; }
         .status-under_inspection { background: #fde2e2; color: #9f2020; }
+        .status-car_washing { background: #fff1c2; color: #7a4f00; }
         .status-completed { background: #ddf5e3; color: #146c2e; }
         .status-released { background: #d7f1e3; color: #0f5e36; }
         .status-returned_for_revision { background: #ffe8c8; color: #9b5a00; }
@@ -327,7 +390,7 @@ $csrfToken = generateCSRFToken();
         }
     </style>
 </head>
-<body class="login-body">
+<body class="login-body <?php echo escape($themeClass); ?>">
 
     <div class="customer-check-floating">
         <div class="customer-check-title" id="customerCheckTrigger">
@@ -355,7 +418,8 @@ $csrfToken = generateCSRFToken();
 
         <!-- Logo -->
         <div class="login-logo">
-            <img src="<?php echo APP_URL; ?>/assets/images/logo.png" alt="The Autodok Logo">
+            <img id="loginShopLogo" src="<?php echo escape($systemLogoUrl); ?>" alt="The Autodok Logo" onerror="this.onerror=null;this.src='<?php echo APP_URL; ?>/assets/images/logo.png';">
+            <div class="login-shop-name" id="loginShopName"><?php echo escape($displayShopName); ?></div>
         </div>
 
         <?php if ($error): ?>
@@ -367,6 +431,22 @@ $csrfToken = generateCSRFToken();
 
         <form method="POST" action="">
             <input type="hidden" name="csrf_token" value="<?php echo $csrfToken; ?>">
+
+            <label class="field-label" for="shop_key">Shop</label>
+            <div class="shop-select-wrap">
+                <select id="shop_key" name="shop_key" class="form-select" required>
+                    <?php foreach ($shopOptions as $shopKey => $shop): ?>
+                        <?php $brandingMeta = $shopBrandingByKey[$shopKey] ?? []; ?>
+                        <option
+                            value="<?php echo escape($shopKey); ?>"
+                            data-shop-name="<?php echo escape($shop['name'] ?? APP_NAME); ?>"
+                            data-logo-url="<?php echo escape($brandingMeta['logo_url'] ?? (APP_URL . '/assets/images/logo.png')); ?>"
+                            <?php echo (($selectedShop['key'] ?? '') === $shopKey) ? 'selected' : ''; ?>>
+                            <?php echo escape($shop['name']); ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
 
             <label class="field-label" for="login_id">ID</label>
             <div class="input-wrap">
@@ -393,6 +473,40 @@ $csrfToken = generateCSRFToken();
         document.addEventListener('DOMContentLoaded', function () {
             const passwordInput = document.getElementById('password');
             const toggleButton = document.querySelector('.password-toggle');
+            const shopSelect = document.getElementById('shop_key');
+            const shopNameEl = document.getElementById('loginShopName');
+            const shopLogoEl = document.getElementById('loginShopLogo');
+            const faviconEl = document.getElementById('loginFavicon');
+            const fallbackLogo = <?php echo json_encode(APP_URL . '/assets/images/logo.png'); ?>;
+
+            if (shopSelect && shopNameEl) {
+                const syncShopName = function () {
+                    const selectedOption = shopSelect.options[shopSelect.selectedIndex];
+                    if (selectedOption) {
+                        const selectedShopName = selectedOption.dataset.shopName || selectedOption.text;
+                        const selectedLogoUrl = selectedOption.dataset.logoUrl || fallbackLogo;
+
+                        shopNameEl.textContent = selectedShopName;
+                        if (shopLogoEl) {
+                            shopLogoEl.src = selectedLogoUrl;
+                        }
+                        if (document.body) {
+                            document.body.classList.remove('theme-main', 'theme-prime');
+                            document.body.classList.add(shopSelect.value === 'autodok_prime' ? 'theme-prime' : 'theme-main');
+                        }
+                        if (faviconEl) {
+                            const iconUrl = selectedLogoUrl.indexOf('?') === -1
+                                ? (selectedLogoUrl + '?v=' + Date.now())
+                                : (selectedLogoUrl + '&v=' + Date.now());
+                            faviconEl.href = iconUrl;
+                        }
+                        document.title = 'Login — ' + selectedShopName;
+                    }
+                };
+
+                shopSelect.addEventListener('change', syncShopName);
+                syncShopName();
+            }
 
             if (!passwordInput || !toggleButton) {
                 return;
@@ -496,7 +610,9 @@ $csrfToken = generateCSRFToken();
                 searchBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
 
                 try {
-                    const res = await fetch(`<?php echo APP_URL; ?>/api/customer_vehicle_status.php?q=${encodeURIComponent(q)}`, {
+                    const selectedShopKey = shopSelect ? shopSelect.value : '';
+                    const searchUrl = `<?php echo APP_URL; ?>/api/customer_vehicle_status.php?q=${encodeURIComponent(q)}&shop_key=${encodeURIComponent(selectedShopKey)}`;
+                    const res = await fetch(searchUrl, {
                         method: 'GET',
                         cache: 'no-store'
                     });
