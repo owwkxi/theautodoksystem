@@ -338,7 +338,10 @@ const NotificationManager = {
         this.updateBadge(0);
         await this.loadNotifications();
       } else {
-        this.notifyResult(data?.message || "Failed to mark all notifications as read", "error");
+        this.notifyResult(
+          data?.message || "Failed to mark all notifications as read",
+          "error",
+        );
         this.loadUnreadCount();
         this.loadNotifications();
       }
@@ -391,7 +394,10 @@ const NotificationManager = {
         this.applyAllClearedUI();
         this.updateBadge(0);
       } else {
-        this.notifyResult(data?.message || "Failed to clear notifications", "error");
+        this.notifyResult(
+          data?.message || "Failed to clear notifications",
+          "error",
+        );
         this.loadUnreadCount();
         this.loadNotifications();
       }

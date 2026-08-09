@@ -767,7 +767,11 @@ body.login-body.theme-prime {
 
 /* ── Welcome banner ────────────────────────────────────── */
 .welcome-banner {
-  background: linear-gradient(90deg, var(--welcome-grad-start) 0%, var(--welcome-grad-end) 100%);
+  background: linear-gradient(
+    90deg,
+    var(--welcome-grad-start) 0%,
+    var(--welcome-grad-end) 100%
+  );
   border-radius: var(--radius);
   padding: 28px 32px;
   margin-bottom: 20px;

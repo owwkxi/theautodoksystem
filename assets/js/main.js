@@ -4,65 +4,70 @@
  */
 
 // Auto-dismiss alerts after 5 seconds
-document.addEventListener('DOMContentLoaded', function() {
-    const alerts = document.querySelectorAll('.alert:not(.alert-permanent)');
-    alerts.forEach(function(alert) {
-        setTimeout(function() {
-            const bsAlert = new bootstrap.Alert(alert);
-            bsAlert.close();
-        }, 5000);
-    });
+document.addEventListener("DOMContentLoaded", function () {
+  const alerts = document.querySelectorAll(".alert:not(.alert-permanent)");
+  alerts.forEach(function (alert) {
+    setTimeout(function () {
+      const bsAlert = new bootstrap.Alert(alert);
+      bsAlert.close();
+    }, 5000);
+  });
 });
 
 // Form validation
-(function() {
-    'use strict';
-    const forms = document.querySelectorAll('.needs-validation');
-    Array.from(forms).forEach(function(form) {
-        form.addEventListener('submit', function(event) {
-            if (!form.checkValidity()) {
-                event.preventDefault();
-                event.stopPropagation();
-            }
-            form.classList.add('was-validated');
-        }, false);
-    });
+(function () {
+  "use strict";
+  const forms = document.querySelectorAll(".needs-validation");
+  Array.from(forms).forEach(function (form) {
+    form.addEventListener(
+      "submit",
+      function (event) {
+        if (!form.checkValidity()) {
+          event.preventDefault();
+          event.stopPropagation();
+        }
+        form.classList.add("was-validated");
+      },
+      false,
+    );
+  });
 })();
 
 // Confirm before delete
-function confirmDelete(message = 'Are you sure you want to delete this item?') {
-    return appConfirm(message, {
-        title: 'Confirm Delete',
-        confirmText: 'Delete',
-        variant: 'danger'
-    });
+function confirmDelete(message = "Are you sure you want to delete this item?") {
+  return appConfirm(message, {
+    title: "Confirm Delete",
+    confirmText: "Delete",
+    variant: "danger",
+  });
 }
 
 // Reusable app confirmation modal (promise-based)
 function appConfirm(message, options = {}) {
-    const {
-        title = 'Confirm Action',
-        confirmText = 'OK',
-        cancelText = 'Cancel',
-        variant = 'primary'
-    } = options;
+  const {
+    title = "Confirm Action",
+    confirmText = "OK",
+    cancelText = "Cancel",
+    variant = "primary",
+  } = options;
 
-    const variantClass = variant === 'danger'
-        ? 'btn-danger'
-        : variant === 'warning'
-            ? 'btn-warning'
-            : 'btn-primary';
+  const variantClass =
+    variant === "danger"
+      ? "btn-danger"
+      : variant === "warning"
+        ? "btn-warning"
+        : "btn-primary";
 
-    return new Promise((resolve) => {
-        let modalEl = document.getElementById('appConfirmModal');
+  return new Promise((resolve) => {
+    let modalEl = document.getElementById("appConfirmModal");
 
-        if (!modalEl) {
-            modalEl = document.createElement('div');
-            modalEl.id = 'appConfirmModal';
-            modalEl.className = 'modal fade';
-            modalEl.tabIndex = -1;
-            modalEl.setAttribute('aria-hidden', 'true');
-            modalEl.innerHTML = `
+    if (!modalEl) {
+      modalEl = document.createElement("div");
+      modalEl.id = "appConfirmModal";
+      modalEl.className = "modal fade";
+      modalEl.tabIndex = -1;
+      modalEl.setAttribute("aria-hidden", "true");
+      modalEl.innerHTML = `
                 <div class="modal-dialog modal-dialog-centered">
                     <div class="modal-content border-0 shadow">
                         <div class="modal-header">
@@ -79,142 +84,157 @@ function appConfirm(message, options = {}) {
                     </div>
                 </div>
             `;
-            document.body.appendChild(modalEl);
-        }
+      document.body.appendChild(modalEl);
+    }
 
-        const titleEl = document.getElementById('appConfirmTitle');
-        const messageEl = document.getElementById('appConfirmMessage');
-        const cancelBtn = document.getElementById('appConfirmCancel');
-        const okBtn = document.getElementById('appConfirmOk');
+    const titleEl = document.getElementById("appConfirmTitle");
+    const messageEl = document.getElementById("appConfirmMessage");
+    const cancelBtn = document.getElementById("appConfirmCancel");
+    const okBtn = document.getElementById("appConfirmOk");
 
-        titleEl.textContent = title;
-        messageEl.textContent = message;
-        cancelBtn.textContent = cancelText;
-        okBtn.textContent = confirmText;
-        okBtn.className = `btn ${variantClass}`;
+    titleEl.textContent = title;
+    messageEl.textContent = message;
+    cancelBtn.textContent = cancelText;
+    okBtn.textContent = confirmText;
+    okBtn.className = `btn ${variantClass}`;
 
-        const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+    const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
 
-        let resolved = false;
-        const cleanup = () => {
-            okBtn.removeEventListener('click', onConfirm);
-            modalEl.removeEventListener('hidden.bs.modal', onHidden);
-        };
+    let resolved = false;
+    const cleanup = () => {
+      okBtn.removeEventListener("click", onConfirm);
+      modalEl.removeEventListener("hidden.bs.modal", onHidden);
+    };
 
-        const onConfirm = () => {
-            if (resolved) return;
-            resolved = true;
-            cleanup();
-            modal.hide();
-            resolve(true);
-        };
+    const onConfirm = () => {
+      if (resolved) return;
+      resolved = true;
+      cleanup();
+      modal.hide();
+      resolve(true);
+    };
 
-        const onHidden = () => {
-            if (resolved) return;
-            resolved = true;
-            cleanup();
-            resolve(false);
-        };
+    const onHidden = () => {
+      if (resolved) return;
+      resolved = true;
+      cleanup();
+      resolve(false);
+    };
 
-        okBtn.addEventListener('click', onConfirm);
-        modalEl.addEventListener('hidden.bs.modal', onHidden);
-        modal.show();
-    });
+    okBtn.addEventListener("click", onConfirm);
+    modalEl.addEventListener("hidden.bs.modal", onHidden);
+    modal.show();
+  });
 }
 
 // Show loading spinner
 function showLoading(button) {
-    const originalText = button.innerHTML;
-    button.disabled = true;
-    button.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Loading...';
-    return originalText;
+  const originalText = button.innerHTML;
+  button.disabled = true;
+  button.innerHTML =
+    '<span class="spinner-border spinner-border-sm me-2"></span>Loading...';
+  return originalText;
 }
 
 // Hide loading spinner
 function hideLoading(button, originalText) {
-    button.disabled = false;
-    button.innerHTML = originalText;
+  button.disabled = false;
+  button.innerHTML = originalText;
 }
 
 // Format currency
 function formatCurrency(amount) {
-    return '₱' + parseFloat(amount).toLocaleString('en-PH', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
-    });
+  return (
+    "₱" +
+    parseFloat(amount).toLocaleString("en-PH", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })
+  );
 }
 
 // Calculate total amount
 function calculateTotal() {
-    const subtotal = parseFloat(document.getElementById('subtotal')?.value || 0);
-    const partsBlocks = parseFloat(document.getElementById('parts_blocks')?.value || 0);
-    const discountType = document.getElementById('discount_type')?.value || 'none';
-    const discountAmount = parseFloat(document.getElementById('discount_amount')?.value || 0);
+  const subtotal = parseFloat(document.getElementById("subtotal")?.value || 0);
+  const partsBlocks = parseFloat(
+    document.getElementById("parts_blocks")?.value || 0,
+  );
+  const discountType =
+    document.getElementById("discount_type")?.value || "none";
+  const discountAmount = parseFloat(
+    document.getElementById("discount_amount")?.value || 0,
+  );
 
-    let total = subtotal + partsBlocks;
+  let total = subtotal + partsBlocks;
 
-    if (discountType === 'percentage') {
-        total = total - (total * (discountAmount / 100));
-    } else if (discountType === 'fixed') {
-        total = total - discountAmount;
-    }
+  if (discountType === "percentage") {
+    total = total - total * (discountAmount / 100);
+  } else if (discountType === "fixed") {
+    total = total - discountAmount;
+  }
 
-    if (document.getElementById('total_amount')) {
-        document.getElementById('total_amount').value = total.toFixed(2);
-    }
+  if (document.getElementById("total_amount")) {
+    document.getElementById("total_amount").value = total.toFixed(2);
+  }
 
-    return total;
+  return total;
 }
 
 // AJAX helper function
-async function apiRequest(url, method = 'GET', data = null, token = null) {
-    const options = {
-        method: method,
-        headers: {
-            'Content-Type': 'application/json'
-        }
+async function apiRequest(url, method = "GET", data = null, token = null) {
+  const options = {
+    method: method,
+    headers: {
+      "Content-Type": "application/json",
+    },
+  };
+
+  if (token) {
+    options.headers["Authorization"] = "Bearer " + token;
+  }
+
+  if (data && (method === "POST" || method === "PUT")) {
+    options.body = JSON.stringify(data);
+  }
+
+  try {
+    const response = await fetch(url, options);
+    const result = await response.json();
+    return result;
+  } catch (error) {
+    console.error("API Request Error:", error);
+    return {
+      success: false,
+      message: "Network error occurred",
     };
-
-    if (token) {
-        options.headers['Authorization'] = 'Bearer ' + token;
-    }
-
-    if (data && (method === 'POST' || method === 'PUT')) {
-        options.body = JSON.stringify(data);
-    }
-
-    try {
-        const response = await fetch(url, options);
-        const result = await response.json();
-        return result;
-    } catch (error) {
-        console.error('API Request Error:', error);
-        return {
-            success: false,
-            message: 'Network error occurred'
-        };
-    }
+  }
 }
 
 // Show toast notification
-function showToast(message, type = 'info') {
-    let toastContainer = document.getElementById('toastContainer');
-    if (!toastContainer) {
-        const container = document.createElement('div');
-        container.id = 'toastContainer';
-        container.className = 'toast-container position-fixed top-0 end-0 p-3';
-        container.style.zIndex = '1080';
-        document.body.appendChild(container);
-        toastContainer = container;
-    }
+function showToast(message, type = "info") {
+  let toastContainer = document.getElementById("toastContainer");
+  if (!toastContainer) {
+    const container = document.createElement("div");
+    container.id = "toastContainer";
+    container.className = "toast-container position-fixed top-0 end-0 p-3";
+    container.style.zIndex = "1080";
+    document.body.appendChild(container);
+    toastContainer = container;
+  }
 
-    const toastId = 'toast-' + Date.now();
-    const bgClass = type === 'success' ? 'bg-success' : 
-                    type === 'error' ? 'bg-danger' : 
-                    type === 'danger' ? 'bg-danger' : 
-                    type === 'warning' ? 'bg-warning' : 'bg-info';
+  const toastId = "toast-" + Date.now();
+  const bgClass =
+    type === "success"
+      ? "bg-success"
+      : type === "error"
+        ? "bg-danger"
+        : type === "danger"
+          ? "bg-danger"
+          : type === "warning"
+            ? "bg-warning"
+            : "bg-info";
 
-    const toastHTML = `
+  const toastHTML = `
         <div id="${toastId}" class="toast ${bgClass} text-white border-0 shadow" role="alert" data-bs-delay="3500" aria-live="assertive" aria-atomic="true" style="min-width:280px;max-width:380px;">
             <div class="toast-header ${bgClass} text-white">
                 <strong class="me-auto">Notification</strong>
@@ -228,144 +248,155 @@ function showToast(message, type = 'info') {
         </div>
     `;
 
-    toastContainer.insertAdjacentHTML('beforeend', toastHTML);
-    const toastElement = document.getElementById(toastId);
-    const toast = new bootstrap.Toast(toastElement);
-    toast.show();
+  toastContainer.insertAdjacentHTML("beforeend", toastHTML);
+  const toastElement = document.getElementById(toastId);
+  const toast = new bootstrap.Toast(toastElement);
+  toast.show();
 
-    toastElement.addEventListener('hidden.bs.toast', function() {
-        toastElement.remove();
-    });
+  toastElement.addEventListener("hidden.bs.toast", function () {
+    toastElement.remove();
+  });
 }
 
 // Show server-side flash messages with the same toast style
-document.addEventListener('DOMContentLoaded', function() {
-    const flash = document.getElementById('flashToastMessage');
-    if (!flash) return;
+document.addEventListener("DOMContentLoaded", function () {
+  const flash = document.getElementById("flashToastMessage");
+  if (!flash) return;
 
-    const message = flash.dataset.message || '';
-    const rawType = (flash.dataset.type || 'info').toLowerCase();
-    const type = rawType === 'danger' ? 'error' : rawType;
-    if (message) {
-        showToast(message, type);
-    }
+  const message = flash.dataset.message || "";
+  const rawType = (flash.dataset.type || "info").toLowerCase();
+  const type = rawType === "danger" ? "error" : rawType;
+  if (message) {
+    showToast(message, type);
+  }
 });
 
 // Normalize browser alert popups into app toasts for a consistent UX
 window.nativeAlert = window.alert;
-window.alert = function(message) {
-    const text = String(message || 'Notification');
-    const lower = text.toLowerCase();
-    const isError = lower.includes('error') || lower.includes('failed') || lower.includes('network') || lower.includes('required') || lower.includes('invalid');
-    showToast(text, isError ? 'error' : 'info');
+window.alert = function (message) {
+  const text = String(message || "Notification");
+  const lower = text.toLowerCase();
+  const isError =
+    lower.includes("error") ||
+    lower.includes("failed") ||
+    lower.includes("network") ||
+    lower.includes("required") ||
+    lower.includes("invalid");
+  showToast(text, isError ? "error" : "info");
 };
 
 // Print function
 function printPage() {
-    window.print();
+  window.print();
 }
 
 // Export to CSV
-function exportToCSV(tableId, filename = 'export.csv') {
-    const table = document.getElementById(tableId);
-    if (!table) return;
+function exportToCSV(tableId, filename = "export.csv") {
+  const table = document.getElementById(tableId);
+  if (!table) return;
 
-    let csv = [];
-    const rows = table.querySelectorAll('tr');
+  let csv = [];
+  const rows = table.querySelectorAll("tr");
 
-    for (let i = 0; i < rows.length; i++) {
-        const row = [];
-        const cols = rows[i].querySelectorAll('td, th');
+  for (let i = 0; i < rows.length; i++) {
+    const row = [];
+    const cols = rows[i].querySelectorAll("td, th");
 
-        for (let j = 0; j < cols.length; j++) {
-            let data = cols[j].innerText.replace(/(\r\n|\n|\r)/gm, '').replace(/(\s\s)/gm, ' ');
-            data = data.replace(/"/g, '""');
-            row.push('"' + data + '"');
-        }
-
-        csv.push(row.join(','));
+    for (let j = 0; j < cols.length; j++) {
+      let data = cols[j].innerText
+        .replace(/(\r\n|\n|\r)/gm, "")
+        .replace(/(\s\s)/gm, " ");
+      data = data.replace(/"/g, '""');
+      row.push('"' + data + '"');
     }
 
-    const csvString = csv.join('\n');
-    const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    
-    if (link.download !== undefined) {
-        const url = URL.createObjectURL(blob);
-        link.setAttribute('href', url);
-        link.setAttribute('download', filename);
-        link.style.visibility = 'hidden';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    }
+    csv.push(row.join(","));
+  }
+
+  const csvString = csv.join("\n");
+  const blob = new Blob([csvString], { type: "text/csv;charset=utf-8;" });
+  const link = document.createElement("a");
+
+  if (link.download !== undefined) {
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", filename);
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
 }
 
 // Debounce function for search
 function debounce(func, wait) {
-    let timeout;
-    return function executedFunction(...args) {
-        const later = () => {
-            clearTimeout(timeout);
-            func(...args);
-        };
-        clearTimeout(timeout);
-        timeout = setTimeout(later, wait);
+  let timeout;
+  return function executedFunction(...args) {
+    const later = () => {
+      clearTimeout(timeout);
+      func(...args);
     };
+    clearTimeout(timeout);
+    timeout = setTimeout(later, wait);
+  };
 }
 
 // Initialize tooltips
-document.addEventListener('DOMContentLoaded', function() {
-    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-    tooltipTriggerList.map(function(tooltipTriggerEl) {
-        return new bootstrap.Tooltip(tooltipTriggerEl);
-    });
+document.addEventListener("DOMContentLoaded", function () {
+  const tooltipTriggerList = [].slice.call(
+    document.querySelectorAll('[data-bs-toggle="tooltip"]'),
+  );
+  tooltipTriggerList.map(function (tooltipTriggerEl) {
+    return new bootstrap.Tooltip(tooltipTriggerEl);
+  });
 });
 
 // Initialize popovers
-document.addEventListener('DOMContentLoaded', function() {
-    const popoverTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="popover"]'));
-    popoverTriggerList.map(function(popoverTriggerEl) {
-        return new bootstrap.Popover(popoverTriggerEl);
-    });
+document.addEventListener("DOMContentLoaded", function () {
+  const popoverTriggerList = [].slice.call(
+    document.querySelectorAll('[data-bs-toggle="popover"]'),
+  );
+  popoverTriggerList.map(function (popoverTriggerEl) {
+    return new bootstrap.Popover(popoverTriggerEl);
+  });
 });
 
 // Hamburger menu toggle
-document.addEventListener('DOMContentLoaded', function() {
-    const sidebarToggle = document.getElementById('sidebarToggle');
-    const sidebar = document.querySelector('.sidebar');
-    const sidebarOverlay = document.getElementById('sidebarOverlay');
+document.addEventListener("DOMContentLoaded", function () {
+  const sidebarToggle = document.getElementById("sidebarToggle");
+  const sidebar = document.querySelector(".sidebar");
+  const sidebarOverlay = document.getElementById("sidebarOverlay");
 
-    if (sidebarToggle && sidebar && sidebarOverlay) {
-        // Toggle sidebar on button click
-        sidebarToggle.addEventListener('click', function() {
-            sidebar.classList.toggle('open');
-            sidebarOverlay.classList.toggle('active');
-        });
+  if (sidebarToggle && sidebar && sidebarOverlay) {
+    // Toggle sidebar on button click
+    sidebarToggle.addEventListener("click", function () {
+      sidebar.classList.toggle("open");
+      sidebarOverlay.classList.toggle("active");
+    });
 
-        // Close sidebar when clicking overlay
-        sidebarOverlay.addEventListener('click', function() {
-            sidebar.classList.remove('open');
-            sidebarOverlay.classList.remove('active');
-        });
+    // Close sidebar when clicking overlay
+    sidebarOverlay.addEventListener("click", function () {
+      sidebar.classList.remove("open");
+      sidebarOverlay.classList.remove("active");
+    });
 
-        // Close sidebar when clicking a nav link (mobile)
-        const navLinks = sidebar.querySelectorAll('.nav-item');
-        navLinks.forEach(function(link) {
-            link.addEventListener('click', function() {
-                if (window.innerWidth <= 768) {
-                    sidebar.classList.remove('open');
-                    sidebarOverlay.classList.remove('active');
-                }
-            });
-        });
+    // Close sidebar when clicking a nav link (mobile)
+    const navLinks = sidebar.querySelectorAll(".nav-item");
+    navLinks.forEach(function (link) {
+      link.addEventListener("click", function () {
+        if (window.innerWidth <= 768) {
+          sidebar.classList.remove("open");
+          sidebarOverlay.classList.remove("active");
+        }
+      });
+    });
 
-        // Close sidebar on window resize if screen becomes larger
-        window.addEventListener('resize', function() {
-            if (window.innerWidth > 768) {
-                sidebar.classList.remove('open');
-                sidebarOverlay.classList.remove('active');
-            }
-        });
-    }
+    // Close sidebar on window resize if screen becomes larger
+    window.addEventListener("resize", function () {
+      if (window.innerWidth > 768) {
+        sidebar.classList.remove("open");
+        sidebarOverlay.classList.remove("active");
+      }
+    });
+  }
 });
