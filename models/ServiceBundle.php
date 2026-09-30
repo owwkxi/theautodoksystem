@@ -105,6 +105,8 @@ class ServiceBundle {
             if ($bundle) {
                 // Get associated services
                 $bundle['services'] = $this->getServices($id);
+                // Get associated products
+                $bundle['products'] = $this->getProducts($id);
             }
             
             return $bundle;
@@ -137,7 +139,7 @@ class ServiceBundle {
                 $params[] = $searchTerm;
             }
             
-            $sql .= " ORDER BY created_at DESC";
+            $sql .= " ORDER BY bundle_name ASC";
             
             // Pagination
             if (isset($filters['limit'])) {
@@ -157,6 +159,7 @@ class ServiceBundle {
             // Get services for each bundle
             foreach ($bundles as &$bundle) {
                 $bundle['services'] = $this->getServices($bundle['id']);
+                $bundle['products'] = $this->getProducts($bundle['id']);
             }
             
             return $bundles;
@@ -349,6 +352,59 @@ class ServiceBundle {
         } catch (Exception $e) {
             $this->db->rollBack();
             error_log("ServiceBundle updateServices error: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Get all products in a bundle
+     */
+    public function getProducts($bundleId) {
+        try {
+            $sql = "SELECT p.id as product_id, p.product_name, p.product_code, p.selling_price, bp.quantity
+                    FROM products p
+                    INNER JOIN bundle_products bp ON p.id = bp.product_id
+                    WHERE bp.bundle_id = ?
+                    ORDER BY p.product_name";
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([$bundleId]);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("ServiceBundle getProducts error: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Update all products in a bundle
+     * @param int $bundleId
+     * @param array $products Array of ['product_id' => int, 'quantity' => int]
+     */
+    public function updateProducts($bundleId, $products = []) {
+        try {
+            $this->db->beginTransaction();
+
+            // Remove existing
+            $sql = "DELETE FROM bundle_products WHERE bundle_id = ?";
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([$bundleId]);
+
+            // Insert new
+            $sql = "INSERT INTO bundle_products (bundle_id, product_id, quantity) VALUES (?, ?, ?)";
+            $stmt = $this->db->prepare($sql);
+            foreach ($products as $prod) {
+                $prodId = (int)($prod['product_id'] ?? $prod['id'] ?? 0);
+                $qty = max(1, (int)($prod['quantity'] ?? $prod['qty'] ?? 1));
+                if ($prodId > 0) {
+                    $stmt->execute([$bundleId, $prodId, $qty]);
+                }
+            }
+
+            $this->db->commit();
+            return true;
+        } catch (Exception $e) {
+            $this->db->rollBack();
+            error_log("ServiceBundle updateProducts error: " . $e->getMessage());
             return false;
         }
     }

@@ -1,0 +1,5111 @@
+[
+    {
+        "id": "trash_6a97e27bb005b6.03865446",
+        "entity_type": "report_expense",
+        "source": "json",
+        "deleted_at": "2026-09-02 16:46:51",
+        "expires_at": "2026-10-02 16:46:51",
+        "shop_key": "autodok_main",
+        "deleted_by": {
+            "id": 2,
+            "name": "Dj Guingue Cortez"
+        },
+        "meta": [],
+        "payload": {
+            "id": "exp_6a968de1192db0.61819657",
+            "expense_date": "2026-09-01",
+            "category": "Outsource",
+            "description": "OIL FILTER 039",
+            "amount": 450,
+            "payment_method": "Cash",
+            "job_order_id": 7,
+            "plate_number": "LAP2625",
+            "created_by": "LOVELY JOYCE",
+            "created_at": "2026-09-01 16:33:37",
+            "shop_key": "autodok_main"
+        }
+    },
+    {
+        "id": "trash_6a97e28ace6540.18486008",
+        "entity_type": "report_expense",
+        "source": "json",
+        "deleted_at": "2026-09-02 16:47:06",
+        "expires_at": "2026-10-02 16:47:06",
+        "shop_key": "autodok_main",
+        "deleted_by": {
+            "id": 2,
+            "name": "Dj Guingue Cortez"
+        },
+        "meta": [],
+        "payload": {
+            "id": "exp_6a96a2fa9ce035.20844147",
+            "expense_date": "2026-09-01",
+            "category": "Outsource",
+            "description": "2 PCS BEARING",
+            "amount": 1960,
+            "payment_method": "Cash",
+            "job_order_id": 8,
+            "plate_number": "LAM1046",
+            "created_by": "LOVELY JOYCE",
+            "created_at": "2026-09-01 18:03:38",
+            "shop_key": "autodok_main"
+        }
+    },
+    {
+        "id": "trash_6a97e29235a781.33010897",
+        "entity_type": "report_expense",
+        "source": "json",
+        "deleted_at": "2026-09-02 16:47:14",
+        "expires_at": "2026-10-02 16:47:14",
+        "shop_key": "autodok_main",
+        "deleted_by": {
+            "id": 2,
+            "name": "Dj Guingue Cortez"
+        },
+        "meta": [],
+        "payload": {
+            "id": "exp_6a96a402cf1673.53373420",
+            "expense_date": "2026-09-01",
+            "category": "Others",
+            "description": "OTHER EXPENSES / PENDING",
+            "amount": 1891,
+            "payment_method": "Cash",
+            "job_order_id": null,
+            "plate_number": "",
+            "created_by": "LOVELY JOYCE",
+            "created_at": "2026-09-01 18:08:02",
+            "shop_key": "autodok_main"
+        }
+    },
+    {
+        "id": "trash_6a97eace380ba0.10057307",
+        "entity_type": "report_expense",
+        "source": "json",
+        "deleted_at": "2026-09-02 17:22:22",
+        "expires_at": "2026-10-02 17:22:22",
+        "shop_key": "autodok_main",
+        "deleted_by": {
+            "id": 2,
+            "name": "Dj Guingue Cortez"
+        },
+        "meta": [],
+        "payload": {
+            "id": "exp_6a97e721eaf361.41004689",
+            "expense_date": "2026-09-02",
+            "category": "Carwash",
+            "description": "",
+            "amount": 150,
+            "payment_method": "Cash",
+            "job_order_id": 372,
+            "plate_number": "LAA-2809",
+            "shop_key": "autodok_main",
+            "created_by": "Iloisa Joy P. Mejias",
+            "created_at": "2026-09-02 17:06:41"
+        }
+    },
+    {
+        "id": "trash_6a97f7ae1edb56.66586032",
+        "entity_type": "report_expense",
+        "source": "json",
+        "deleted_at": "2026-09-02 18:17:18",
+        "expires_at": "2026-10-02 18:17:18",
+        "shop_key": "autodok_main",
+        "deleted_by": {
+            "id": 9,
+            "name": "Jay Cortez"
+        },
+        "meta": [],
+        "payload": {
+            "id": "exp_6a97f56745db83.60462337",
+            "expense_date": "2026-09-02",
+            "category": "Outsource",
+            "description": "1 PC SHOCK ABSORBER",
+            "amount": 3000,
+            "payment_method": "Cash",
+            "job_order_id": 376,
+            "plate_number": "ANA-6793",
+            "shop_key": "autodok_main",
+            "created_by": "Iloisa Joy P. Mejias",
+            "created_at": "2026-09-02 18:07:35"
+        }
+    },
+    {
+        "id": "trash_6a97f7c24e4834.66736846",
+        "entity_type": "report_expense",
+        "source": "json",
+        "deleted_at": "2026-09-02 18:17:38",
+        "expires_at": "2026-10-02 18:17:38",
+        "shop_key": "autodok_main",
+        "deleted_by": {
+            "id": 9,
+            "name": "Jay Cortez"
+        },
+        "meta": [],
+        "payload": {
+            "id": "exp_6a97f57e649b81.26534811",
+            "expense_date": "2026-09-02",
+            "category": "Outsource",
+            "description": "2 PCS RACK END",
+            "amount": 3600,
+            "payment_method": "Cash",
+            "job_order_id": 376,
+            "plate_number": "ANA-6793",
+            "shop_key": "autodok_main",
+            "created_by": "Iloisa Joy P. Mejias",
+            "created_at": "2026-09-02 18:07:58"
+        }
+    },
+    {
+        "id": "trash_6a97f7ceb47b00.41452066",
+        "entity_type": "report_expense",
+        "source": "json",
+        "deleted_at": "2026-09-02 18:17:50",
+        "expires_at": "2026-10-02 18:17:50",
+        "shop_key": "autodok_main",
+        "deleted_by": {
+            "id": 9,
+            "name": "Jay Cortez"
+        },
+        "meta": [],
+        "payload": {
+            "id": "exp_6a97f59aa5c531.71135666",
+            "expense_date": "2026-09-02",
+            "category": "Outsource",
+            "description": "2 PCS SHOCK MOUNTING",
+            "amount": 3000,
+            "payment_method": "Cash",
+            "job_order_id": 376,
+            "plate_number": "ANA-6793",
+            "shop_key": "autodok_main",
+            "created_by": "Iloisa Joy P. Mejias",
+            "created_at": "2026-09-02 18:08:26"
+        }
+    },
+    {
+        "id": "trash_6a97f7dd6a8737.54815140",
+        "entity_type": "report_expense",
+        "source": "json",
+        "deleted_at": "2026-09-02 18:18:05",
+        "expires_at": "2026-10-02 18:18:05",
+        "shop_key": "autodok_main",
+        "deleted_by": {
+            "id": 9,
+            "name": "Jay Cortez"
+        },
+        "meta": [],
+        "payload": {
+            "id": "exp_6a97f5b3a009e1.04911497",
+            "expense_date": "2026-09-02",
+            "category": "Outsource",
+            "description": "8 PCS SPRING BUSHING",
+            "amount": 600,
+            "payment_method": "Cash",
+            "job_order_id": 376,
+            "plate_number": "ANA-6793",
+            "shop_key": "autodok_main",
+            "created_by": "Iloisa Joy P. Mejias",
+            "created_at": "2026-09-02 18:08:51"
+        }
+    },
+    {
+        "id": "trash_6a97f7e9bd31f6.91449135",
+        "entity_type": "report_expense",
+        "source": "json",
+        "deleted_at": "2026-09-02 18:18:17",
+        "expires_at": "2026-10-02 18:18:17",
+        "shop_key": "autodok_main",
+        "deleted_by": {
+            "id": 9,
+            "name": "Jay Cortez"
+        },
+        "meta": [],
+        "payload": {
+            "id": "exp_6a97f687516258.42404934",
+            "expense_date": "2026-09-02",
+            "category": "Others",
+            "description": "3 PCS HUB BEARING REAR",
+            "amount": 2940,
+            "payment_method": "Cash",
+            "job_order_id": null,
+            "plate_number": "",
+            "shop_key": "autodok_main",
+            "created_by": "Iloisa Joy P. Mejias",
+            "created_at": "2026-09-02 18:12:23"
+        }
+    },
+    {
+        "id": "trash_6a99a4e87fd196.39746860",
+        "entity_type": "report_expense",
+        "source": "json",
+        "deleted_at": "2026-09-04 00:48:40",
+        "expires_at": "2026-10-04 00:48:40",
+        "shop_key": "autodok_main",
+        "deleted_by": {
+            "id": 2,
+            "name": "Dj Guingue Cortez"
+        },
+        "meta": [],
+        "payload": {
+            "id": "exp_6a8d56d42d89c3.25706447",
+            "expense_date": "2026-08-25",
+            "category": "Outsource",
+            "description": "CASH OUT",
+            "amount": 100,
+            "payment_method": "Cash",
+            "job_order_id": 317,
+            "plate_number": "LAI-4993",
+            "created_by": "Iloisa Joy P. Mejias",
+            "created_at": "2026-08-25 16:48:20",
+            "shop_key": "autodok_main"
+        }
+    },
+    {
+        "id": "trash_6a99a634746088.63443668",
+        "entity_type": "job_order",
+        "source": "database",
+        "deleted_at": "2026-09-04 00:54:12",
+        "expires_at": "2026-10-04 00:54:12",
+        "shop_key": "autodok_main",
+        "deleted_by": {
+            "id": 2,
+            "name": "Dj Guingue Cortez"
+        },
+        "meta": {
+            "table": "job_orders"
+        },
+        "payload": {
+            "job_order": {
+                "id": 317,
+                "job_order_number": "JO095",
+                "customer_id": 200,
+                "vehicle_id": 319,
+                "service_adviser_id": 10,
+                "status": "released",
+                "priority": "normal",
+                "subtotal": "600.00",
+                "labor_total": "0.00",
+                "parts_total": "0.00",
+                "discount_type": "custom",
+                "discount_amount": "0.00",
+                "discount_percentage": "0.00",
+                "partial_amount": "600.00",
+                "total_amount": "600.00",
+                "payment_status": "paid",
+                "payment_method": "bank_transfer",
+                "payment_date": "2026-08-25 16:47:52",
+                "notes": "CUSTOMER&amp;amp;amp;amp;amp;amp;amp;#039;S PARTS",
+                "estimated_completion": null,
+                "actual_completion": null,
+                "status_timer_seconds": 4816,
+                "status_timer_started_at": null,
+                "work_started_at": "2026-08-25 15:51:52",
+                "inspection_started_at": null,
+                "completed_at": null,
+                "created_by": 4,
+                "created_by_type": "user",
+                "created_at": "2026-08-25 15:51:47",
+                "updated_at": "2026-09-04 00:50:50"
+            },
+            "job_order_services": [
+                {
+                    "id": 1612,
+                    "job_order_id": 317,
+                    "service_id": 21,
+                    "bundle_id": null,
+                    "service_name": "CHANGE OIL",
+                    "service_price": "0.00",
+                    "labor_cost": "500.00",
+                    "quantity": 1,
+                    "total": "500.00",
+                    "sub_items_json": "[\"CLEAN AIR FILTER\",\"CLEAN CABIN FILTER\",\"CHECK FLUIDS\",\"CHECK OUTER BELTS\",\"CHECK BATTERY HEALTH\",\"CHECK LIGHTING SYSTEM\",\"BOLT AND NUT TIGHTENING\",\"SCANNING\",\"CHANGE OIL FILTER\",\"CHECK LIGHTS\",\"CHECK FLUIDS\",\"CHECK UNDERCHASSIS\"]",
+                    "created_at": "2026-08-25 16:55:39"
+                },
+                {
+                    "id": 1613,
+                    "job_order_id": 317,
+                    "service_id": null,
+                    "bundle_id": null,
+                    "service_name": "CASH OUT",
+                    "service_price": "0.00",
+                    "labor_cost": "100.00",
+                    "quantity": 1,
+                    "total": "100.00",
+                    "sub_items_json": null,
+                    "created_at": "2026-08-25 16:55:39"
+                }
+            ],
+            "job_order_products": [],
+            "job_order_technicians": [
+                {
+                    "id": 295,
+                    "job_order_id": 317,
+                    "technician_id": 10,
+                    "is_assist": 0,
+                    "assigned_at": "2026-08-25 15:51:47",
+                    "started_at": null,
+                    "completed_at": "2026-08-25 17:13:00",
+                    "work_duration": 4816,
+                    "status": "completed",
+                    "notes": null,
+                    "created_at": "2026-08-25 15:51:47"
+                }
+            ],
+            "work_sessions": [
+                {
+                    "id": 614,
+                    "job_order_technician_id": 295,
+                    "start_time": "2026-08-25 15:51:52",
+                    "end_time": "2026-08-25 17:12:08",
+                    "duration": 4816,
+                    "notes": null,
+                    "created_at": "2026-08-25 15:51:52"
+                }
+            ],
+            "job_order_inspections": [],
+            "technician_points": [
+                {
+                    "id": 64,
+                    "technician_id": 10,
+                    "job_order_id": 317,
+                    "reason": "JO Completed (Lead)",
+                    "points": "10.0",
+                    "created_at": "2026-08-25 17:13:00"
+                },
+                {
+                    "id": 65,
+                    "technician_id": 10,
+                    "job_order_id": 317,
+                    "reason": "Revenue Bonus",
+                    "points": "0.6",
+                    "created_at": "2026-08-25 17:13:00"
+                },
+                {
+                    "id": 66,
+                    "technician_id": 10,
+                    "job_order_id": 317,
+                    "reason": "Speed Bonus",
+                    "points": "5.0",
+                    "created_at": "2026-08-25 17:13:00"
+                },
+                {
+                    "id": 67,
+                    "technician_id": 10,
+                    "job_order_id": 317,
+                    "reason": "Clean Completion",
+                    "points": "3.0",
+                    "created_at": "2026-08-25 17:13:00"
+                }
+            ],
+            "report_expenses": [
+                {
+                    "id": "exp_6a99a549bc9478.42244292",
+                    "expense_date": "2026-08-25",
+                    "category": "Outsource",
+                    "description": "CASH OUT",
+                    "amount": 100,
+                    "payment_method": "Cash",
+                    "job_order_id": 317,
+                    "plate_number": "LAI-4993",
+                    "shop_key": "autodok_main",
+                    "created_by": "Dj Guingue Cortez",
+                    "created_at": "2026-09-04 00:50:17"
+                }
+            ]
+        }
+    },
+    {
+        "id": "trash_6a9a867cac6a33.50658367",
+        "entity_type": "report_expense",
+        "source": "json",
+        "deleted_at": "2026-09-04 16:51:08",
+        "expires_at": "2026-10-04 16:51:08",
+        "shop_key": "autodok_main",
+        "deleted_by": {
+            "id": 2,
+            "name": "Dj Guingue Cortez"
+        },
+        "meta": [],
+        "payload": {
+            "id": "exp_6a9a3f5970c6a6.45797114",
+            "expense_date": "2026-09-04",
+            "category": "Outsource",
+            "description": "CASH OUT",
+            "amount": 300,
+            "payment_method": "Cash",
+            "job_order_id": 398,
+            "plate_number": "LAK-6351",
+            "shop_key": "autodok_main",
+            "created_by": "Iloisa Joy P. Mejias",
+            "created_at": "2026-09-04 11:47:37"
+        }
+    },
+    {
+        "id": "trash_6a9a9316b81a55.70990745",
+        "entity_type": "job_order",
+        "source": "database",
+        "deleted_at": "2026-09-04 17:44:54",
+        "expires_at": "2026-10-04 17:44:54",
+        "shop_key": "autodok_main",
+        "deleted_by": {
+            "id": 2,
+            "name": "Dj Guingue Cortez"
+        },
+        "meta": {
+            "table": "job_orders"
+        },
+        "payload": {
+            "job_order": {
+                "id": 402,
+                "job_order_number": "JO175",
+                "customer_id": 287,
+                "vehicle_id": 416,
+                "service_adviser_id": null,
+                "status": "pending",
+                "priority": "normal",
+                "subtotal": "2500.00",
+                "labor_total": "0.00",
+                "parts_total": "1000.00",
+                "discount_type": "none",
+                "discount_amount": "0.00",
+                "discount_percentage": "0.00",
+                "partial_amount": "0.00",
+                "total_amount": "3500.00",
+                "payment_status": "pending",
+                "payment_method": "cash",
+                "payment_date": null,
+                "notes": "",
+                "estimated_completion": null,
+                "actual_completion": null,
+                "status_timer_seconds": 0,
+                "status_timer_started_at": null,
+                "work_started_at": null,
+                "inspection_started_at": null,
+                "completed_at": null,
+                "created_by": 2,
+                "created_by_type": "user",
+                "created_at": "2026-09-04 17:44:43",
+                "updated_at": "2026-09-04 17:44:43"
+            },
+            "job_order_services": [
+                {
+                    "id": 2232,
+                    "job_order_id": 402,
+                    "service_id": null,
+                    "bundle_id": null,
+                    "service_name": "LABOR",
+                    "service_price": "0.00",
+                    "labor_cost": "2500.00",
+                    "quantity": 1,
+                    "total": "2500.00",
+                    "sub_items_json": "[\"OXYGEN SENSOR CLEANING\",\"CLEANING MAP SENSOR\",\"CLEANING THROTTLE BODY\",\"CLEANING MANIFOLD\",\"CLEANING SPARK PLUG\",\"SCANNING\\/RELEARN THROTTLE BODY\",\"CHECK FLUIDS\",\"CHECK LIGHTS\",\"CHECK UNDERCHASSIS\"]",
+                    "created_at": "2026-09-04 17:44:43"
+                }
+            ],
+            "job_order_products": [
+                {
+                    "id": 1955,
+                    "job_order_id": 402,
+                    "product_id": null,
+                    "product_name": "SENSOR CLEANER",
+                    "product_type": "parts",
+                    "unit_price": "500.00",
+                    "quantity": 1,
+                    "total": "500.00",
+                    "created_at": "2026-09-04 17:44:43"
+                },
+                {
+                    "id": 1956,
+                    "job_order_id": 402,
+                    "product_id": null,
+                    "product_name": "THROTTLE CLEANER",
+                    "product_type": "parts",
+                    "unit_price": "500.00",
+                    "quantity": 1,
+                    "total": "500.00",
+                    "created_at": "2026-09-04 17:44:43"
+                }
+            ],
+            "job_order_technicians": [],
+            "work_sessions": [],
+            "job_order_inspections": [],
+            "technician_points": [],
+            "report_expenses": []
+        }
+    },
+    {
+        "id": "trash_6a9a94f93ea7c5.74467446",
+        "entity_type": "estimate",
+        "source": "database",
+        "deleted_at": "2026-09-04 17:52:57",
+        "expires_at": "2026-10-04 17:52:57",
+        "shop_key": "autodok_main",
+        "deleted_by": {
+            "id": 2,
+            "name": "Dj Guingue Cortez"
+        },
+        "meta": {
+            "table": "job_estimates"
+        },
+        "payload": {
+            "id": 114,
+            "estimate_number": "JE080",
+            "customer_name": "adcasdf",
+            "customer_phone": "24523452",
+            "customer_email": "",
+            "customer_address": "",
+            "vehicle_make": "",
+            "vehicle_model": "",
+            "vehicle_year": "",
+            "vehicle_plate": "",
+            "vehicle_color": "",
+            "vehicle_mileage": "",
+            "services_total": "0.00",
+            "products_total": "0.00",
+            "grand_total": "0.00",
+            "discount_type": "none",
+            "discount_value": "0.00",
+            "notes": "",
+            "recommendations_json": "[]",
+            "services_json": "[{\"id\":182,\"type\":\"service\",\"name\":\"AIRCON CLEANING (CAMERA)\",\"price\":0,\"base_price\":0,\"labor_cost\":0,\"qty\":1,\"selectedSubItems\":[]}]",
+            "products_json": "[{\"id\":160,\"name\":\"sample\",\"code\":\"PRD154\",\"price\":0,\"qty\":2,\"stock\":2}]",
+            "status": "converted",
+            "created_by": 2,
+            "created_at": "2026-09-04 17:52:03",
+            "updated_at": "2026-09-04 17:52:31"
+        }
+    },
+    {
+        "id": "trash_6a9a95168ce3b5.26575086",
+        "entity_type": "product",
+        "source": "database",
+        "deleted_at": "2026-09-04 17:53:26",
+        "expires_at": "2026-10-04 17:53:26",
+        "shop_key": "autodok_main",
+        "deleted_by": {
+            "id": 2,
+            "name": "Dj Guingue Cortez"
+        },
+        "meta": {
+            "table": "products"
+        },
+        "payload": {
+            "id": 160,
+            "product_code": "PRD154",
+            "product_name": "sample",
+            "category_id": null,
+            "brand_id": null,
+            "unit_id": null,
+            "description": "",
+            "supplier_id": null,
+            "supplier": null,
+            "cost_price": "0.00",
+            "selling_price": "0.00",
+            "quantity": 1,
+            "min_stock_level": 10,
+            "status": "active",
+            "created_at": "2026-09-04 17:51:01",
+            "updated_at": "2026-09-04 17:52:17"
+        }
+    },
+    {
+        "id": "trash_6a9ba55b399972.34228937",
+        "entity_type": "job_order",
+        "source": "database",
+        "deleted_at": "2026-09-05 13:15:07",
+        "expires_at": "2026-10-05 13:15:07",
+        "shop_key": "autodok_main",
+        "deleted_by": {
+            "id": 2,
+            "name": "Dj Guingue Cortez"
+        },
+        "meta": {
+            "table": "job_orders"
+        },
+        "payload": {
+            "job_order": {
+                "id": 408,
+                "job_order_number": "JO180",
+                "customer_id": 61,
+                "vehicle_id": 432,
+                "service_adviser_id": null,
+                "status": "completed",
+                "priority": "normal",
+                "subtotal": "6500.00",
+                "labor_total": "0.00",
+                "parts_total": "1500.00",
+                "discount_type": "none",
+                "discount_amount": "0.00",
+                "discount_percentage": "0.00",
+                "partial_amount": "0.00",
+                "total_amount": "8000.00",
+                "payment_status": "pending",
+                "payment_method": "cash",
+                "payment_date": null,
+                "notes": "",
+                "estimated_completion": null,
+                "actual_completion": null,
+                "status_timer_seconds": 4,
+                "status_timer_started_at": null,
+                "work_started_at": "2026-09-05 13:11:19",
+                "inspection_started_at": "2026-09-05 13:11:21",
+                "completed_at": "2026-09-05 13:14:37",
+                "created_by": 2,
+                "created_by_type": "user",
+                "created_at": "2026-09-05 13:11:13",
+                "updated_at": "2026-09-05 13:14:37"
+            },
+            "job_order_services": [
+                {
+                    "id": 2253,
+                    "job_order_id": 408,
+                    "service_id": 17,
+                    "bundle_id": null,
+                    "service_name": "AIRCON CLEANING (DUAL)",
+                    "service_price": "0.00",
+                    "labor_cost": "6500.00",
+                    "quantity": 1,
+                    "total": "6500.00",
+                    "sub_items_json": "[\"Air Filter Cleaning\",\"Evaporator Coil Cleaning\",\"Blower\\/Fan Cleaning\"]",
+                    "created_at": "2026-09-05 13:11:13"
+                }
+            ],
+            "job_order_products": [
+                {
+                    "id": 1986,
+                    "job_order_id": 408,
+                    "product_id": 88,
+                    "product_name": "AIR FILTER",
+                    "product_type": "parts",
+                    "unit_price": "1500.00",
+                    "quantity": 1,
+                    "total": "1500.00",
+                    "created_at": "2026-09-05 13:11:13"
+                }
+            ],
+            "job_order_technicians": [],
+            "work_sessions": [],
+            "job_order_inspections": [],
+            "technician_points": [],
+            "report_expenses": []
+        }
+    },
+    {
+        "id": "trash_6a9ba5ee4e8742.45285263",
+        "entity_type": "job_order",
+        "source": "database",
+        "deleted_at": "2026-09-05 13:17:34",
+        "expires_at": "2026-10-05 13:17:34",
+        "shop_key": "autodok_main",
+        "deleted_by": {
+            "id": 2,
+            "name": "Dj Guingue Cortez"
+        },
+        "meta": {
+            "table": "job_orders"
+        },
+        "payload": {
+            "job_order": {
+                "id": 409,
+                "job_order_number": "JO180",
+                "customer_id": 61,
+                "vehicle_id": 433,
+                "service_adviser_id": null,
+                "status": "completed",
+                "priority": "normal",
+                "subtotal": "6500.00",
+                "labor_total": "0.00",
+                "parts_total": "0.00",
+                "discount_type": "none",
+                "discount_amount": "0.00",
+                "discount_percentage": "0.00",
+                "partial_amount": "0.00",
+                "total_amount": "6500.00",
+                "payment_status": "pending",
+                "payment_method": "cash",
+                "payment_date": null,
+                "notes": "",
+                "estimated_completion": null,
+                "actual_completion": null,
+                "status_timer_seconds": 7,
+                "status_timer_started_at": null,
+                "work_started_at": "2026-09-05 13:15:37",
+                "inspection_started_at": "2026-09-05 13:15:38",
+                "completed_at": "2026-09-05 13:15:44",
+                "created_by": 2,
+                "created_by_type": "user",
+                "created_at": "2026-09-05 13:15:34",
+                "updated_at": "2026-09-05 13:15:44"
+            },
+            "job_order_services": [
+                {
+                    "id": 2254,
+                    "job_order_id": 409,
+                    "service_id": 17,
+                    "bundle_id": null,
+                    "service_name": "AIRCON CLEANING (DUAL)",
+                    "service_price": "0.00",
+                    "labor_cost": "6500.00",
+                    "quantity": 1,
+                    "total": "6500.00",
+                    "sub_items_json": "[\"Air Filter Cleaning\",\"Evaporator Coil Cleaning\",\"Blower\\/Fan Cleaning\"]",
+                    "created_at": "2026-09-05 13:15:34"
+                }
+            ],
+            "job_order_products": [],
+            "job_order_technicians": [],
+            "work_sessions": [],
+            "job_order_inspections": [],
+            "technician_points": [],
+            "report_expenses": []
+        }
+    },
+    {
+        "id": "trash_6a9ba937693ad2.39680952",
+        "entity_type": "job_order",
+        "source": "database",
+        "deleted_at": "2026-09-05 13:31:35",
+        "expires_at": "2026-10-05 13:31:35",
+        "shop_key": "autodok_main",
+        "deleted_by": {
+            "id": 2,
+            "name": "Dj Guingue Cortez"
+        },
+        "meta": {
+            "table": "job_orders"
+        },
+        "payload": {
+            "job_order": {
+                "id": 410,
+                "job_order_number": "JO180",
+                "customer_id": 61,
+                "vehicle_id": 434,
+                "service_adviser_id": null,
+                "status": "completed",
+                "priority": "normal",
+                "subtotal": "6500.00",
+                "labor_total": "0.00",
+                "parts_total": "0.00",
+                "discount_type": "none",
+                "discount_amount": "0.00",
+                "discount_percentage": "0.00",
+                "partial_amount": "0.00",
+                "total_amount": "6500.00",
+                "payment_status": "pending",
+                "payment_method": "cash",
+                "payment_date": null,
+                "notes": "",
+                "estimated_completion": null,
+                "actual_completion": null,
+                "status_timer_seconds": 4,
+                "status_timer_started_at": null,
+                "work_started_at": "2026-09-05 13:17:59",
+                "inspection_started_at": null,
+                "completed_at": "2026-09-05 13:18:03",
+                "created_by": 2,
+                "created_by_type": "user",
+                "created_at": "2026-09-05 13:17:53",
+                "updated_at": "2026-09-05 13:18:03"
+            },
+            "job_order_services": [
+                {
+                    "id": 2255,
+                    "job_order_id": 410,
+                    "service_id": 137,
+                    "bundle_id": null,
+                    "service_name": "AIRCON CLEANING (DUAL)",
+                    "service_price": "0.00",
+                    "labor_cost": "6500.00",
+                    "quantity": 1,
+                    "total": "6500.00",
+                    "sub_items_json": "[\"VACUUM\",\"LEAKTEST\",\"CHARGE FREON\",\"REPLACE ORING\",\"REPLACE EXPANSION VALVE\",\"REPLACE FILTER DRIER\",\"FLUSHING\"]",
+                    "created_at": "2026-09-05 13:17:53"
+                }
+            ],
+            "job_order_products": [],
+            "job_order_technicians": [],
+            "work_sessions": [],
+            "job_order_inspections": [],
+            "technician_points": [],
+            "report_expenses": []
+        }
+    },
+    {
+        "id": "trash_6a9bab54b53b24.52299520",
+        "entity_type": "job_order",
+        "source": "database",
+        "deleted_at": "2026-09-05 13:40:36",
+        "expires_at": "2026-10-05 13:40:36",
+        "shop_key": "autodok_main",
+        "deleted_by": {
+            "id": 2,
+            "name": "Dj Guingue Cortez"
+        },
+        "meta": {
+            "table": "job_orders"
+        },
+        "payload": {
+            "job_order": {
+                "id": 412,
+                "job_order_number": "JO182",
+                "customer_id": 61,
+                "vehicle_id": 436,
+                "service_adviser_id": null,
+                "status": "completed",
+                "priority": "normal",
+                "subtotal": "6500.00",
+                "labor_total": "0.00",
+                "parts_total": "0.00",
+                "discount_type": "none",
+                "discount_amount": "0.00",
+                "discount_percentage": "0.00",
+                "partial_amount": "0.00",
+                "total_amount": "6500.00",
+                "payment_status": "pending",
+                "payment_method": "cash",
+                "payment_date": null,
+                "notes": "",
+                "estimated_completion": null,
+                "actual_completion": null,
+                "status_timer_seconds": 4,
+                "status_timer_started_at": null,
+                "work_started_at": "2026-09-05 13:31:56",
+                "inspection_started_at": "2026-09-05 13:31:58",
+                "completed_at": "2026-09-05 13:32:00",
+                "created_by": 2,
+                "created_by_type": "user",
+                "created_at": "2026-09-05 13:31:52",
+                "updated_at": "2026-09-05 13:32:00"
+            },
+            "job_order_services": [
+                {
+                    "id": 2264,
+                    "job_order_id": 412,
+                    "service_id": 17,
+                    "bundle_id": null,
+                    "service_name": "AIRCON CLEANING (DUAL)",
+                    "service_price": "0.00",
+                    "labor_cost": "6500.00",
+                    "quantity": 1,
+                    "total": "6500.00",
+                    "sub_items_json": "[\"Air Filter Cleaning\",\"Evaporator Coil Cleaning\",\"Blower\\/Fan Cleaning\"]",
+                    "created_at": "2026-09-05 13:31:52"
+                }
+            ],
+            "job_order_products": [],
+            "job_order_technicians": [],
+            "work_sessions": [],
+            "job_order_inspections": [],
+            "technician_points": [],
+            "report_expenses": []
+        }
+    },
+    {
+        "id": "trash_6a9bacc480a735.22195044",
+        "entity_type": "job_order",
+        "source": "database",
+        "deleted_at": "2026-09-05 13:46:44",
+        "expires_at": "2026-10-05 13:46:44",
+        "shop_key": "autodok_main",
+        "deleted_by": {
+            "id": 2,
+            "name": "Dj Guingue Cortez"
+        },
+        "meta": {
+            "table": "job_orders"
+        },
+        "payload": {
+            "job_order": {
+                "id": 413,
+                "job_order_number": "JO182",
+                "customer_id": 35,
+                "vehicle_id": 437,
+                "service_adviser_id": null,
+                "status": "completed",
+                "priority": "normal",
+                "subtotal": "6500.00",
+                "labor_total": "0.00",
+                "parts_total": "0.00",
+                "discount_type": "none",
+                "discount_amount": "0.00",
+                "discount_percentage": "0.00",
+                "partial_amount": "0.00",
+                "total_amount": "6500.00",
+                "payment_status": "pending",
+                "payment_method": "cash",
+                "payment_date": null,
+                "notes": "",
+                "estimated_completion": null,
+                "actual_completion": null,
+                "status_timer_seconds": 4,
+                "status_timer_started_at": null,
+                "work_started_at": "2026-09-05 13:40:52",
+                "inspection_started_at": null,
+                "completed_at": "2026-09-05 13:40:56",
+                "created_by": 2,
+                "created_by_type": "user",
+                "created_at": "2026-09-05 13:40:49",
+                "updated_at": "2026-09-05 13:40:56"
+            },
+            "job_order_services": [
+                {
+                    "id": 2267,
+                    "job_order_id": 413,
+                    "service_id": 17,
+                    "bundle_id": null,
+                    "service_name": "AIRCON CLEANING (DUAL)",
+                    "service_price": "0.00",
+                    "labor_cost": "6500.00",
+                    "quantity": 1,
+                    "total": "6500.00",
+                    "sub_items_json": "[\"Air Filter Cleaning\",\"Evaporator Coil Cleaning\",\"Blower\\/Fan Cleaning\"]",
+                    "created_at": "2026-09-05 13:40:49"
+                }
+            ],
+            "job_order_products": [],
+            "job_order_technicians": [],
+            "work_sessions": [],
+            "job_order_inspections": [],
+            "technician_points": [],
+            "report_expenses": []
+        }
+    },
+    {
+        "id": "trash_6a9bae6353a086.49882399",
+        "entity_type": "job_order",
+        "source": "database",
+        "deleted_at": "2026-09-05 13:53:39",
+        "expires_at": "2026-10-05 13:53:39",
+        "shop_key": "autodok_main",
+        "deleted_by": {
+            "id": 2,
+            "name": "Dj Guingue Cortez"
+        },
+        "meta": {
+            "table": "job_orders"
+        },
+        "payload": {
+            "job_order": {
+                "id": 414,
+                "job_order_number": "JO182",
+                "customer_id": 302,
+                "vehicle_id": 438,
+                "service_adviser_id": null,
+                "status": "completed",
+                "priority": "normal",
+                "subtotal": "6500.00",
+                "labor_total": "0.00",
+                "parts_total": "0.00",
+                "discount_type": "none",
+                "discount_amount": "0.00",
+                "discount_percentage": "0.00",
+                "partial_amount": "0.00",
+                "total_amount": "6500.00",
+                "payment_status": "pending",
+                "payment_method": "cash",
+                "payment_date": null,
+                "notes": "",
+                "estimated_completion": null,
+                "actual_completion": null,
+                "status_timer_seconds": 4,
+                "status_timer_started_at": null,
+                "work_started_at": "2026-09-05 13:46:59",
+                "inspection_started_at": "2026-09-05 13:47:01",
+                "completed_at": "2026-09-05 13:47:03",
+                "created_by": 2,
+                "created_by_type": "user",
+                "created_at": "2026-09-05 13:46:56",
+                "updated_at": "2026-09-05 13:47:03"
+            },
+            "job_order_services": [
+                {
+                    "id": 2268,
+                    "job_order_id": 414,
+                    "service_id": 17,
+                    "bundle_id": null,
+                    "service_name": "AIRCON CLEANING (DUAL)",
+                    "service_price": "0.00",
+                    "labor_cost": "6500.00",
+                    "quantity": 1,
+                    "total": "6500.00",
+                    "sub_items_json": "[\"Air Filter Cleaning\",\"Evaporator Coil Cleaning\",\"Blower\\/Fan Cleaning\"]",
+                    "created_at": "2026-09-05 13:46:56"
+                }
+            ],
+            "job_order_products": [],
+            "job_order_technicians": [],
+            "work_sessions": [],
+            "job_order_inspections": [],
+            "technician_points": [],
+            "report_expenses": []
+        }
+    },
+    {
+        "id": "trash_6a9baea952aef1.40620622",
+        "entity_type": "job_order",
+        "source": "database",
+        "deleted_at": "2026-09-05 13:54:49",
+        "expires_at": "2026-10-05 13:54:49",
+        "shop_key": "autodok_main",
+        "deleted_by": {
+            "id": 2,
+            "name": "Dj Guingue Cortez"
+        },
+        "meta": {
+            "table": "job_orders"
+        },
+        "payload": {
+            "job_order": {
+                "id": 415,
+                "job_order_number": "JO182",
+                "customer_id": 20,
+                "vehicle_id": 439,
+                "service_adviser_id": null,
+                "status": "completed",
+                "priority": "normal",
+                "subtotal": "400.00",
+                "labor_total": "0.00",
+                "parts_total": "0.00",
+                "discount_type": "none",
+                "discount_amount": "0.00",
+                "discount_percentage": "0.00",
+                "partial_amount": "0.00",
+                "total_amount": "400.00",
+                "payment_status": "pending",
+                "payment_method": "cash",
+                "payment_date": null,
+                "notes": "",
+                "estimated_completion": null,
+                "actual_completion": null,
+                "status_timer_seconds": 3,
+                "status_timer_started_at": null,
+                "work_started_at": "2026-09-05 13:54:04",
+                "inspection_started_at": "2026-09-05 13:54:06",
+                "completed_at": "2026-09-05 13:54:07",
+                "created_by": 2,
+                "created_by_type": "user",
+                "created_at": "2026-09-05 13:54:01",
+                "updated_at": "2026-09-05 13:54:07"
+            },
+            "job_order_services": [
+                {
+                    "id": 2270,
+                    "job_order_id": 415,
+                    "service_id": 59,
+                    "bundle_id": null,
+                    "service_name": "BRAKE CLEANING / ADJUST FRONT RH/LH",
+                    "service_price": "0.00",
+                    "labor_cost": "400.00",
+                    "quantity": 1,
+                    "total": "400.00",
+                    "sub_items_json": null,
+                    "created_at": "2026-09-05 13:54:01"
+                }
+            ],
+            "job_order_products": [],
+            "job_order_technicians": [],
+            "work_sessions": [],
+            "job_order_inspections": [],
+            "technician_points": [],
+            "report_expenses": []
+        }
+    },
+    {
+        "id": "trash_6a9bb41b083550.47295563",
+        "entity_type": "job_order",
+        "source": "database",
+        "deleted_at": "2026-09-05 14:18:03",
+        "expires_at": "2026-10-05 14:18:03",
+        "shop_key": "autodok_main",
+        "deleted_by": {
+            "id": 2,
+            "name": "Dj Guingue Cortez"
+        },
+        "meta": {
+            "table": "job_orders"
+        },
+        "payload": {
+            "job_order": {
+                "id": 416,
+                "job_order_number": "JO182",
+                "customer_id": 61,
+                "vehicle_id": 440,
+                "service_adviser_id": null,
+                "status": "completed",
+                "priority": "normal",
+                "subtotal": "6500.00",
+                "labor_total": "0.00",
+                "parts_total": "1500.00",
+                "discount_type": "none",
+                "discount_amount": "0.00",
+                "discount_percentage": "0.00",
+                "partial_amount": "0.00",
+                "total_amount": "8000.00",
+                "payment_status": "pending",
+                "payment_method": "cash",
+                "payment_date": null,
+                "notes": "",
+                "estimated_completion": null,
+                "actual_completion": null,
+                "status_timer_seconds": 5,
+                "status_timer_started_at": null,
+                "work_started_at": "2026-09-05 14:06:17",
+                "inspection_started_at": "2026-09-05 14:06:20",
+                "completed_at": "2026-09-05 14:06:22",
+                "created_by": 2,
+                "created_by_type": "user",
+                "created_at": "2026-09-05 14:06:14",
+                "updated_at": "2026-09-05 14:06:22"
+            },
+            "job_order_services": [
+                {
+                    "id": 2275,
+                    "job_order_id": 416,
+                    "service_id": 137,
+                    "bundle_id": null,
+                    "service_name": "AIRCON CLEANING (DUAL)",
+                    "service_price": "0.00",
+                    "labor_cost": "6500.00",
+                    "quantity": 1,
+                    "total": "6500.00",
+                    "sub_items_json": "[\"VACUUM\",\"LEAKTEST\",\"CHARGE FREON\",\"REPLACE ORING\",\"REPLACE EXPANSION VALVE\",\"REPLACE FILTER DRIER\",\"FLUSHING\"]",
+                    "created_at": "2026-09-05 14:06:14"
+                }
+            ],
+            "job_order_products": [
+                {
+                    "id": 1998,
+                    "job_order_id": 416,
+                    "product_id": 88,
+                    "product_name": "AIR FILTER",
+                    "product_type": "parts",
+                    "unit_price": "1500.00",
+                    "quantity": 1,
+                    "total": "1500.00",
+                    "created_at": "2026-09-05 14:06:14"
+                }
+            ],
+            "job_order_technicians": [],
+            "work_sessions": [],
+            "job_order_inspections": [],
+            "technician_points": [],
+            "report_expenses": []
+        }
+    },
+    {
+        "id": "trash_6a9bb41dd75219.52183681",
+        "entity_type": "job_order",
+        "source": "database",
+        "deleted_at": "2026-09-05 14:18:05",
+        "expires_at": "2026-10-05 14:18:05",
+        "shop_key": "autodok_main",
+        "deleted_by": {
+            "id": 2,
+            "name": "Dj Guingue Cortez"
+        },
+        "meta": {
+            "table": "job_orders"
+        },
+        "payload": {
+            "job_order": {
+                "id": 417,
+                "job_order_number": "JO183",
+                "customer_id": 35,
+                "vehicle_id": 441,
+                "service_adviser_id": null,
+                "status": "completed",
+                "priority": "normal",
+                "subtotal": "8120.00",
+                "labor_total": "0.00",
+                "parts_total": "0.00",
+                "discount_type": "none",
+                "discount_amount": "0.00",
+                "discount_percentage": "0.00",
+                "partial_amount": "0.00",
+                "total_amount": "8120.00",
+                "payment_status": "pending",
+                "payment_method": "cash",
+                "payment_date": null,
+                "notes": "",
+                "estimated_completion": null,
+                "actual_completion": null,
+                "status_timer_seconds": 5,
+                "status_timer_started_at": null,
+                "work_started_at": "2026-09-05 14:16:09",
+                "inspection_started_at": "2026-09-05 14:16:12",
+                "completed_at": "2026-09-05 14:16:14",
+                "created_by": 2,
+                "created_by_type": "user",
+                "created_at": "2026-09-05 14:16:05",
+                "updated_at": "2026-09-05 14:16:14"
+            },
+            "job_order_services": [
+                {
+                    "id": 2280,
+                    "job_order_id": 417,
+                    "service_id": 137,
+                    "bundle_id": null,
+                    "service_name": "AIRCON CLEANING (DUAL)",
+                    "service_price": "0.00",
+                    "labor_cost": "6500.00",
+                    "quantity": 1,
+                    "total": "6500.00",
+                    "sub_items_json": "[\"VACUUM\",\"LEAKTEST\",\"CHARGE FREON\",\"REPLACE ORING\",\"REPLACE EXPANSION VALVE\",\"REPLACE FILTER DRIER\",\"FLUSHING\"]",
+                    "created_at": "2026-09-05 14:16:05"
+                },
+                {
+                    "id": 2281,
+                    "job_order_id": 417,
+                    "service_id": 130,
+                    "bundle_id": null,
+                    "service_name": "BACK TO ZERO",
+                    "service_price": "0.00",
+                    "labor_cost": "120.00",
+                    "quantity": 1,
+                    "total": "120.00",
+                    "sub_items_json": null,
+                    "created_at": "2026-09-05 14:16:05"
+                },
+                {
+                    "id": 2282,
+                    "job_order_id": 417,
+                    "service_id": 87,
+                    "bundle_id": null,
+                    "service_name": "CHARGE FREON",
+                    "service_price": "0.00",
+                    "labor_cost": "1500.00",
+                    "quantity": 1,
+                    "total": "1500.00",
+                    "sub_items_json": "[\"VACUUM\",\"LEAK TEST\",\"ADD COMPRESSOR OIL\"]",
+                    "created_at": "2026-09-05 14:16:05"
+                }
+            ],
+            "job_order_products": [],
+            "job_order_technicians": [],
+            "work_sessions": [],
+            "job_order_inspections": [],
+            "technician_points": [],
+            "report_expenses": []
+        }
+    },
+    {
+        "id": "trash_6a9c0e22ea9d48.70357243",
+        "entity_type": "manual_income",
+        "source": "json",
+        "deleted_at": "2026-09-05 20:42:10",
+        "expires_at": "2026-10-05 20:42:10",
+        "shop_key": "autodok_main",
+        "deleted_by": {
+            "id": 4,
+            "name": "Erin Patricia Martinez"
+        },
+        "meta": [],
+        "payload": {
+            "id": "inc_6a9c0de3279743.70728526",
+            "income_date": "2026-09-05",
+            "description": "XPANDER/RESCUE",
+            "amount": 6240,
+            "payment_method": "Swipe/Card",
+            "shop_key": "autodok_main",
+            "created_by": "Erin Patricia Martinez",
+            "created_at": "2026-09-05 20:41:07"
+        }
+    },
+    {
+        "id": "trash_6a9c136181ab21.00708815",
+        "entity_type": "report_expense",
+        "source": "json",
+        "deleted_at": "2026-09-05 21:04:33",
+        "expires_at": "2026-10-05 21:04:33",
+        "shop_key": "autodok_main",
+        "deleted_by": {
+            "id": 7,
+            "name": "Iloisa Joy P. Mejias"
+        },
+        "meta": [],
+        "payload": {
+            "id": "exp_6a9c12d0926da3.55590981",
+            "expense_date": "2026-09-05",
+            "category": "Outsource",
+            "description": "2 PCS HUB BEARING",
+            "amount": 6000,
+            "payment_method": "Cash",
+            "job_order_id": 405,
+            "plate_number": "AAG-5685",
+            "shop_key": "autodok_main",
+            "created_by": "Iloisa Joy P. Mejias",
+            "created_at": "2026-09-05 21:02:08"
+        }
+    },
+    {
+        "id": "trash_6a9c21dd680314.72385520",
+        "entity_type": "job_order",
+        "source": "database",
+        "deleted_at": "2026-09-05 22:06:21",
+        "expires_at": "2026-10-05 22:06:21",
+        "shop_key": "autodok_main",
+        "deleted_by": {
+            "id": 2,
+            "name": "Dj Guingue Cortez"
+        },
+        "meta": {
+            "table": "job_orders"
+        },
+        "payload": {
+            "job_order": {
+                "id": 419,
+                "job_order_number": "JO183",
+                "customer_id": 61,
+                "vehicle_id": 443,
+                "service_adviser_id": null,
+                "status": "completed",
+                "priority": "normal",
+                "subtotal": "13000.00",
+                "labor_total": "0.00",
+                "parts_total": "0.00",
+                "discount_type": "none",
+                "discount_amount": "0.00",
+                "discount_percentage": "0.00",
+                "partial_amount": "0.00",
+                "total_amount": "13000.00",
+                "payment_status": "pending",
+                "payment_method": "cash",
+                "payment_date": null,
+                "notes": "",
+                "estimated_completion": null,
+                "actual_completion": null,
+                "status_timer_seconds": 4,
+                "status_timer_started_at": null,
+                "work_started_at": "2026-09-05 14:36:53",
+                "inspection_started_at": "2026-09-05 14:36:55",
+                "completed_at": "2026-09-05 14:36:57",
+                "created_by": 2,
+                "created_by_type": "user",
+                "created_at": "2026-09-05 14:36:50",
+                "updated_at": "2026-09-05 14:36:57"
+            },
+            "job_order_services": [
+                {
+                    "id": 2289,
+                    "job_order_id": 419,
+                    "service_id": 17,
+                    "bundle_id": null,
+                    "service_name": "AIRCON CLEANING (DUAL)",
+                    "service_price": "0.00",
+                    "labor_cost": "6500.00",
+                    "quantity": 1,
+                    "total": "6500.00",
+                    "sub_items_json": "[\"Air Filter Cleaning\",\"Evaporator Coil Cleaning\",\"Blower\\/Fan Cleaning\"]",
+                    "created_at": "2026-09-05 14:36:50"
+                },
+                {
+                    "id": 2290,
+                    "job_order_id": 419,
+                    "service_id": 137,
+                    "bundle_id": null,
+                    "service_name": "AIRCON CLEANING (DUAL)",
+                    "service_price": "0.00",
+                    "labor_cost": "6500.00",
+                    "quantity": 1,
+                    "total": "6500.00",
+                    "sub_items_json": "[\"VACUUM\",\"LEAKTEST\",\"CHARGE FREON\",\"REPLACE ORING\",\"REPLACE EXPANSION VALVE\",\"REPLACE FILTER DRIER\",\"FLUSHING\"]",
+                    "created_at": "2026-09-05 14:36:50"
+                }
+            ],
+            "job_order_products": [],
+            "job_order_technicians": [],
+            "work_sessions": [],
+            "job_order_inspections": [],
+            "technician_points": [],
+            "report_expenses": []
+        }
+    },
+    {
+        "id": "trash_6a9c21dff29bd2.38544295",
+        "entity_type": "job_order",
+        "source": "database",
+        "deleted_at": "2026-09-05 22:06:23",
+        "expires_at": "2026-10-05 22:06:23",
+        "shop_key": "autodok_main",
+        "deleted_by": {
+            "id": 2,
+            "name": "Dj Guingue Cortez"
+        },
+        "meta": {
+            "table": "job_orders"
+        },
+        "payload": {
+            "job_order": {
+                "id": 422,
+                "job_order_number": "JO186",
+                "customer_id": 144,
+                "vehicle_id": 446,
+                "service_adviser_id": null,
+                "status": "completed",
+                "priority": "normal",
+                "subtotal": "12000.00",
+                "labor_total": "0.00",
+                "parts_total": "0.00",
+                "discount_type": "none",
+                "discount_amount": "0.00",
+                "discount_percentage": "0.00",
+                "partial_amount": "0.00",
+                "total_amount": "12000.00",
+                "payment_status": "pending",
+                "payment_method": "cash",
+                "payment_date": null,
+                "notes": "",
+                "estimated_completion": null,
+                "actual_completion": null,
+                "status_timer_seconds": 4,
+                "status_timer_started_at": null,
+                "work_started_at": "2026-09-05 21:41:33",
+                "inspection_started_at": "2026-09-05 21:41:36",
+                "completed_at": "2026-09-05 21:41:37",
+                "created_by": 2,
+                "created_by_type": "user",
+                "created_at": "2026-09-05 21:41:31",
+                "updated_at": "2026-09-05 21:41:37"
+            },
+            "job_order_services": [
+                {
+                    "id": 2315,
+                    "job_order_id": 422,
+                    "service_id": 137,
+                    "bundle_id": null,
+                    "service_name": "AIRCON CLEANING (DUAL)",
+                    "service_price": "0.00",
+                    "labor_cost": "6500.00",
+                    "quantity": 1,
+                    "total": "6500.00",
+                    "sub_items_json": "[\"VACUUM\",\"LEAKTEST\",\"CHARGE FREON\",\"REPLACE ORING\",\"REPLACE EXPANSION VALVE\",\"REPLACE FILTER DRIER\",\"FLUSHING\"]",
+                    "created_at": "2026-09-05 21:41:31"
+                },
+                {
+                    "id": 2316,
+                    "job_order_id": 422,
+                    "service_id": 50,
+                    "bundle_id": null,
+                    "service_name": "AIRCON CLEANING (SINGLE)",
+                    "service_price": "0.00",
+                    "labor_cost": "5500.00",
+                    "quantity": 1,
+                    "total": "5500.00",
+                    "sub_items_json": "[\"REPLACE EXP. VALVE\",\"REPLACE FILTER DRIER\",\"VACUUM\",\"LEAK TEST\",\"FLSUHING AIRCON SYSTEM\",\"CHARGE FREON\",\"CHECK-UP\",\"SCANNING\"]",
+                    "created_at": "2026-09-05 21:41:31"
+                }
+            ],
+            "job_order_products": [],
+            "job_order_technicians": [],
+            "work_sessions": [],
+            "job_order_inspections": [],
+            "technician_points": [],
+            "report_expenses": []
+        }
+    },
+    {
+        "id": "trash_6a9c22406e45f8.28250010",
+        "entity_type": "job_order",
+        "source": "database",
+        "deleted_at": "2026-09-05 22:08:00",
+        "expires_at": "2026-10-05 22:08:00",
+        "shop_key": "autodok_main",
+        "deleted_by": {
+            "id": 2,
+            "name": "Dj Guingue Cortez"
+        },
+        "meta": {
+            "table": "job_orders"
+        },
+        "payload": {
+            "job_order": {
+                "id": 423,
+                "job_order_number": "JO186",
+                "customer_id": 35,
+                "vehicle_id": 447,
+                "service_adviser_id": null,
+                "status": "completed",
+                "priority": "normal",
+                "subtotal": "13000.00",
+                "labor_total": "0.00",
+                "parts_total": "0.00",
+                "discount_type": "none",
+                "discount_amount": "0.00",
+                "discount_percentage": "0.00",
+                "partial_amount": "0.00",
+                "total_amount": "13000.00",
+                "payment_status": "pending",
+                "payment_method": "cash",
+                "payment_date": null,
+                "notes": "",
+                "estimated_completion": null,
+                "actual_completion": null,
+                "status_timer_seconds": 8,
+                "status_timer_started_at": null,
+                "work_started_at": "2026-09-05 22:06:51",
+                "inspection_started_at": "2026-09-05 22:06:57",
+                "completed_at": "2026-09-05 22:06:59",
+                "created_by": 2,
+                "created_by_type": "user",
+                "created_at": "2026-09-05 22:06:42",
+                "updated_at": "2026-09-05 22:06:59"
+            },
+            "job_order_services": [
+                {
+                    "id": 2317,
+                    "job_order_id": 423,
+                    "service_id": 17,
+                    "bundle_id": null,
+                    "service_name": "AIRCON CLEANING (DUAL)",
+                    "service_price": "0.00",
+                    "labor_cost": "6500.00",
+                    "quantity": 1,
+                    "total": "6500.00",
+                    "sub_items_json": "[\"Air Filter Cleaning\",\"Evaporator Coil Cleaning\",\"Blower\\/Fan Cleaning\"]",
+                    "created_at": "2026-09-05 22:06:42"
+                },
+                {
+                    "id": 2318,
+                    "job_order_id": 423,
+                    "service_id": 137,
+                    "bundle_id": null,
+                    "service_name": "AIRCON CLEANING (DUAL)",
+                    "service_price": "0.00",
+                    "labor_cost": "6500.00",
+                    "quantity": 1,
+                    "total": "6500.00",
+                    "sub_items_json": "[\"VACUUM\",\"LEAKTEST\",\"CHARGE FREON\",\"REPLACE ORING\",\"REPLACE EXPANSION VALVE\",\"REPLACE FILTER DRIER\",\"FLUSHING\"]",
+                    "created_at": "2026-09-05 22:06:42"
+                }
+            ],
+            "job_order_products": [],
+            "job_order_technicians": [],
+            "work_sessions": [],
+            "job_order_inspections": [],
+            "technician_points": [],
+            "report_expenses": []
+        }
+    },
+    {
+        "id": "trash_6a9c237706adf8.52240841",
+        "entity_type": "job_order",
+        "source": "database",
+        "deleted_at": "2026-09-05 22:13:11",
+        "expires_at": "2026-10-05 22:13:11",
+        "shop_key": "autodok_main",
+        "deleted_by": {
+            "id": 2,
+            "name": "Dj Guingue Cortez"
+        },
+        "meta": {
+            "table": "job_orders"
+        },
+        "payload": {
+            "job_order": {
+                "id": 424,
+                "job_order_number": "JO186",
+                "customer_id": 138,
+                "vehicle_id": 448,
+                "service_adviser_id": null,
+                "status": "completed",
+                "priority": "normal",
+                "subtotal": "18500.00",
+                "labor_total": "0.00",
+                "parts_total": "0.00",
+                "discount_type": "none",
+                "discount_amount": "0.00",
+                "discount_percentage": "0.00",
+                "partial_amount": "0.00",
+                "total_amount": "18500.00",
+                "payment_status": "pending",
+                "payment_method": "cash",
+                "payment_date": null,
+                "notes": "",
+                "estimated_completion": null,
+                "actual_completion": null,
+                "status_timer_seconds": 3,
+                "status_timer_started_at": null,
+                "work_started_at": "2026-09-05 22:08:51",
+                "inspection_started_at": "2026-09-05 22:08:52",
+                "completed_at": "2026-09-05 22:08:54",
+                "created_by": 2,
+                "created_by_type": "user",
+                "created_at": "2026-09-05 22:08:48",
+                "updated_at": "2026-09-05 22:08:54"
+            },
+            "job_order_services": [
+                {
+                    "id": 2319,
+                    "job_order_id": 424,
+                    "service_id": 17,
+                    "bundle_id": null,
+                    "service_name": "AIRCON CLEANING (DUAL)",
+                    "service_price": "0.00",
+                    "labor_cost": "6500.00",
+                    "quantity": 1,
+                    "total": "6500.00",
+                    "sub_items_json": "[\"Air Filter Cleaning\",\"Evaporator Coil Cleaning\",\"Blower\\/Fan Cleaning\"]",
+                    "created_at": "2026-09-05 22:08:48"
+                },
+                {
+                    "id": 2320,
+                    "job_order_id": 424,
+                    "service_id": 137,
+                    "bundle_id": null,
+                    "service_name": "AIRCON CLEANING (DUAL)",
+                    "service_price": "0.00",
+                    "labor_cost": "6500.00",
+                    "quantity": 1,
+                    "total": "6500.00",
+                    "sub_items_json": "[\"VACUUM\",\"LEAKTEST\",\"CHARGE FREON\",\"REPLACE ORING\",\"REPLACE EXPANSION VALVE\",\"REPLACE FILTER DRIER\",\"FLUSHING\"]",
+                    "created_at": "2026-09-05 22:08:48"
+                },
+                {
+                    "id": 2321,
+                    "job_order_id": 424,
+                    "service_id": 50,
+                    "bundle_id": null,
+                    "service_name": "AIRCON CLEANING (SINGLE)",
+                    "service_price": "0.00",
+                    "labor_cost": "5500.00",
+                    "quantity": 1,
+                    "total": "5500.00",
+                    "sub_items_json": "[\"REPLACE EXP. VALVE\",\"REPLACE FILTER DRIER\",\"VACUUM\",\"LEAK TEST\",\"FLSUHING AIRCON SYSTEM\",\"CHARGE FREON\",\"CHECK-UP\",\"SCANNING\"]",
+                    "created_at": "2026-09-05 22:08:48"
+                }
+            ],
+            "job_order_products": [],
+            "job_order_technicians": [],
+            "work_sessions": [],
+            "job_order_inspections": [],
+            "technician_points": [],
+            "report_expenses": []
+        }
+    },
+    {
+        "id": "trash_6a9c251fd6c753.91700508",
+        "entity_type": "job_order",
+        "source": "database",
+        "deleted_at": "2026-09-05 22:20:15",
+        "expires_at": "2026-10-05 22:20:15",
+        "shop_key": "autodok_main",
+        "deleted_by": {
+            "id": 2,
+            "name": "Dj Guingue Cortez"
+        },
+        "meta": {
+            "table": "job_orders"
+        },
+        "payload": {
+            "job_order": {
+                "id": 425,
+                "job_order_number": "JO186",
+                "customer_id": 61,
+                "vehicle_id": 449,
+                "service_adviser_id": null,
+                "status": "completed",
+                "priority": "normal",
+                "subtotal": "13000.00",
+                "labor_total": "0.00",
+                "parts_total": "0.00",
+                "discount_type": "none",
+                "discount_amount": "0.00",
+                "discount_percentage": "0.00",
+                "partial_amount": "0.00",
+                "total_amount": "13000.00",
+                "payment_status": "pending",
+                "payment_method": "cash",
+                "payment_date": null,
+                "notes": "",
+                "estimated_completion": null,
+                "actual_completion": null,
+                "status_timer_seconds": 0,
+                "status_timer_started_at": null,
+                "work_started_at": null,
+                "inspection_started_at": null,
+                "completed_at": "2026-09-05 22:19:17",
+                "created_by": 2,
+                "created_by_type": "user",
+                "created_at": "2026-09-05 22:19:13",
+                "updated_at": "2026-09-05 22:19:17"
+            },
+            "job_order_services": [
+                {
+                    "id": 2322,
+                    "job_order_id": 425,
+                    "service_id": 17,
+                    "bundle_id": null,
+                    "service_name": "AIRCON CLEANING (DUAL)",
+                    "service_price": "0.00",
+                    "labor_cost": "6500.00",
+                    "quantity": 1,
+                    "total": "6500.00",
+                    "sub_items_json": "[\"Air Filter Cleaning\",\"Evaporator Coil Cleaning\",\"Blower\\/Fan Cleaning\"]",
+                    "created_at": "2026-09-05 22:19:13"
+                },
+                {
+                    "id": 2323,
+                    "job_order_id": 425,
+                    "service_id": 137,
+                    "bundle_id": null,
+                    "service_name": "AIRCON CLEANING (DUAL)",
+                    "service_price": "0.00",
+                    "labor_cost": "6500.00",
+                    "quantity": 1,
+                    "total": "6500.00",
+                    "sub_items_json": "[\"VACUUM\",\"LEAKTEST\",\"CHARGE FREON\",\"REPLACE ORING\",\"REPLACE EXPANSION VALVE\",\"REPLACE FILTER DRIER\",\"FLUSHING\"]",
+                    "created_at": "2026-09-05 22:19:13"
+                }
+            ],
+            "job_order_products": [],
+            "job_order_technicians": [],
+            "work_sessions": [],
+            "job_order_inspections": [],
+            "technician_points": [],
+            "report_expenses": []
+        }
+    },
+    {
+        "id": "trash_6a9c25da715919.69427980",
+        "entity_type": "job_order",
+        "source": "database",
+        "deleted_at": "2026-09-05 22:23:22",
+        "expires_at": "2026-10-05 22:23:22",
+        "shop_key": "autodok_main",
+        "deleted_by": {
+            "id": 2,
+            "name": "Dj Guingue Cortez"
+        },
+        "meta": {
+            "table": "job_orders"
+        },
+        "payload": {
+            "job_order": {
+                "id": 426,
+                "job_order_number": "JO186",
+                "customer_id": 61,
+                "vehicle_id": 450,
+                "service_adviser_id": null,
+                "status": "completed",
+                "priority": "normal",
+                "subtotal": "13000.00",
+                "labor_total": "0.00",
+                "parts_total": "0.00",
+                "discount_type": "none",
+                "discount_amount": "0.00",
+                "discount_percentage": "0.00",
+                "partial_amount": "0.00",
+                "total_amount": "13000.00",
+                "payment_status": "pending",
+                "payment_method": "cash",
+                "payment_date": null,
+                "notes": "",
+                "estimated_completion": null,
+                "actual_completion": null,
+                "status_timer_seconds": 0,
+                "status_timer_started_at": null,
+                "work_started_at": null,
+                "inspection_started_at": null,
+                "completed_at": "2026-09-05 22:22:22",
+                "created_by": 2,
+                "created_by_type": "user",
+                "created_at": "2026-09-05 22:22:19",
+                "updated_at": "2026-09-05 22:22:22"
+            },
+            "job_order_services": [
+                {
+                    "id": 2324,
+                    "job_order_id": 426,
+                    "service_id": 17,
+                    "bundle_id": null,
+                    "service_name": "AIRCON CLEANING (DUAL)",
+                    "service_price": "0.00",
+                    "labor_cost": "6500.00",
+                    "quantity": 1,
+                    "total": "6500.00",
+                    "sub_items_json": "[\"Air Filter Cleaning\",\"Evaporator Coil Cleaning\",\"Blower\\/Fan Cleaning\"]",
+                    "created_at": "2026-09-05 22:22:19"
+                },
+                {
+                    "id": 2325,
+                    "job_order_id": 426,
+                    "service_id": 137,
+                    "bundle_id": null,
+                    "service_name": "AIRCON CLEANING (DUAL)",
+                    "service_price": "0.00",
+                    "labor_cost": "6500.00",
+                    "quantity": 1,
+                    "total": "6500.00",
+                    "sub_items_json": "[\"VACUUM\",\"LEAKTEST\",\"CHARGE FREON\",\"REPLACE ORING\",\"REPLACE EXPANSION VALVE\",\"REPLACE FILTER DRIER\",\"FLUSHING\"]",
+                    "created_at": "2026-09-05 22:22:19"
+                }
+            ],
+            "job_order_products": [],
+            "job_order_technicians": [],
+            "work_sessions": [],
+            "job_order_inspections": [],
+            "technician_points": [],
+            "report_expenses": []
+        }
+    },
+    {
+        "id": "trash_6a9c271e2e3a50.20714708",
+        "entity_type": "job_order",
+        "source": "database",
+        "deleted_at": "2026-09-05 22:28:46",
+        "expires_at": "2026-10-05 22:28:46",
+        "shop_key": "autodok_main",
+        "deleted_by": {
+            "id": 2,
+            "name": "Dj Guingue Cortez"
+        },
+        "meta": {
+            "table": "job_orders"
+        },
+        "payload": {
+            "job_order": {
+                "id": 427,
+                "job_order_number": "JO186",
+                "customer_id": 61,
+                "vehicle_id": 451,
+                "service_adviser_id": null,
+                "status": "completed",
+                "priority": "normal",
+                "subtotal": "13000.00",
+                "labor_total": "0.00",
+                "parts_total": "0.00",
+                "discount_type": "none",
+                "discount_amount": "0.00",
+                "discount_percentage": "0.00",
+                "partial_amount": "0.00",
+                "total_amount": "13000.00",
+                "payment_status": "pending",
+                "payment_method": "cash",
+                "payment_date": null,
+                "notes": "",
+                "estimated_completion": null,
+                "actual_completion": null,
+                "status_timer_seconds": 0,
+                "status_timer_started_at": null,
+                "work_started_at": null,
+                "inspection_started_at": null,
+                "completed_at": "2026-09-05 22:23:58",
+                "created_by": 2,
+                "created_by_type": "user",
+                "created_at": "2026-09-05 22:23:39",
+                "updated_at": "2026-09-05 22:23:58"
+            },
+            "job_order_services": [
+                {
+                    "id": 2326,
+                    "job_order_id": 427,
+                    "service_id": 137,
+                    "bundle_id": null,
+                    "service_name": "AIRCON CLEANING (DUAL)",
+                    "service_price": "0.00",
+                    "labor_cost": "6500.00",
+                    "quantity": 1,
+                    "total": "6500.00",
+                    "sub_items_json": "[\"VACUUM\",\"LEAKTEST\",\"CHARGE FREON\",\"REPLACE ORING\",\"REPLACE EXPANSION VALVE\",\"REPLACE FILTER DRIER\",\"FLUSHING\"]",
+                    "created_at": "2026-09-05 22:23:39"
+                },
+                {
+                    "id": 2327,
+                    "job_order_id": 427,
+                    "service_id": 17,
+                    "bundle_id": null,
+                    "service_name": "AIRCON CLEANING (DUAL)",
+                    "service_price": "0.00",
+                    "labor_cost": "6500.00",
+                    "quantity": 1,
+                    "total": "6500.00",
+                    "sub_items_json": "[\"Air Filter Cleaning\",\"Evaporator Coil Cleaning\",\"Blower\\/Fan Cleaning\"]",
+                    "created_at": "2026-09-05 22:23:39"
+                }
+            ],
+            "job_order_products": [],
+            "job_order_technicians": [],
+            "work_sessions": [],
+            "job_order_inspections": [],
+            "technician_points": [],
+            "report_expenses": []
+        }
+    },
+    {
+        "id": "trash_6a9c3523c9d5e0.69555035",
+        "entity_type": "job_order",
+        "source": "database",
+        "deleted_at": "2026-09-05 23:28:35",
+        "expires_at": "2026-10-05 23:28:35",
+        "shop_key": "autodok_main",
+        "deleted_by": {
+            "id": 2,
+            "name": "Dj Guingue Cortez"
+        },
+        "meta": {
+            "table": "job_orders"
+        },
+        "payload": {
+            "job_order": {
+                "id": 429,
+                "job_order_number": "JO187",
+                "customer_id": 306,
+                "vehicle_id": 453,
+                "service_adviser_id": null,
+                "status": "completed",
+                "priority": "normal",
+                "subtotal": "6500.00",
+                "labor_total": "0.00",
+                "parts_total": "0.00",
+                "discount_type": "none",
+                "discount_amount": "0.00",
+                "discount_percentage": "0.00",
+                "partial_amount": "0.00",
+                "total_amount": "6500.00",
+                "payment_status": "pending",
+                "payment_method": "cash",
+                "payment_date": null,
+                "notes": "",
+                "estimated_completion": null,
+                "actual_completion": null,
+                "status_timer_seconds": 0,
+                "status_timer_started_at": null,
+                "work_started_at": null,
+                "inspection_started_at": null,
+                "completed_at": "2026-09-05 23:18:58",
+                "created_by": 2,
+                "created_by_type": "user",
+                "created_at": "2026-09-05 23:18:55",
+                "updated_at": "2026-09-05 23:18:58"
+            },
+            "job_order_services": [
+                {
+                    "id": 2329,
+                    "job_order_id": 429,
+                    "service_id": 182,
+                    "bundle_id": null,
+                    "service_name": "AIRCON CLEANING (CAMERA)",
+                    "service_price": "0.00",
+                    "labor_cost": "0.00",
+                    "quantity": 1,
+                    "total": "0.00",
+                    "sub_items_json": null,
+                    "created_at": "2026-09-05 23:18:55"
+                },
+                {
+                    "id": 2330,
+                    "job_order_id": 429,
+                    "service_id": 17,
+                    "bundle_id": null,
+                    "service_name": "AIRCON CLEANING (DUAL)",
+                    "service_price": "0.00",
+                    "labor_cost": "6500.00",
+                    "quantity": 1,
+                    "total": "6500.00",
+                    "sub_items_json": "[\"Air Filter Cleaning\",\"Evaporator Coil Cleaning\",\"Blower\\/Fan Cleaning\"]",
+                    "created_at": "2026-09-05 23:18:55"
+                }
+            ],
+            "job_order_products": [],
+            "job_order_technicians": [],
+            "work_sessions": [],
+            "job_order_inspections": [],
+            "technician_points": [],
+            "report_expenses": []
+        }
+    },
+    {
+        "id": "trash_6a9c370d902694.98832871",
+        "entity_type": "job_order",
+        "source": "database",
+        "deleted_at": "2026-09-05 23:36:45",
+        "expires_at": "2026-10-05 23:36:45",
+        "shop_key": "autodok_main",
+        "deleted_by": {
+            "id": 2,
+            "name": "Dj Guingue Cortez"
+        },
+        "meta": {
+            "table": "job_orders"
+        },
+        "payload": {
+            "job_order": {
+                "id": 430,
+                "job_order_number": "JO187",
+                "customer_id": 307,
+                "vehicle_id": 454,
+                "service_adviser_id": null,
+                "status": "completed",
+                "priority": "normal",
+                "subtotal": "13000.00",
+                "labor_total": "0.00",
+                "parts_total": "0.00",
+                "discount_type": "none",
+                "discount_amount": "0.00",
+                "discount_percentage": "0.00",
+                "partial_amount": "0.00",
+                "total_amount": "13000.00",
+                "payment_status": "pending",
+                "payment_method": "cash",
+                "payment_date": null,
+                "notes": "",
+                "estimated_completion": null,
+                "actual_completion": null,
+                "status_timer_seconds": 0,
+                "status_timer_started_at": null,
+                "work_started_at": null,
+                "inspection_started_at": null,
+                "completed_at": "2026-09-05 23:29:57",
+                "created_by": 2,
+                "created_by_type": "user",
+                "created_at": "2026-09-05 23:29:54",
+                "updated_at": "2026-09-05 23:29:57"
+            },
+            "job_order_services": [
+                {
+                    "id": 2331,
+                    "job_order_id": 430,
+                    "service_id": 17,
+                    "bundle_id": null,
+                    "service_name": "AIRCON CLEANING (DUAL)",
+                    "service_price": "0.00",
+                    "labor_cost": "6500.00",
+                    "quantity": 1,
+                    "total": "6500.00",
+                    "sub_items_json": "[\"Air Filter Cleaning\",\"Evaporator Coil Cleaning\",\"Blower\\/Fan Cleaning\"]",
+                    "created_at": "2026-09-05 23:29:54"
+                },
+                {
+                    "id": 2332,
+                    "job_order_id": 430,
+                    "service_id": 137,
+                    "bundle_id": null,
+                    "service_name": "AIRCON CLEANING (DUAL)",
+                    "service_price": "0.00",
+                    "labor_cost": "6500.00",
+                    "quantity": 1,
+                    "total": "6500.00",
+                    "sub_items_json": "[\"VACUUM\",\"LEAKTEST\",\"CHARGE FREON\",\"REPLACE ORING\",\"REPLACE EXPANSION VALVE\",\"REPLACE FILTER DRIER\",\"FLUSHING\"]",
+                    "created_at": "2026-09-05 23:29:54"
+                }
+            ],
+            "job_order_products": [],
+            "job_order_technicians": [],
+            "work_sessions": [],
+            "job_order_inspections": [],
+            "technician_points": [],
+            "report_expenses": []
+        }
+    },
+    {
+        "id": "trash_6a9c3795dadac4.31678011",
+        "entity_type": "job_order",
+        "source": "database",
+        "deleted_at": "2026-09-05 23:39:01",
+        "expires_at": "2026-10-05 23:39:01",
+        "shop_key": "autodok_main",
+        "deleted_by": {
+            "id": 2,
+            "name": "Dj Guingue Cortez"
+        },
+        "meta": {
+            "table": "job_orders"
+        },
+        "payload": {
+            "job_order": {
+                "id": 431,
+                "job_order_number": "JO187",
+                "customer_id": 308,
+                "vehicle_id": 455,
+                "service_adviser_id": null,
+                "status": "completed",
+                "priority": "normal",
+                "subtotal": "6500.00",
+                "labor_total": "0.00",
+                "parts_total": "0.00",
+                "discount_type": "none",
+                "discount_amount": "0.00",
+                "discount_percentage": "0.00",
+                "partial_amount": "0.00",
+                "total_amount": "6500.00",
+                "payment_status": "pending",
+                "payment_method": "cash",
+                "payment_date": null,
+                "notes": "",
+                "estimated_completion": null,
+                "actual_completion": null,
+                "status_timer_seconds": 0,
+                "status_timer_started_at": null,
+                "work_started_at": null,
+                "inspection_started_at": null,
+                "completed_at": "2026-09-05 23:37:05",
+                "created_by": 2,
+                "created_by_type": "user",
+                "created_at": "2026-09-05 23:37:03",
+                "updated_at": "2026-09-05 23:37:05"
+            },
+            "job_order_services": [
+                {
+                    "id": 2333,
+                    "job_order_id": 431,
+                    "service_id": 137,
+                    "bundle_id": null,
+                    "service_name": "AIRCON CLEANING (DUAL)",
+                    "service_price": "0.00",
+                    "labor_cost": "6500.00",
+                    "quantity": 1,
+                    "total": "6500.00",
+                    "sub_items_json": "[\"VACUUM\",\"LEAKTEST\",\"CHARGE FREON\",\"REPLACE ORING\",\"REPLACE EXPANSION VALVE\",\"REPLACE FILTER DRIER\",\"FLUSHING\"]",
+                    "created_at": "2026-09-05 23:37:03"
+                }
+            ],
+            "job_order_products": [],
+            "job_order_technicians": [],
+            "work_sessions": [],
+            "job_order_inspections": [],
+            "technician_points": [],
+            "report_expenses": []
+        }
+    },
+    {
+        "id": "trash_6a9c4f1eb44e64.08130924",
+        "entity_type": "job_order",
+        "source": "database",
+        "deleted_at": "2026-09-06 01:19:26",
+        "expires_at": "2026-10-06 01:19:26",
+        "shop_key": "autodok_main",
+        "deleted_by": {
+            "id": 2,
+            "name": "Dj Guingue Cortez"
+        },
+        "meta": {
+            "table": "job_orders"
+        },
+        "payload": {
+            "job_order": {
+                "id": 432,
+                "job_order_number": "JO187",
+                "customer_id": 309,
+                "vehicle_id": 456,
+                "service_adviser_id": null,
+                "status": "completed",
+                "priority": "normal",
+                "subtotal": "5500.00",
+                "labor_total": "0.00",
+                "parts_total": "0.00",
+                "discount_type": "none",
+                "discount_amount": "0.00",
+                "discount_percentage": "0.00",
+                "partial_amount": "0.00",
+                "total_amount": "5500.00",
+                "payment_status": "pending",
+                "payment_method": "cash",
+                "payment_date": null,
+                "notes": "",
+                "estimated_completion": null,
+                "actual_completion": null,
+                "status_timer_seconds": 0,
+                "status_timer_started_at": null,
+                "work_started_at": null,
+                "inspection_started_at": null,
+                "completed_at": "2026-09-05 23:39:38",
+                "created_by": 2,
+                "created_by_type": "user",
+                "created_at": "2026-09-05 23:39:31",
+                "updated_at": "2026-09-05 23:39:38"
+            },
+            "job_order_services": [
+                {
+                    "id": 2334,
+                    "job_order_id": 432,
+                    "service_id": 50,
+                    "bundle_id": null,
+                    "service_name": "AIRCON CLEANING (SINGLE)",
+                    "service_price": "0.00",
+                    "labor_cost": "5500.00",
+                    "quantity": 1,
+                    "total": "5500.00",
+                    "sub_items_json": "[\"REPLACE EXP. VALVE\",\"REPLACE FILTER DRIER\",\"VACUUM\",\"LEAK TEST\",\"FLSUHING AIRCON SYSTEM\",\"CHARGE FREON\",\"CHECK-UP\",\"SCANNING\"]",
+                    "created_at": "2026-09-05 23:39:31"
+                }
+            ],
+            "job_order_products": [],
+            "job_order_technicians": [],
+            "work_sessions": [],
+            "job_order_inspections": [],
+            "technician_points": [],
+            "report_expenses": []
+        }
+    },
+    {
+        "id": "trash_6a9c4f2732e630.03161632",
+        "entity_type": "job_order",
+        "source": "database",
+        "deleted_at": "2026-09-06 01:19:35",
+        "expires_at": "2026-10-06 01:19:35",
+        "shop_key": "autodok_main",
+        "deleted_by": {
+            "id": 2,
+            "name": "Dj Guingue Cortez"
+        },
+        "meta": {
+            "table": "job_orders"
+        },
+        "payload": {
+            "job_order": {
+                "id": 433,
+                "job_order_number": "JO188",
+                "customer_id": 310,
+                "vehicle_id": 457,
+                "service_adviser_id": null,
+                "status": "completed",
+                "priority": "normal",
+                "subtotal": "6500.00",
+                "labor_total": "0.00",
+                "parts_total": "0.00",
+                "discount_type": "none",
+                "discount_amount": "0.00",
+                "discount_percentage": "0.00",
+                "partial_amount": "0.00",
+                "total_amount": "6500.00",
+                "payment_status": "pending",
+                "payment_method": "cash",
+                "payment_date": null,
+                "notes": "",
+                "estimated_completion": null,
+                "actual_completion": null,
+                "status_timer_seconds": 0,
+                "status_timer_started_at": null,
+                "work_started_at": null,
+                "inspection_started_at": null,
+                "completed_at": "2026-09-06 01:01:41",
+                "created_by": 2,
+                "created_by_type": "user",
+                "created_at": "2026-09-06 01:01:32",
+                "updated_at": "2026-09-06 01:01:41"
+            },
+            "job_order_services": [
+                {
+                    "id": 2335,
+                    "job_order_id": 433,
+                    "service_id": 17,
+                    "bundle_id": null,
+                    "service_name": "AIRCON CLEANING (DUAL)",
+                    "service_price": "0.00",
+                    "labor_cost": "6500.00",
+                    "quantity": 1,
+                    "total": "6500.00",
+                    "sub_items_json": "[\"Air Filter Cleaning\",\"Evaporator Coil Cleaning\",\"Blower\\/Fan Cleaning\"]",
+                    "created_at": "2026-09-06 01:01:32"
+                }
+            ],
+            "job_order_products": [],
+            "job_order_technicians": [],
+            "work_sessions": [],
+            "job_order_inspections": [],
+            "technician_points": [],
+            "report_expenses": []
+        }
+    },
+    {
+        "id": "trash_6a9c4f8fd410b2.12369679",
+        "entity_type": "job_order",
+        "source": "database",
+        "deleted_at": "2026-09-06 01:21:19",
+        "expires_at": "2026-10-06 01:21:19",
+        "shop_key": "autodok_main",
+        "deleted_by": {
+            "id": 2,
+            "name": "Dj Guingue Cortez"
+        },
+        "meta": {
+            "table": "job_orders"
+        },
+        "payload": {
+            "job_order": {
+                "id": 428,
+                "job_order_number": "JO186",
+                "customer_id": 61,
+                "vehicle_id": 452,
+                "service_adviser_id": null,
+                "status": "completed",
+                "priority": "normal",
+                "subtotal": "5500.00",
+                "labor_total": "0.00",
+                "parts_total": "0.00",
+                "discount_type": "none",
+                "discount_amount": "0.00",
+                "discount_percentage": "0.00",
+                "partial_amount": "0.00",
+                "total_amount": "5500.00",
+                "payment_status": "pending",
+                "payment_method": "cash",
+                "payment_date": null,
+                "notes": "",
+                "estimated_completion": null,
+                "actual_completion": null,
+                "status_timer_seconds": 0,
+                "status_timer_started_at": null,
+                "work_started_at": null,
+                "inspection_started_at": null,
+                "completed_at": "2026-09-05 23:01:01",
+                "created_by": 2,
+                "created_by_type": "user",
+                "created_at": "2026-09-05 23:00:45",
+                "updated_at": "2026-09-05 23:01:01"
+            },
+            "job_order_services": [
+                {
+                    "id": 2328,
+                    "job_order_id": 428,
+                    "service_id": 50,
+                    "bundle_id": null,
+                    "service_name": "AIRCON CLEANING (SINGLE)",
+                    "service_price": "0.00",
+                    "labor_cost": "5500.00",
+                    "quantity": 1,
+                    "total": "5500.00",
+                    "sub_items_json": "[\"REPLACE EXP. VALVE\",\"REPLACE FILTER DRIER\",\"VACUUM\",\"LEAK TEST\",\"FLSUHING AIRCON SYSTEM\",\"CHARGE FREON\",\"CHECK-UP\",\"SCANNING\"]",
+                    "created_at": "2026-09-05 23:00:45"
+                }
+            ],
+            "job_order_products": [],
+            "job_order_technicians": [],
+            "work_sessions": [],
+            "job_order_inspections": [],
+            "technician_points": [],
+            "report_expenses": []
+        }
+    },
+    {
+        "id": "trash_6a9c4fc280c971.57994609",
+        "entity_type": "job_order",
+        "source": "database",
+        "deleted_at": "2026-09-06 01:22:10",
+        "expires_at": "2026-10-06 01:22:10",
+        "shop_key": "autodok_main",
+        "deleted_by": {
+            "id": 2,
+            "name": "Dj Guingue Cortez"
+        },
+        "meta": {
+            "table": "job_orders"
+        },
+        "payload": {
+            "job_order": {
+                "id": 434,
+                "job_order_number": "JO187",
+                "customer_id": 311,
+                "vehicle_id": 458,
+                "service_adviser_id": null,
+                "status": "completed",
+                "priority": "normal",
+                "subtotal": "800.00",
+                "labor_total": "0.00",
+                "parts_total": "0.00",
+                "discount_type": "none",
+                "discount_amount": "0.00",
+                "discount_percentage": "0.00",
+                "partial_amount": "0.00",
+                "total_amount": "800.00",
+                "payment_status": "pending",
+                "payment_method": "cash",
+                "payment_date": null,
+                "notes": "",
+                "estimated_completion": null,
+                "actual_completion": null,
+                "status_timer_seconds": 0,
+                "status_timer_started_at": null,
+                "work_started_at": null,
+                "inspection_started_at": null,
+                "completed_at": "2026-09-06 01:20:45",
+                "created_by": 2,
+                "created_by_type": "user",
+                "created_at": "2026-09-06 01:20:36",
+                "updated_at": "2026-09-06 01:20:45"
+            },
+            "job_order_services": [
+                {
+                    "id": 2336,
+                    "job_order_id": 434,
+                    "service_id": 30,
+                    "bundle_id": null,
+                    "service_name": "BRAKE CLEANING AND ADJUST FRONT/ REAR",
+                    "service_price": "0.00",
+                    "labor_cost": "800.00",
+                    "quantity": 1,
+                    "total": "800.00",
+                    "sub_items_json": null,
+                    "created_at": "2026-09-06 01:20:36"
+                }
+            ],
+            "job_order_products": [],
+            "job_order_technicians": [],
+            "work_sessions": [],
+            "job_order_inspections": [],
+            "technician_points": [],
+            "report_expenses": []
+        }
+    },
+    {
+        "id": "trash_6a9c51d88b9747.65989348",
+        "entity_type": "job_order",
+        "source": "database",
+        "deleted_at": "2026-09-06 01:31:04",
+        "expires_at": "2026-10-06 01:31:04",
+        "shop_key": "autodok_main",
+        "deleted_by": {
+            "id": 2,
+            "name": "Dj Guingue Cortez"
+        },
+        "meta": {
+            "table": "job_orders"
+        },
+        "payload": {
+            "job_order": {
+                "id": 435,
+                "job_order_number": "JO186",
+                "customer_id": 61,
+                "vehicle_id": 459,
+                "service_adviser_id": null,
+                "status": "completed",
+                "priority": "normal",
+                "subtotal": "18500.00",
+                "labor_total": "0.00",
+                "parts_total": "1800.00",
+                "discount_type": "none",
+                "discount_amount": "0.00",
+                "discount_percentage": "0.00",
+                "partial_amount": "0.00",
+                "total_amount": "20300.00",
+                "payment_status": "pending",
+                "payment_method": "cash",
+                "payment_date": null,
+                "notes": "",
+                "estimated_completion": null,
+                "actual_completion": null,
+                "status_timer_seconds": 0,
+                "status_timer_started_at": null,
+                "work_started_at": null,
+                "inspection_started_at": null,
+                "completed_at": "2026-09-06 01:30:14",
+                "created_by": 2,
+                "created_by_type": "user",
+                "created_at": "2026-09-06 01:30:10",
+                "updated_at": "2026-09-06 01:30:14"
+            },
+            "job_order_services": [
+                {
+                    "id": 2337,
+                    "job_order_id": 435,
+                    "service_id": 137,
+                    "bundle_id": null,
+                    "service_name": "AIRCON CLEANING (DUAL)",
+                    "service_price": "0.00",
+                    "labor_cost": "6500.00",
+                    "quantity": 1,
+                    "total": "6500.00",
+                    "sub_items_json": "[\"VACUUM\",\"LEAKTEST\",\"CHARGE FREON\",\"REPLACE ORING\",\"REPLACE EXPANSION VALVE\",\"REPLACE FILTER DRIER\",\"FLUSHING\"]",
+                    "created_at": "2026-09-06 01:30:10"
+                },
+                {
+                    "id": 2338,
+                    "job_order_id": 435,
+                    "service_id": 17,
+                    "bundle_id": null,
+                    "service_name": "AIRCON CLEANING (DUAL)",
+                    "service_price": "0.00",
+                    "labor_cost": "6500.00",
+                    "quantity": 1,
+                    "total": "6500.00",
+                    "sub_items_json": "[\"Air Filter Cleaning\",\"Evaporator Coil Cleaning\",\"Blower\\/Fan Cleaning\"]",
+                    "created_at": "2026-09-06 01:30:10"
+                },
+                {
+                    "id": 2339,
+                    "job_order_id": 435,
+                    "service_id": 50,
+                    "bundle_id": null,
+                    "service_name": "AIRCON CLEANING (SINGLE)",
+                    "service_price": "0.00",
+                    "labor_cost": "5500.00",
+                    "quantity": 1,
+                    "total": "5500.00",
+                    "sub_items_json": "[\"REPLACE EXP. VALVE\",\"REPLACE FILTER DRIER\",\"VACUUM\",\"LEAK TEST\",\"FLSUHING AIRCON SYSTEM\",\"CHARGE FREON\",\"CHECK-UP\",\"SCANNING\"]",
+                    "created_at": "2026-09-06 01:30:10"
+                }
+            ],
+            "job_order_products": [
+                {
+                    "id": 2018,
+                    "job_order_id": 435,
+                    "product_id": 53,
+                    "product_name": "AIR FILTER",
+                    "product_type": "parts",
+                    "unit_price": "1800.00",
+                    "quantity": 1,
+                    "total": "1800.00",
+                    "created_at": "2026-09-06 01:30:10"
+                }
+            ],
+            "job_order_technicians": [],
+            "work_sessions": [],
+            "job_order_inspections": [],
+            "technician_points": [],
+            "report_expenses": []
+        }
+    },
+    {
+        "id": "trash_6a9e1fc6987873.10767717",
+        "entity_type": "job_order",
+        "source": "database",
+        "deleted_at": "2026-09-07 10:21:58",
+        "expires_at": "2026-10-07 10:21:58",
+        "shop_key": "autodok_main",
+        "deleted_by": {
+            "id": 2,
+            "name": "Dj Guingue Cortez"
+        },
+        "meta": {
+            "table": "job_orders"
+        },
+        "payload": {
+            "job_order": {
+                "id": 445,
+                "job_order_number": "JO195",
+                "customer_id": 320,
+                "vehicle_id": 469,
+                "service_adviser_id": null,
+                "status": "completed",
+                "priority": "normal",
+                "subtotal": "120.00",
+                "labor_total": "0.00",
+                "parts_total": "0.00",
+                "discount_type": "none",
+                "discount_amount": "0.00",
+                "discount_percentage": "0.00",
+                "partial_amount": "0.00",
+                "total_amount": "120.00",
+                "payment_status": "pending",
+                "payment_method": "cash",
+                "payment_date": null,
+                "notes": "",
+                "estimated_completion": null,
+                "actual_completion": null,
+                "status_timer_seconds": 2,
+                "status_timer_started_at": null,
+                "work_started_at": "2026-09-07 10:21:12",
+                "inspection_started_at": null,
+                "completed_at": "2026-09-07 10:21:14",
+                "created_by": 2,
+                "created_by_type": "user",
+                "created_at": "2026-09-07 10:21:08",
+                "updated_at": "2026-09-07 10:21:14"
+            },
+            "job_order_services": [
+                {
+                    "id": 2401,
+                    "job_order_id": 445,
+                    "service_id": 130,
+                    "bundle_id": null,
+                    "service_name": "BACK TO ZERO",
+                    "service_price": "0.00",
+                    "labor_cost": "120.00",
+                    "quantity": 1,
+                    "total": "120.00",
+                    "sub_items_json": null,
+                    "created_at": "2026-09-07 10:21:08"
+                }
+            ],
+            "job_order_products": [],
+            "job_order_technicians": [],
+            "work_sessions": [],
+            "job_order_inspections": [],
+            "technician_points": [],
+            "report_expenses": []
+        }
+    },
+    {
+        "id": "trash_6a9e1fd1aff9f4.37741256",
+        "entity_type": "job_order",
+        "source": "database",
+        "deleted_at": "2026-09-07 10:22:09",
+        "expires_at": "2026-10-07 10:22:09",
+        "shop_key": "autodok_main",
+        "deleted_by": {
+            "id": 2,
+            "name": "Dj Guingue Cortez"
+        },
+        "meta": {
+            "table": "job_orders"
+        },
+        "payload": {
+            "job_order": {
+                "id": 443,
+                "job_order_number": "JO193",
+                "customer_id": 61,
+                "vehicle_id": 467,
+                "service_adviser_id": null,
+                "status": "completed",
+                "priority": "normal",
+                "subtotal": "15000.00",
+                "labor_total": "0.00",
+                "parts_total": "1200.00",
+                "discount_type": "none",
+                "discount_amount": "0.00",
+                "discount_percentage": "0.00",
+                "partial_amount": "0.00",
+                "total_amount": "16200.00",
+                "payment_status": "pending",
+                "payment_method": "cash",
+                "payment_date": null,
+                "notes": "",
+                "estimated_completion": null,
+                "actual_completion": null,
+                "status_timer_seconds": 0,
+                "status_timer_started_at": null,
+                "work_started_at": null,
+                "inspection_started_at": null,
+                "completed_at": "2026-09-07 10:17:24",
+                "created_by": 2,
+                "created_by_type": "user",
+                "created_at": "2026-09-07 10:17:20",
+                "updated_at": "2026-09-07 10:17:24"
+            },
+            "job_order_services": [
+                {
+                    "id": 2397,
+                    "job_order_id": 443,
+                    "service_id": 17,
+                    "bundle_id": null,
+                    "service_name": "AIRCON CLEANING (DUAL)",
+                    "service_price": "0.00",
+                    "labor_cost": "6500.00",
+                    "quantity": 1,
+                    "total": "6500.00",
+                    "sub_items_json": "[\"Air Filter Cleaning\",\"Evaporator Coil Cleaning\",\"Blower\\/Fan Cleaning\"]",
+                    "created_at": "2026-09-07 10:17:20"
+                },
+                {
+                    "id": 2398,
+                    "job_order_id": 443,
+                    "service_id": 137,
+                    "bundle_id": null,
+                    "service_name": "AIRCON CLEANING (DUAL)",
+                    "service_price": "0.00",
+                    "labor_cost": "6500.00",
+                    "quantity": 1,
+                    "total": "6500.00",
+                    "sub_items_json": "[\"VACUUM\",\"LEAKTEST\",\"CHARGE FREON\",\"REPLACE ORING\",\"REPLACE EXPANSION VALVE\",\"REPLACE FILTER DRIER\",\"FLUSHING\"]",
+                    "created_at": "2026-09-07 10:17:20"
+                },
+                {
+                    "id": 2399,
+                    "job_order_id": 443,
+                    "service_id": null,
+                    "bundle_id": null,
+                    "service_name": "ADFASDFA",
+                    "service_price": "0.00",
+                    "labor_cost": "2000.00",
+                    "quantity": 1,
+                    "total": "2000.00",
+                    "sub_items_json": "[\"DASDF\",\"ASDASD\",\"ASJDHFAHJKSD\"]",
+                    "created_at": "2026-09-07 10:17:20"
+                }
+            ],
+            "job_order_products": [
+                {
+                    "id": 2069,
+                    "job_order_id": 443,
+                    "product_id": 118,
+                    "product_name": "AIR FILTER-MINIVAN",
+                    "product_type": "parts",
+                    "unit_price": "1200.00",
+                    "quantity": 1,
+                    "total": "1200.00",
+                    "created_at": "2026-09-07 10:17:20"
+                }
+            ],
+            "job_order_technicians": [],
+            "work_sessions": [],
+            "job_order_inspections": [],
+            "technician_points": [],
+            "report_expenses": []
+        }
+    },
+    {
+        "id": "trash_6a9e33791d5aa3.46651662",
+        "entity_type": "job_order",
+        "source": "database",
+        "deleted_at": "2026-09-07 11:46:01",
+        "expires_at": "2026-10-07 11:46:01",
+        "shop_key": "autodok_main",
+        "deleted_by": {
+            "id": 2,
+            "name": "Dj Guingue Cortez"
+        },
+        "meta": {
+            "table": "job_orders"
+        },
+        "payload": {
+            "job_order": {
+                "id": 447,
+                "job_order_number": "JO197",
+                "customer_id": 138,
+                "vehicle_id": 471,
+                "service_adviser_id": null,
+                "status": "pending",
+                "priority": "normal",
+                "subtotal": "0.00",
+                "labor_total": "0.00",
+                "parts_total": "3000.00",
+                "discount_type": "none",
+                "discount_amount": "0.00",
+                "discount_percentage": "0.00",
+                "partial_amount": "0.00",
+                "total_amount": "3000.00",
+                "payment_status": "pending",
+                "payment_method": "cash",
+                "payment_date": null,
+                "notes": "",
+                "estimated_completion": null,
+                "actual_completion": null,
+                "status_timer_seconds": 0,
+                "status_timer_started_at": null,
+                "work_started_at": null,
+                "inspection_started_at": null,
+                "completed_at": null,
+                "created_by": 2,
+                "created_by_type": "user",
+                "created_at": "2026-09-07 11:45:26",
+                "updated_at": "2026-09-07 11:45:26"
+            },
+            "job_order_services": [
+                {
+                    "id": 2411,
+                    "job_order_id": 447,
+                    "service_id": 182,
+                    "bundle_id": null,
+                    "service_name": "AIRCON CLEANING (CAMERA)",
+                    "service_price": "0.00",
+                    "labor_cost": "0.00",
+                    "quantity": 1,
+                    "total": "0.00",
+                    "sub_items_json": null,
+                    "created_at": "2026-09-07 11:45:26"
+                }
+            ],
+            "job_order_products": [
+                {
+                    "id": 2094,
+                    "job_order_id": 447,
+                    "product_id": 162,
+                    "product_name": "sample",
+                    "product_type": "parts",
+                    "unit_price": "1000.00",
+                    "quantity": 3,
+                    "total": "3000.00",
+                    "created_at": "2026-09-07 11:45:26"
+                }
+            ],
+            "job_order_technicians": [],
+            "work_sessions": [],
+            "job_order_inspections": [],
+            "technician_points": [],
+            "report_expenses": []
+        }
+    },
+    {
+        "id": "trash_6a9e33e4e85466.92385869",
+        "entity_type": "estimate",
+        "source": "database",
+        "deleted_at": "2026-09-07 11:47:48",
+        "expires_at": "2026-10-07 11:47:48",
+        "shop_key": "autodok_main",
+        "deleted_by": {
+            "id": 2,
+            "name": "Dj Guingue Cortez"
+        },
+        "meta": {
+            "table": "job_estimates"
+        },
+        "payload": {
+            "id": 122,
+            "estimate_number": "JE087",
+            "customer_name": "sadasd",
+            "customer_phone": "4234234",
+            "customer_email": "",
+            "customer_address": "",
+            "vehicle_make": "",
+            "vehicle_model": "",
+            "vehicle_year": "",
+            "vehicle_plate": "",
+            "vehicle_color": "",
+            "vehicle_mileage": "",
+            "services_total": "120.00",
+            "products_total": "2000.00",
+            "grand_total": "2120.00",
+            "discount_type": "none",
+            "discount_value": "0.00",
+            "notes": "",
+            "recommendations_json": "[]",
+            "services_json": "[{\"id\":130,\"type\":\"service\",\"name\":\"BACK TO ZERO\",\"price\":120,\"base_price\":0,\"labor_cost\":120,\"qty\":1,\"selectedSubItems\":[]}]",
+            "products_json": "[{\"id\":162,\"name\":\"sample\",\"code\":\"PRD155\",\"price\":1000,\"qty\":2,\"stock\":2}]",
+            "status": "converted",
+            "created_by": 2,
+            "created_at": "2026-09-07 11:47:00",
+            "updated_at": "2026-09-07 11:47:19"
+        }
+    },
+    {
+        "id": "trash_6a9e6a5bdf5f31.52807246",
+        "entity_type": "job_order",
+        "source": "database",
+        "deleted_at": "2026-09-07 15:40:11",
+        "expires_at": "2026-10-07 15:40:11",
+        "shop_key": "autodok_main",
+        "deleted_by": {
+            "id": 2,
+            "name": "Dj Guingue Cortez"
+        },
+        "meta": {
+            "table": "job_orders"
+        },
+        "payload": {
+            "job_order": {
+                "id": 451,
+                "job_order_number": "JO200",
+                "customer_id": 325,
+                "vehicle_id": 481,
+                "service_adviser_id": null,
+                "status": "pending",
+                "priority": "normal",
+                "subtotal": "6500.00",
+                "labor_total": "0.00",
+                "parts_total": "0.00",
+                "discount_type": "none",
+                "discount_amount": "0.00",
+                "discount_percentage": "0.00",
+                "partial_amount": "1500.00",
+                "total_amount": "6500.00",
+                "payment_status": "partial",
+                "payment_method": "cash",
+                "payment_date": "2026-09-07 15:39:56",
+                "notes": "",
+                "estimated_completion": null,
+                "actual_completion": null,
+                "status_timer_seconds": 0,
+                "status_timer_started_at": null,
+                "work_started_at": null,
+                "inspection_started_at": null,
+                "completed_at": null,
+                "created_by": 2,
+                "created_by_type": "user",
+                "created_at": "2026-09-07 15:39:45",
+                "updated_at": "2026-09-07 15:39:56"
+            },
+            "job_order_services": [
+                {
+                    "id": 2453,
+                    "job_order_id": 451,
+                    "service_id": 17,
+                    "bundle_id": null,
+                    "service_name": "AIRCON CLEANING (DUAL)",
+                    "service_price": "0.00",
+                    "labor_cost": "6500.00",
+                    "quantity": 1,
+                    "total": "6500.00",
+                    "sub_items_json": "[\"Air Filter Cleaning\",\"Evaporator Coil Cleaning\",\"Blower\\/Fan Cleaning\"]",
+                    "created_at": "2026-09-07 15:39:45"
+                }
+            ],
+            "job_order_products": [],
+            "job_order_technicians": [],
+            "work_sessions": [],
+            "job_order_inspections": [],
+            "technician_points": [],
+            "report_expenses": []
+        }
+    },
+    {
+        "id": "trash_6a9e6cd505d8b7.03862019",
+        "entity_type": "job_order",
+        "source": "database",
+        "deleted_at": "2026-09-07 15:50:45",
+        "expires_at": "2026-10-07 15:50:45",
+        "shop_key": "autodok_main",
+        "deleted_by": {
+            "id": 2,
+            "name": "Dj Guingue Cortez"
+        },
+        "meta": {
+            "table": "job_orders"
+        },
+        "payload": {
+            "job_order": {
+                "id": 452,
+                "job_order_number": "JO200",
+                "customer_id": 326,
+                "vehicle_id": 482,
+                "service_adviser_id": null,
+                "status": "pending",
+                "priority": "normal",
+                "subtotal": "6500.00",
+                "labor_total": "0.00",
+                "parts_total": "0.00",
+                "discount_type": "none",
+                "discount_amount": "0.00",
+                "discount_percentage": "0.00",
+                "partial_amount": "1500.00",
+                "total_amount": "6500.00",
+                "payment_status": "partial",
+                "payment_method": "cash",
+                "payment_date": "2026-09-07 15:50:02",
+                "notes": "",
+                "estimated_completion": null,
+                "actual_completion": null,
+                "status_timer_seconds": 0,
+                "status_timer_started_at": null,
+                "work_started_at": null,
+                "inspection_started_at": null,
+                "completed_at": null,
+                "created_by": 2,
+                "created_by_type": "user",
+                "created_at": "2026-09-07 15:49:53",
+                "updated_at": "2026-09-07 15:50:03"
+            },
+            "job_order_services": [
+                {
+                    "id": 2466,
+                    "job_order_id": 452,
+                    "service_id": 17,
+                    "bundle_id": null,
+                    "service_name": "AIRCON CLEANING (DUAL)",
+                    "service_price": "0.00",
+                    "labor_cost": "6500.00",
+                    "quantity": 1,
+                    "total": "6500.00",
+                    "sub_items_json": "[\"Air Filter Cleaning\",\"Evaporator Coil Cleaning\",\"Blower\\/Fan Cleaning\"]",
+                    "created_at": "2026-09-07 15:49:53"
+                }
+            ],
+            "job_order_products": [],
+            "job_order_technicians": [],
+            "work_sessions": [],
+            "job_order_inspections": [],
+            "technician_points": [],
+            "report_expenses": []
+        }
+    },
+    {
+        "id": "trash_6a9e792d6648e2.75992334",
+        "entity_type": "manual_income",
+        "source": "json",
+        "deleted_at": "2026-09-07 16:43:25",
+        "expires_at": "2026-10-07 16:43:25",
+        "shop_key": "autodok_main",
+        "deleted_by": {
+            "id": 2,
+            "name": "Dj Guingue Cortez"
+        },
+        "meta": [],
+        "payload": {
+            "id": "inc_6a9e79259bc098.44399466",
+            "income_date": "2026-09-07",
+            "description": "",
+            "amount": 100,
+            "payment_method": "Cash",
+            "shop_key": "autodok_main",
+            "created_by": "Dj Guingue Cortez",
+            "created_at": "2026-09-07 16:43:17"
+        }
+    },
+    {
+        "id": "trash_6a9e7befdfecb4.74239694",
+        "entity_type": "report_expense",
+        "source": "json",
+        "deleted_at": "2026-09-07 16:55:11",
+        "expires_at": "2026-10-07 16:55:11",
+        "shop_key": "autodok_main",
+        "deleted_by": {
+            "id": 7,
+            "name": "Iloisa Joy P. Mejias"
+        },
+        "meta": [],
+        "payload": {
+            "id": "exp_6a9e7b64a9f1b8.47541482",
+            "expense_date": "2026-09-07",
+            "category": "Outsource",
+            "description": "OIL FILTER",
+            "amount": 380,
+            "payment_method": "Cash",
+            "job_order_id": 444,
+            "plate_number": "LHE-998",
+            "shop_key": "autodok_main",
+            "created_by": "Iloisa Joy P. Mejias",
+            "created_at": "2026-09-07 16:52:52"
+        }
+    },
+    {
+        "id": "trash_6a9e814eb2cf34.58520855",
+        "entity_type": "estimate",
+        "source": "database",
+        "deleted_at": "2026-09-07 17:18:06",
+        "expires_at": "2026-10-07 17:18:06",
+        "shop_key": "autodok_main",
+        "deleted_by": {
+            "id": 2,
+            "name": "Dj Guingue Cortez"
+        },
+        "meta": {
+            "table": "job_estimates"
+        },
+        "payload": {
+            "id": 128,
+            "estimate_number": "JE092",
+            "customer_name": "523452",
+            "customer_phone": "",
+            "customer_email": "",
+            "customer_address": "",
+            "vehicle_make": "",
+            "vehicle_model": "",
+            "vehicle_year": "",
+            "vehicle_plate": "",
+            "vehicle_color": "",
+            "vehicle_mileage": "",
+            "services_total": "6500.00",
+            "products_total": "0.00",
+            "grand_total": "6500.00",
+            "discount_type": "none",
+            "discount_value": "0.00",
+            "notes": "",
+            "recommendations_json": "[]",
+            "services_json": "[{\"id\":17,\"type\":\"service\",\"name\":\"AIRCON CLEANING (DUAL)\",\"price\":6500,\"base_price\":0,\"labor_cost\":6500,\"qty\":1,\"selectedSubItems\":[\"Air Filter Cleaning\",\"Evaporator Coil Cleaning\",\"Blower\\/Fan Cleaning\"]}]",
+            "products_json": "[]",
+            "status": "draft",
+            "created_by": 2,
+            "created_at": "2026-09-07 17:17:39",
+            "updated_at": "2026-09-07 17:17:46"
+        }
+    },
+    {
+        "id": "trash_6a9e82b2929fa6.37596652",
+        "entity_type": "estimate",
+        "source": "database",
+        "deleted_at": "2026-09-07 17:24:02",
+        "expires_at": "2026-10-07 17:24:02",
+        "shop_key": "autodok_main",
+        "deleted_by": {
+            "id": 2,
+            "name": "Dj Guingue Cortez"
+        },
+        "meta": {
+            "table": "job_estimates"
+        },
+        "payload": {
+            "id": 129,
+            "estimate_number": "JE092",
+            "customer_name": "r3452345243",
+            "customer_phone": "",
+            "customer_email": "",
+            "customer_address": "",
+            "vehicle_make": "",
+            "vehicle_model": "",
+            "vehicle_year": "",
+            "vehicle_plate": "",
+            "vehicle_color": "",
+            "vehicle_mileage": "",
+            "services_total": "5500.00",
+            "products_total": "0.00",
+            "grand_total": "5500.00",
+            "discount_type": "none",
+            "discount_value": "0.00",
+            "notes": "",
+            "recommendations_json": "[]",
+            "services_json": "[{\"id\":50,\"type\":\"service\",\"name\":\"AIRCON CLEANING (SINGLE)\",\"price\":5500,\"base_price\":0,\"labor_cost\":5500,\"qty\":1,\"selectedSubItems\":[\"REPLACE EXP. VALVE\",\"REPLACE FILTER DRIER\",\"VACUUM\",\"LEAK TEST\",\"FLSUHING AIRCON SYSTEM\",\"CHARGE FREON\",\"CHECK-UP\",\"SCANNING\"]}]",
+            "products_json": "[]",
+            "status": "draft",
+            "created_by": 2,
+            "created_at": "2026-09-07 17:23:47",
+            "updated_at": "2026-09-07 17:23:47"
+        }
+    },
+    {
+        "id": "trash_6a9e9b4d5dd103.22305858",
+        "entity_type": "job_order",
+        "source": "database",
+        "deleted_at": "2026-09-07 19:09:01",
+        "expires_at": "2026-10-07 19:09:01",
+        "shop_key": "autodok_main",
+        "deleted_by": {
+            "id": 2,
+            "name": "Dj Guingue Cortez"
+        },
+        "meta": {
+            "table": "job_orders"
+        },
+        "payload": {
+            "job_order": {
+                "id": 454,
+                "job_order_number": "JO201",
+                "customer_id": 327,
+                "vehicle_id": 484,
+                "service_adviser_id": null,
+                "status": "released",
+                "priority": "normal",
+                "subtotal": "0.00",
+                "labor_total": "0.00",
+                "parts_total": "0.00",
+                "discount_type": "none",
+                "discount_amount": "0.00",
+                "discount_percentage": "0.00",
+                "partial_amount": "0.00",
+                "total_amount": "0.00",
+                "payment_status": "paid",
+                "payment_method": "cash",
+                "payment_date": "2026-09-07 19:07:23",
+                "notes": "",
+                "estimated_completion": null,
+                "actual_completion": null,
+                "status_timer_seconds": 0,
+                "status_timer_started_at": null,
+                "work_started_at": null,
+                "inspection_started_at": null,
+                "completed_at": null,
+                "created_by": 2,
+                "created_by_type": "user",
+                "created_at": "2026-09-07 19:07:06",
+                "updated_at": "2026-09-07 19:08:17"
+            },
+            "job_order_services": [
+                {
+                    "id": 2482,
+                    "job_order_id": 454,
+                    "service_id": 182,
+                    "bundle_id": null,
+                    "service_name": "AIRCON CLEANING (CAMERA)",
+                    "service_price": "0.00",
+                    "labor_cost": "0.00",
+                    "quantity": 1,
+                    "total": "0.00",
+                    "sub_items_json": null,
+                    "created_at": "2026-09-07 19:07:06"
+                }
+            ],
+            "job_order_products": [],
+            "job_order_technicians": [],
+            "work_sessions": [],
+            "job_order_inspections": [],
+            "technician_points": [],
+            "report_expenses": []
+        }
+    },
+    {
+        "id": "trash_6a9e9b53083711.47067671",
+        "entity_type": "job_order",
+        "source": "database",
+        "deleted_at": "2026-09-07 19:09:07",
+        "expires_at": "2026-10-07 19:09:07",
+        "shop_key": "autodok_main",
+        "deleted_by": {
+            "id": 2,
+            "name": "Dj Guingue Cortez"
+        },
+        "meta": {
+            "table": "job_orders"
+        },
+        "payload": {
+            "job_order": {
+                "id": 453,
+                "job_order_number": "JO200",
+                "customer_id": 61,
+                "vehicle_id": 483,
+                "service_adviser_id": null,
+                "status": "released",
+                "priority": "normal",
+                "subtotal": "0.00",
+                "labor_total": "0.00",
+                "parts_total": "0.00",
+                "discount_type": "none",
+                "discount_amount": "0.00",
+                "discount_percentage": "0.00",
+                "partial_amount": "0.00",
+                "total_amount": "0.00",
+                "payment_status": "paid",
+                "payment_method": "cash",
+                "payment_date": "2026-09-07 19:07:37",
+                "notes": "",
+                "estimated_completion": null,
+                "actual_completion": null,
+                "status_timer_seconds": 0,
+                "status_timer_started_at": null,
+                "work_started_at": null,
+                "inspection_started_at": null,
+                "completed_at": null,
+                "created_by": 2,
+                "created_by_type": "user",
+                "created_at": "2026-09-07 19:06:35",
+                "updated_at": "2026-09-07 19:08:20"
+            },
+            "job_order_services": [
+                {
+                    "id": 2481,
+                    "job_order_id": 453,
+                    "service_id": 139,
+                    "bundle_id": null,
+                    "service_name": "AIRCON SERVICING",
+                    "service_price": "0.00",
+                    "labor_cost": "0.00",
+                    "quantity": 1,
+                    "total": "0.00",
+                    "sub_items_json": "[\"PULL OUT\\/INSTALL EVAPORATOR\",\"PULL OUT\\/INSTALL CONDENSER\",\"FLUSHING CONDENSER\",\"FLUSHING AIRCON SYSTEM\",\"PULL OUT\\/INSTALL COMPRESSOR ASSY\",\"CHANGE OIL COMPRESSOR\",\"REPLACE FILTER DRIER\",\"REPLACE EXP. VALVE\",\"REPLACE ORING\"]",
+                    "created_at": "2026-09-07 19:06:35"
+                }
+            ],
+            "job_order_products": [],
+            "job_order_technicians": [],
+            "work_sessions": [],
+            "job_order_inspections": [],
+            "technician_points": [],
+            "report_expenses": [
+                {
+                    "id": "exp_6a9e9b1680e870.59059959",
+                    "expense_date": "2026-09-07",
+                    "category": "Outsource",
+                    "description": "",
+                    "amount": 1000,
+                    "payment_method": "Cash",
+                    "job_order_id": 453,
+                    "plate_number": "123",
+                    "shop_key": "autodok_main",
+                    "created_by": "Dj Guingue Cortez",
+                    "created_at": "2026-09-07 19:08:06"
+                }
+            ]
+        }
+    },
+    {
+        "id": "trash_6aa0c4e79b2c52.95875040",
+        "entity_type": "report_expense",
+        "source": "json",
+        "deleted_at": "2026-09-09 10:31:03",
+        "expires_at": "2026-10-09 10:31:03",
+        "shop_key": "autodok_main",
+        "deleted_by": {
+            "id": 7,
+            "name": "Iloisa Joy P. Mejias"
+        },
+        "meta": [],
+        "payload": {
+            "id": "exp_6a9fdb87566ae0.67525410",
+            "expense_date": "2026-09-08",
+            "category": "Carwash",
+            "description": "",
+            "amount": 150,
+            "payment_method": "Cash",
+            "job_order_id": 466,
+            "plate_number": "MCV-6759",
+            "shop_key": "autodok_main",
+            "created_by": "Iloisa Joy P. Mejias",
+            "created_at": "2026-09-08 17:55:19"
+        }
+    },
+    {
+        "id": "trash_6aa0c9efc88dd8.10541906",
+        "entity_type": "job_order",
+        "source": "database",
+        "deleted_at": "2026-09-09 10:52:31",
+        "expires_at": "2026-10-09 10:52:31",
+        "shop_key": "autodok_main",
+        "deleted_by": {
+            "id": 2,
+            "name": "Dj Guingue Cortez"
+        },
+        "meta": {
+            "table": "job_orders"
+        },
+        "payload": {
+            "job_order": {
+                "id": 474,
+                "job_order_number": "JO219",
+                "customer_id": 61,
+                "vehicle_id": 504,
+                "service_adviser_id": null,
+                "status": "completed",
+                "priority": "normal",
+                "subtotal": "13000.00",
+                "labor_total": "0.00",
+                "parts_total": "0.00",
+                "discount_type": "none",
+                "discount_amount": "0.00",
+                "discount_percentage": "0.00",
+                "partial_amount": "0.00",
+                "total_amount": "13000.00",
+                "payment_status": "pending",
+                "payment_method": "cash",
+                "payment_date": null,
+                "notes": "",
+                "estimated_completion": null,
+                "actual_completion": null,
+                "status_timer_seconds": 0,
+                "status_timer_started_at": null,
+                "work_started_at": null,
+                "inspection_started_at": null,
+                "completed_at": "2026-09-09 10:51:40",
+                "created_by": 2,
+                "created_by_type": "user",
+                "created_at": "2026-09-09 10:51:29",
+                "updated_at": "2026-09-09 10:51:40"
+            },
+            "job_order_services": [
+                {
+                    "id": 2606,
+                    "job_order_id": 474,
+                    "service_id": 17,
+                    "bundle_id": null,
+                    "service_name": "AIRCON CLEANING (DUAL)",
+                    "service_price": "0.00",
+                    "labor_cost": "6500.00",
+                    "quantity": 1,
+                    "total": "6500.00",
+                    "sub_items_json": "[\"Air Filter Cleaning\",\"Evaporator Coil Cleaning\",\"Blower\\/Fan Cleaning\"]",
+                    "created_at": "2026-09-09 10:51:29"
+                },
+                {
+                    "id": 2607,
+                    "job_order_id": 474,
+                    "service_id": 137,
+                    "bundle_id": null,
+                    "service_name": "AIRCON CLEANING (DUAL)",
+                    "service_price": "0.00",
+                    "labor_cost": "6500.00",
+                    "quantity": 1,
+                    "total": "6500.00",
+                    "sub_items_json": "[\"VACUUM\",\"LEAKTEST\",\"CHARGE FREON\",\"REPLACE ORING\",\"REPLACE EXPANSION VALVE\",\"REPLACE FILTER DRIER\",\"FLUSHING\"]",
+                    "created_at": "2026-09-09 10:51:29"
+                }
+            ],
+            "job_order_products": [],
+            "job_order_technicians": [],
+            "work_sessions": [],
+            "job_order_inspections": [],
+            "technician_points": [],
+            "report_expenses": []
+        }
+    },
+    {
+        "id": "trash_6aa36a70b50081.78296897",
+        "entity_type": "job_order",
+        "source": "database",
+        "deleted_at": "2026-09-11 10:41:52",
+        "expires_at": "2026-10-11 10:41:52",
+        "shop_key": "autodok_main",
+        "deleted_by": {
+            "id": 2,
+            "name": "Dj Guingue Cortez"
+        },
+        "meta": {
+            "table": "job_orders"
+        },
+        "payload": {
+            "job_order": {
+                "id": 487,
+                "job_order_number": "JO231",
+                "customer_id": 61,
+                "vehicle_id": 517,
+                "service_adviser_id": null,
+                "status": "completed",
+                "priority": "normal",
+                "subtotal": "13000.00",
+                "labor_total": "0.00",
+                "parts_total": "1500.00",
+                "discount_type": "none",
+                "discount_amount": "0.00",
+                "discount_percentage": "0.00",
+                "partial_amount": "0.00",
+                "total_amount": "14500.00",
+                "payment_status": "pending",
+                "payment_method": "cash",
+                "payment_date": null,
+                "notes": "",
+                "estimated_completion": null,
+                "actual_completion": null,
+                "status_timer_seconds": 0,
+                "status_timer_started_at": null,
+                "work_started_at": null,
+                "inspection_started_at": null,
+                "completed_at": "2026-09-11 10:18:34",
+                "created_by": 2,
+                "created_by_type": "user",
+                "created_at": "2026-09-11 10:18:29",
+                "updated_at": "2026-09-11 10:18:34"
+            },
+            "job_order_services": [
+                {
+                    "id": 2746,
+                    "job_order_id": 487,
+                    "service_id": 17,
+                    "bundle_id": null,
+                    "service_name": "AIRCON CLEANING (DUAL)",
+                    "service_price": "0.00",
+                    "labor_cost": "6500.00",
+                    "quantity": 1,
+                    "total": "6500.00",
+                    "sub_items_json": "[\"Air Filter Cleaning\",\"Evaporator Coil Cleaning\",\"Blower\\/Fan Cleaning\"]",
+                    "created_at": "2026-09-11 10:18:29"
+                },
+                {
+                    "id": 2747,
+                    "job_order_id": 487,
+                    "service_id": 137,
+                    "bundle_id": null,
+                    "service_name": "AIRCON CLEANING (DUAL)",
+                    "service_price": "0.00",
+                    "labor_cost": "6500.00",
+                    "quantity": 1,
+                    "total": "6500.00",
+                    "sub_items_json": "[\"VACUUM\",\"LEAKTEST\",\"CHARGE FREON\",\"REPLACE ORING\",\"REPLACE EXPANSION VALVE\",\"REPLACE FILTER DRIER\",\"FLUSHING\"]",
+                    "created_at": "2026-09-11 10:18:29"
+                }
+            ],
+            "job_order_products": [
+                {
+                    "id": 2427,
+                    "job_order_id": 487,
+                    "product_id": 88,
+                    "product_name": "AIR FILTER",
+                    "product_type": "parts",
+                    "unit_price": "1500.00",
+                    "quantity": 1,
+                    "total": "1500.00",
+                    "created_at": "2026-09-11 10:18:29"
+                }
+            ],
+            "job_order_technicians": [],
+            "work_sessions": [],
+            "job_order_inspections": [],
+            "technician_points": [],
+            "report_expenses": []
+        }
+    },
+    {
+        "id": "trash_6aa5003769a025.13993140",
+        "entity_type": "job_order",
+        "source": "database",
+        "deleted_at": "2026-09-12 15:33:11",
+        "expires_at": "2026-10-12 15:33:11",
+        "shop_key": "autodok_main",
+        "deleted_by": {
+            "id": 2,
+            "name": "Dj Guingue Cortez"
+        },
+        "meta": {
+            "table": "job_orders"
+        },
+        "payload": {
+            "job_order": {
+                "id": 499,
+                "job_order_number": "JO243",
+                "customer_id": 61,
+                "vehicle_id": 529,
+                "service_adviser_id": null,
+                "status": "ongoing",
+                "priority": "normal",
+                "subtotal": "6500.00",
+                "labor_total": "0.00",
+                "parts_total": "2250.00",
+                "discount_type": "none",
+                "discount_amount": "0.00",
+                "discount_percentage": "0.00",
+                "partial_amount": "0.00",
+                "total_amount": "8750.00",
+                "payment_status": "pending",
+                "payment_method": "cash",
+                "payment_date": null,
+                "notes": "",
+                "estimated_completion": null,
+                "actual_completion": null,
+                "status_timer_seconds": 0,
+                "status_timer_started_at": "2026-09-12 15:31:00",
+                "work_started_at": "2026-09-12 15:31:00",
+                "inspection_started_at": null,
+                "completed_at": null,
+                "created_by": 2,
+                "created_by_type": "user",
+                "created_at": "2026-09-12 15:30:50",
+                "updated_at": "2026-09-12 15:31:00"
+            },
+            "job_order_services": [
+                {
+                    "id": 2847,
+                    "job_order_id": 499,
+                    "service_id": 137,
+                    "bundle_id": null,
+                    "service_name": "AIRCON CLEANING (DUAL)",
+                    "service_price": "0.00",
+                    "labor_cost": "6500.00",
+                    "quantity": 1,
+                    "total": "6500.00",
+                    "sub_items_json": "[\"VACUUM\",\"LEAKTEST\",\"CHARGE FREON\",\"REPLACE ORING\",\"REPLACE EXPANSION VALVE\",\"REPLACE FILTER DRIER\",\"FLUSHING\"]",
+                    "created_at": "2026-09-12 15:30:50"
+                }
+            ],
+            "job_order_products": [
+                {
+                    "id": 2581,
+                    "job_order_id": 499,
+                    "product_id": 53,
+                    "product_name": "AIR FILTER",
+                    "product_type": "parts",
+                    "unit_price": "1800.00",
+                    "quantity": 1,
+                    "total": "1800.00",
+                    "created_at": "2026-09-12 15:30:50"
+                },
+                {
+                    "id": 2582,
+                    "job_order_id": 499,
+                    "product_id": 163,
+                    "product_name": "BRAKE CLEANER MITSUBISHI",
+                    "product_type": "parts",
+                    "unit_price": "450.00",
+                    "quantity": 1,
+                    "total": "450.00",
+                    "created_at": "2026-09-12 15:30:50"
+                }
+            ],
+            "job_order_technicians": [],
+            "work_sessions": [],
+            "job_order_inspections": [],
+            "technician_points": [],
+            "report_expenses": []
+        }
+    },
+    {
+        "id": "trash_6aa506ac154595.29906720",
+        "entity_type": "job_order",
+        "source": "database",
+        "deleted_at": "2026-09-12 16:00:44",
+        "expires_at": "2026-10-12 16:00:44",
+        "shop_key": "autodok_main",
+        "deleted_by": {
+            "id": 2,
+            "name": "Dj Guingue Cortez"
+        },
+        "meta": {
+            "table": "job_orders"
+        },
+        "payload": {
+            "job_order": {
+                "id": 501,
+                "job_order_number": "JO244",
+                "customer_id": 370,
+                "vehicle_id": 531,
+                "service_adviser_id": null,
+                "status": "ongoing",
+                "priority": "normal",
+                "subtotal": "0.00",
+                "labor_total": "0.00",
+                "parts_total": "1800.00",
+                "discount_type": "none",
+                "discount_amount": "0.00",
+                "discount_percentage": "0.00",
+                "partial_amount": "0.00",
+                "total_amount": "1800.00",
+                "payment_status": "pending",
+                "payment_method": "cash",
+                "payment_date": null,
+                "notes": "",
+                "estimated_completion": null,
+                "actual_completion": null,
+                "status_timer_seconds": 0,
+                "status_timer_started_at": "2026-09-12 15:59:43",
+                "work_started_at": "2026-09-12 15:59:43",
+                "inspection_started_at": null,
+                "completed_at": null,
+                "created_by": 2,
+                "created_by_type": "user",
+                "created_at": "2026-09-12 15:59:40",
+                "updated_at": "2026-09-12 15:59:43"
+            },
+            "job_order_services": [
+                {
+                    "id": 2851,
+                    "job_order_id": 501,
+                    "service_id": 182,
+                    "bundle_id": null,
+                    "service_name": "AIRCON CLEANING (CAMERA)",
+                    "service_price": "0.00",
+                    "labor_cost": "0.00",
+                    "quantity": 1,
+                    "total": "0.00",
+                    "sub_items_json": null,
+                    "created_at": "2026-09-12 15:59:40"
+                }
+            ],
+            "job_order_products": [
+                {
+                    "id": 2586,
+                    "job_order_id": 501,
+                    "product_id": 53,
+                    "product_name": "AIR FILTER",
+                    "product_type": "parts",
+                    "unit_price": "1800.00",
+                    "quantity": 1,
+                    "total": "1800.00",
+                    "created_at": "2026-09-12 15:59:40"
+                }
+            ],
+            "job_order_technicians": [],
+            "work_sessions": [],
+            "job_order_inspections": [],
+            "technician_points": [],
+            "report_expenses": []
+        }
+    },
+    {
+        "id": "trash_6aa506b0b34b61.79010059",
+        "entity_type": "job_order",
+        "source": "database",
+        "deleted_at": "2026-09-12 16:00:48",
+        "expires_at": "2026-10-12 16:00:48",
+        "shop_key": "autodok_main",
+        "deleted_by": {
+            "id": 2,
+            "name": "Dj Guingue Cortez"
+        },
+        "meta": {
+            "table": "job_orders"
+        },
+        "payload": {
+            "job_order": {
+                "id": 500,
+                "job_order_number": "JO243",
+                "customer_id": 61,
+                "vehicle_id": 530,
+                "service_adviser_id": null,
+                "status": "ongoing",
+                "priority": "normal",
+                "subtotal": "6500.00",
+                "labor_total": "0.00",
+                "parts_total": "2350.00",
+                "discount_type": "none",
+                "discount_amount": "0.00",
+                "discount_percentage": "0.00",
+                "partial_amount": "0.00",
+                "total_amount": "8850.00",
+                "payment_status": "pending",
+                "payment_method": "cash",
+                "payment_date": null,
+                "notes": "",
+                "estimated_completion": null,
+                "actual_completion": null,
+                "status_timer_seconds": 112,
+                "status_timer_started_at": "2026-09-12 16:00:22",
+                "work_started_at": "2026-09-12 15:58:28",
+                "inspection_started_at": null,
+                "completed_at": null,
+                "created_by": 2,
+                "created_by_type": "user",
+                "created_at": "2026-09-12 15:58:24",
+                "updated_at": "2026-09-12 16:00:22"
+            },
+            "job_order_services": [
+                {
+                    "id": 2850,
+                    "job_order_id": 500,
+                    "service_id": 17,
+                    "bundle_id": null,
+                    "service_name": "AIRCON CLEANING (DUAL)",
+                    "service_price": "0.00",
+                    "labor_cost": "6500.00",
+                    "quantity": 1,
+                    "total": "6500.00",
+                    "sub_items_json": "[\"Air Filter Cleaning\",\"Evaporator Coil Cleaning\",\"Blower\\/Fan Cleaning\"]",
+                    "created_at": "2026-09-12 15:59:16"
+                }
+            ],
+            "job_order_products": [
+                {
+                    "id": 2584,
+                    "job_order_id": 500,
+                    "product_id": 132,
+                    "product_name": "AIRCON BELT",
+                    "product_type": "parts",
+                    "unit_price": "1400.00",
+                    "quantity": 1,
+                    "total": "1400.00",
+                    "created_at": "2026-09-12 15:59:16"
+                },
+                {
+                    "id": 2585,
+                    "job_order_id": 500,
+                    "product_id": 63,
+                    "product_name": "ATF CVT",
+                    "product_type": "parts",
+                    "unit_price": "950.00",
+                    "quantity": 1,
+                    "total": "950.00",
+                    "created_at": "2026-09-12 15:59:16"
+                }
+            ],
+            "job_order_technicians": [],
+            "work_sessions": [],
+            "job_order_inspections": [],
+            "technician_points": [],
+            "report_expenses": []
+        }
+    },
+    {
+        "id": "trash_6aa50945846272.96456837",
+        "entity_type": "job_order",
+        "source": "database",
+        "deleted_at": "2026-09-12 16:11:49",
+        "expires_at": "2026-10-12 16:11:49",
+        "shop_key": "autodok_main",
+        "deleted_by": {
+            "id": 2,
+            "name": "Dj Guingue Cortez"
+        },
+        "meta": {
+            "table": "job_orders"
+        },
+        "payload": {
+            "job_order": {
+                "id": 502,
+                "job_order_number": "JO243",
+                "customer_id": 61,
+                "vehicle_id": 532,
+                "service_adviser_id": null,
+                "status": "ongoing",
+                "priority": "normal",
+                "subtotal": "0.00",
+                "labor_total": "0.00",
+                "parts_total": "5550.00",
+                "discount_type": "none",
+                "discount_amount": "0.00",
+                "discount_percentage": "0.00",
+                "partial_amount": "0.00",
+                "total_amount": "5550.00",
+                "payment_status": "pending",
+                "payment_method": "cash",
+                "payment_date": null,
+                "notes": "",
+                "estimated_completion": null,
+                "actual_completion": null,
+                "status_timer_seconds": 185,
+                "status_timer_started_at": "2026-09-12 16:11:34",
+                "work_started_at": "2026-09-12 16:02:50",
+                "inspection_started_at": null,
+                "completed_at": null,
+                "created_by": 2,
+                "created_by_type": "user",
+                "created_at": "2026-09-12 16:02:41",
+                "updated_at": "2026-09-12 16:11:34"
+            },
+            "job_order_services": [
+                {
+                    "id": 2859,
+                    "job_order_id": 502,
+                    "service_id": 182,
+                    "bundle_id": null,
+                    "service_name": "AIRCON CLEANING (CAMERA)",
+                    "service_price": "0.00",
+                    "labor_cost": "0.00",
+                    "quantity": 1,
+                    "total": "0.00",
+                    "sub_items_json": null,
+                    "created_at": "2026-09-12 16:11:08"
+                }
+            ],
+            "job_order_products": [
+                {
+                    "id": 2599,
+                    "job_order_id": 502,
+                    "product_id": 118,
+                    "product_name": "AIR FILTER-MINIVAN",
+                    "product_type": "parts",
+                    "unit_price": "1200.00",
+                    "quantity": 2,
+                    "total": "2400.00",
+                    "created_at": "2026-09-12 16:11:08"
+                },
+                {
+                    "id": 2600,
+                    "job_order_id": 502,
+                    "product_id": 102,
+                    "product_name": "BRAKE SHOE-MINIVAN",
+                    "product_type": "parts",
+                    "unit_price": "2200.00",
+                    "quantity": 1,
+                    "total": "2200.00",
+                    "created_at": "2026-09-12 16:11:08"
+                },
+                {
+                    "id": 2601,
+                    "job_order_id": 502,
+                    "product_id": 32,
+                    "product_name": "OIL FILTER 313",
+                    "product_type": "parts",
+                    "unit_price": "950.00",
+                    "quantity": 1,
+                    "total": "950.00",
+                    "created_at": "2026-09-12 16:11:08"
+                }
+            ],
+            "job_order_technicians": [],
+            "work_sessions": [],
+            "job_order_inspections": [],
+            "technician_points": [],
+            "report_expenses": []
+        }
+    },
+    {
+        "id": "trash_6aa51d034fe0e6.92988758",
+        "entity_type": "job_order",
+        "source": "database",
+        "deleted_at": "2026-09-12 17:36:03",
+        "expires_at": "2026-10-12 17:36:03",
+        "shop_key": "autodok_main",
+        "deleted_by": {
+            "id": 2,
+            "name": "Dj Guingue Cortez"
+        },
+        "meta": {
+            "table": "job_orders"
+        },
+        "payload": {
+            "job_order": {
+                "id": 199,
+                "job_order_number": "JO020",
+                "customer_id": 97,
+                "vehicle_id": 199,
+                "service_adviser_id": null,
+                "status": "released",
+                "priority": "normal",
+                "subtotal": "1000.00",
+                "labor_total": "0.00",
+                "parts_total": "350.00",
+                "discount_type": "none",
+                "discount_amount": "0.00",
+                "discount_percentage": "0.00",
+                "partial_amount": "1350.00",
+                "total_amount": "1350.00",
+                "payment_status": "paid",
+                "payment_method": "gcash",
+                "payment_date": "2026-08-17 14:04:27",
+                "notes": "ALL PARTS CUSTOMER SUPPLY",
+                "estimated_completion": null,
+                "actual_completion": null,
+                "status_timer_seconds": 2987,
+                "status_timer_started_at": null,
+                "work_started_at": "2026-08-17 11:26:40",
+                "inspection_started_at": "2026-08-17 13:45:48",
+                "completed_at": null,
+                "created_by": 4,
+                "created_by_type": "user",
+                "created_at": "2026-08-17 10:54:55",
+                "updated_at": "2026-08-17 23:41:29"
+            },
+            "job_order_services": [
+                {
+                    "id": 974,
+                    "job_order_id": 199,
+                    "service_id": null,
+                    "bundle_id": null,
+                    "service_name": "REPLACE ALL OUTER BELTS",
+                    "service_price": "0.00",
+                    "labor_cost": "500.00",
+                    "quantity": 1,
+                    "total": "500.00",
+                    "sub_items_json": null,
+                    "created_at": "2026-08-17 23:41:29"
+                },
+                {
+                    "id": 975,
+                    "job_order_id": 199,
+                    "service_id": null,
+                    "bundle_id": null,
+                    "service_name": "FLUSHING COOLANT",
+                    "service_price": "0.00",
+                    "labor_cost": "500.00",
+                    "quantity": 1,
+                    "total": "500.00",
+                    "sub_items_json": "[\"CHECK FLUIDS\",\"CHECK LIGHTS\",\"CHECK UNDERCHASSIS\"]",
+                    "created_at": "2026-08-17 23:41:29"
+                }
+            ],
+            "job_order_products": [
+                {
+                    "id": 346,
+                    "job_order_id": 199,
+                    "product_id": 7,
+                    "product_name": "COOLANT GREEN",
+                    "product_type": "parts",
+                    "unit_price": "350.00",
+                    "quantity": 1,
+                    "total": "350.00",
+                    "created_at": "2026-08-17 23:41:29"
+                }
+            ],
+            "job_order_technicians": [
+                {
+                    "id": 200,
+                    "job_order_id": 199,
+                    "technician_id": 19,
+                    "is_assist": 0,
+                    "assigned_at": "2026-08-17 10:56:26",
+                    "started_at": null,
+                    "completed_at": "2026-08-17 14:04:33",
+                    "work_duration": 2987,
+                    "status": "completed",
+                    "notes": null,
+                    "created_at": "2026-08-17 10:56:26"
+                }
+            ],
+            "work_sessions": [
+                {
+                    "id": 427,
+                    "job_order_technician_id": 200,
+                    "start_time": "2026-08-17 11:26:40",
+                    "end_time": "2026-08-17 12:05:21",
+                    "duration": 2321,
+                    "notes": "LUNCH",
+                    "created_at": "2026-08-17 11:26:40"
+                },
+                {
+                    "id": 432,
+                    "job_order_technician_id": 200,
+                    "start_time": "2026-08-17 13:45:48",
+                    "end_time": "2026-08-17 13:56:54",
+                    "duration": 2987,
+                    "notes": "for inspection",
+                    "created_at": "2026-08-17 13:45:48"
+                }
+            ],
+            "job_order_inspections": [],
+            "technician_points": [],
+            "report_expenses": []
+        }
+    },
+    {
+        "id": "trash_6aa51d13bb40e0.48707960",
+        "entity_type": "job_order",
+        "source": "database",
+        "deleted_at": "2026-09-12 17:36:19",
+        "expires_at": "2026-10-12 17:36:19",
+        "shop_key": "autodok_main",
+        "deleted_by": {
+            "id": 2,
+            "name": "Dj Guingue Cortez"
+        },
+        "meta": {
+            "table": "job_orders"
+        },
+        "payload": {
+            "job_order": {
+                "id": 196,
+                "job_order_number": "JO017",
+                "customer_id": 100,
+                "vehicle_id": 196,
+                "service_adviser_id": null,
+                "status": "released",
+                "priority": "normal",
+                "subtotal": "7500.00",
+                "labor_total": "0.00",
+                "parts_total": "0.00",
+                "discount_type": "custom",
+                "discount_amount": "1000.00",
+                "discount_percentage": "0.00",
+                "partial_amount": "6500.00",
+                "total_amount": "6500.00",
+                "payment_status": "paid",
+                "payment_method": "cash",
+                "payment_date": "2026-08-17 15:50:01",
+                "notes": "",
+                "estimated_completion": null,
+                "actual_completion": null,
+                "status_timer_seconds": 7340,
+                "status_timer_started_at": null,
+                "work_started_at": "2026-08-17 08:45:40",
+                "inspection_started_at": "2026-08-17 15:22:59",
+                "completed_at": null,
+                "created_by": 7,
+                "created_by_type": "user",
+                "created_at": "2026-08-17 08:41:40",
+                "updated_at": "2026-08-17 23:41:46"
+            },
+            "job_order_services": [
+                {
+                    "id": 979,
+                    "job_order_id": 196,
+                    "service_id": null,
+                    "bundle_id": null,
+                    "service_name": "PULL OUT/ INSTALL ALTERNATOR ASSY",
+                    "service_price": "0.00",
+                    "labor_cost": "7500.00",
+                    "quantity": 1,
+                    "total": "7500.00",
+                    "sub_items_json": "[\"REPLACE ALTERNATOR PULLY W\\/ MATERIALS\",\"CHARGE BATTERY\",\"SCANNING\",\"CHECK FLUIDS\",\"CHECK LIGHTS\",\"CHECK UNDERCHASSIS\"]",
+                    "created_at": "2026-08-17 23:42:29"
+                }
+            ],
+            "job_order_products": [],
+            "job_order_technicians": [
+                {
+                    "id": 197,
+                    "job_order_id": 196,
+                    "technician_id": 20,
+                    "is_assist": 0,
+                    "assigned_at": "2026-08-17 08:41:40",
+                    "started_at": null,
+                    "completed_at": "2026-08-17 15:50:07",
+                    "work_duration": 7340,
+                    "status": "completed",
+                    "notes": null,
+                    "created_at": "2026-08-17 08:41:40"
+                }
+            ],
+            "work_sessions": [
+                {
+                    "id": 422,
+                    "job_order_technician_id": 197,
+                    "start_time": "2026-08-17 08:45:40",
+                    "end_time": "2026-08-17 09:17:21",
+                    "duration": 1901,
+                    "notes": null,
+                    "created_at": "2026-08-17 08:45:40"
+                },
+                {
+                    "id": 425,
+                    "job_order_technician_id": 197,
+                    "start_time": "2026-08-17 09:17:31",
+                    "end_time": "2026-08-17 09:17:55",
+                    "duration": 1925,
+                    "notes": "WAITING SA PARTS",
+                    "created_at": "2026-08-17 09:17:31"
+                },
+                {
+                    "id": 434,
+                    "job_order_technician_id": 197,
+                    "start_time": "2026-08-17 13:52:47",
+                    "end_time": "2026-08-17 15:23:02",
+                    "duration": 7340,
+                    "notes": null,
+                    "created_at": "2026-08-17 13:52:47"
+                }
+            ],
+            "job_order_inspections": [],
+            "technician_points": [],
+            "report_expenses": []
+        }
+    },
+    {
+        "id": "trash_6aa51d254164a7.83467968",
+        "entity_type": "job_order",
+        "source": "database",
+        "deleted_at": "2026-09-12 17:36:37",
+        "expires_at": "2026-10-12 17:36:37",
+        "shop_key": "autodok_main",
+        "deleted_by": {
+            "id": 2,
+            "name": "Dj Guingue Cortez"
+        },
+        "meta": {
+            "table": "job_orders"
+        },
+        "payload": {
+            "job_order": {
+                "id": 143,
+                "job_order_number": "JO014",
+                "customer_id": 101,
+                "vehicle_id": 143,
+                "service_adviser_id": null,
+                "status": "released",
+                "priority": "normal",
+                "subtotal": "600.00",
+                "labor_total": "0.00",
+                "parts_total": "0.00",
+                "discount_type": "none",
+                "discount_amount": "0.00",
+                "discount_percentage": "0.00",
+                "partial_amount": "600.00",
+                "total_amount": "600.00",
+                "payment_status": "paid",
+                "payment_method": "gcash",
+                "payment_date": "2026-08-17 16:09:16",
+                "notes": "paid 10 pesos cash, 590 BT",
+                "estimated_completion": null,
+                "actual_completion": null,
+                "status_timer_seconds": 2072,
+                "status_timer_started_at": null,
+                "work_started_at": "2026-08-15 16:28:07",
+                "inspection_started_at": "2026-08-15 17:01:47",
+                "completed_at": null,
+                "created_by": 4,
+                "created_by_type": "user",
+                "created_at": "2026-08-15 16:21:13",
+                "updated_at": "2026-08-17 23:42:04"
+            },
+            "job_order_services": [
+                {
+                    "id": 977,
+                    "job_order_id": 143,
+                    "service_id": 228,
+                    "bundle_id": null,
+                    "service_name": "REPLACE BRAKE PAD",
+                    "service_price": "0.00",
+                    "labor_cost": "600.00",
+                    "quantity": 1,
+                    "total": "600.00",
+                    "sub_items_json": null,
+                    "created_at": "2026-08-17 23:42:04"
+                }
+            ],
+            "job_order_products": [],
+            "job_order_technicians": [
+                {
+                    "id": 165,
+                    "job_order_id": 143,
+                    "technician_id": 24,
+                    "is_assist": 0,
+                    "assigned_at": "2026-08-15 16:26:27",
+                    "started_at": null,
+                    "completed_at": "2026-08-15 17:04:28",
+                    "work_duration": 2072,
+                    "status": "completed",
+                    "notes": null,
+                    "created_at": "2026-08-15 16:26:27"
+                }
+            ],
+            "work_sessions": [
+                {
+                    "id": 309,
+                    "job_order_technician_id": 165,
+                    "start_time": "2026-08-15 16:28:07",
+                    "end_time": "2026-08-15 17:01:21",
+                    "duration": 1994,
+                    "notes": null,
+                    "created_at": "2026-08-15 16:28:07"
+                },
+                {
+                    "id": 310,
+                    "job_order_technician_id": 165,
+                    "start_time": "2026-08-15 17:01:47",
+                    "end_time": "2026-08-15 17:01:50",
+                    "duration": 1997,
+                    "notes": null,
+                    "created_at": "2026-08-15 17:01:47"
+                },
+                {
+                    "id": 311,
+                    "job_order_technician_id": 165,
+                    "start_time": "2026-08-15 17:03:07",
+                    "end_time": "2026-08-15 17:04:22",
+                    "duration": 2072,
+                    "notes": null,
+                    "created_at": "2026-08-15 17:03:07"
+                }
+            ],
+            "job_order_inspections": [],
+            "technician_points": [],
+            "report_expenses": []
+        }
+    },
+    {
+        "id": "trash_6aa523b7847223.28203609",
+        "entity_type": "announcement",
+        "source": "json",
+        "deleted_at": "2026-09-12 18:04:39",
+        "expires_at": "2026-10-12 18:04:39",
+        "shop_key": "autodok_main",
+        "deleted_by": {
+            "id": 2,
+            "name": "Dj Guingue Cortez"
+        },
+        "meta": [],
+        "payload": {
+            "id": "ann_6a970cd6f41688.53259225",
+            "category": "Urgent",
+            "title": "System Update",
+            "message": "<p class=\"p1\" style=\"caret-color: rgb(0, 0, 0); color: rgb(0, 0, 0);\">&nbsp;Manual Income and Expenses are now separated. Please&nbsp;<span class=\"s1\"><b>re-enter your previous records</b></span>&nbsp;in the updated system. Thank you!</p>",
+            "enabled": true,
+            "audience": "everyone",
+            "shop_key": "",
+            "updated_at": "2026-09-02 01:51:25",
+            "updated_by": "Dj Guingue Cortez"
+        }
+    },
+    {
+        "id": "trash_6aa539403142b6.64668166",
+        "entity_type": "report_expense",
+        "source": "json",
+        "deleted_at": "2026-09-12 19:36:32",
+        "expires_at": "2026-10-12 19:36:32",
+        "shop_key": "autodok_main",
+        "deleted_by": {
+            "id": 7,
+            "name": "Iloisa Joy P. Mejias"
+        },
+        "meta": [],
+        "payload": {
+            "id": "exp_6aa4f3034e9709.85355832",
+            "expense_date": "2026-09-12",
+            "category": "Outsource",
+            "description": "BOLT",
+            "amount": 12,
+            "payment_method": "Cash",
+            "job_order_id": 498,
+            "plate_number": "SA194A",
+            "shop_key": "autodok_main",
+            "created_by": "Iloisa Joy P. Mejias",
+            "created_at": "2026-09-12 14:36:51"
+        }
+    },
+    {
+        "id": "trash_6aa791cf863cf2.84458280",
+        "entity_type": "job_order",
+        "source": "database",
+        "deleted_at": "2026-09-14 14:18:55",
+        "expires_at": "2026-10-14 14:18:55",
+        "shop_key": "autodok_main",
+        "deleted_by": {
+            "id": 2,
+            "name": "Dj Guingue Cortez"
+        },
+        "meta": {
+            "table": "job_orders"
+        },
+        "payload": {
+            "job_order": {
+                "id": 513,
+                "job_order_number": "JO254",
+                "customer_id": 61,
+                "vehicle_id": 543,
+                "service_adviser_id": null,
+                "status": "completed",
+                "priority": "normal",
+                "subtotal": "6500.00",
+                "labor_total": "0.00",
+                "parts_total": "0.00",
+                "discount_type": "none",
+                "discount_amount": "0.00",
+                "discount_percentage": "0.00",
+                "partial_amount": "0.00",
+                "total_amount": "6500.00",
+                "payment_status": "pending",
+                "payment_method": "cash",
+                "payment_date": null,
+                "notes": "",
+                "estimated_completion": null,
+                "actual_completion": null,
+                "status_timer_seconds": 0,
+                "status_timer_started_at": null,
+                "work_started_at": null,
+                "inspection_started_at": null,
+                "completed_at": "2026-09-14 14:16:34",
+                "created_by": 2,
+                "created_by_type": "user",
+                "created_at": "2026-09-14 14:08:19",
+                "updated_at": "2026-09-14 14:16:34"
+            },
+            "job_order_services": [
+                {
+                    "id": 2928,
+                    "job_order_id": 513,
+                    "service_id": 17,
+                    "bundle_id": null,
+                    "service_name": "AIRCON CLEANING (DUAL)",
+                    "service_price": "0.00",
+                    "labor_cost": "6500.00",
+                    "quantity": 1,
+                    "total": "6500.00",
+                    "sub_items_json": "[\"Air Filter Cleaning\",\"Evaporator Coil Cleaning\",\"Blower\\/Fan Cleaning\"]",
+                    "created_at": "2026-09-14 14:08:41"
+                }
+            ],
+            "job_order_products": [],
+            "job_order_technicians": [],
+            "work_sessions": [],
+            "job_order_inspections": [],
+            "technician_points": [],
+            "report_expenses": []
+        }
+    },
+    {
+        "id": "trash_6aa884243c2181.65562809",
+        "entity_type": "job_order",
+        "source": "database",
+        "deleted_at": "2026-09-15 07:32:52",
+        "expires_at": "2026-10-15 07:32:52",
+        "shop_key": "autodok_main",
+        "deleted_by": {
+            "id": 2,
+            "name": "Dj Guingue Cortez"
+        },
+        "meta": {
+            "table": "job_orders"
+        },
+        "payload": {
+            "job_order": {
+                "id": 482,
+                "job_order_number": "JO226",
+                "customer_id": 354,
+                "vehicle_id": 512,
+                "service_adviser_id": 37,
+                "status": "cancelled",
+                "priority": "normal",
+                "subtotal": "800.00",
+                "labor_total": "0.00",
+                "parts_total": "6800.00",
+                "discount_type": "none",
+                "discount_amount": "0.00",
+                "discount_percentage": "0.00",
+                "partial_amount": "0.00",
+                "total_amount": "7600.00",
+                "payment_status": "pending",
+                "payment_method": "cash",
+                "payment_date": null,
+                "notes": "RECEIVED:\n\nSTARTED:\n\n\nFINISHED:",
+                "estimated_completion": null,
+                "actual_completion": null,
+                "status_timer_seconds": 6416,
+                "status_timer_started_at": null,
+                "work_started_at": "2026-09-10 11:19:59",
+                "inspection_started_at": null,
+                "completed_at": null,
+                "created_by": 4,
+                "created_by_type": "user",
+                "created_at": "2026-09-10 11:19:53",
+                "updated_at": "2026-09-12 09:31:11"
+            },
+            "job_order_services": [
+                {
+                    "id": 2685,
+                    "job_order_id": 482,
+                    "service_id": null,
+                    "bundle_id": null,
+                    "service_name": "REPLACE OXYGEN SENSOR",
+                    "service_price": "0.00",
+                    "labor_cost": "800.00",
+                    "quantity": 1,
+                    "total": "800.00",
+                    "sub_items_json": "[\"SCANNING\"]",
+                    "created_at": "2026-09-10 11:22:06"
+                }
+            ],
+            "job_order_products": [
+                {
+                    "id": 2369,
+                    "job_order_id": 482,
+                    "product_id": null,
+                    "product_name": "OXYGEN SENSOR",
+                    "product_type": "parts",
+                    "unit_price": "6800.00",
+                    "quantity": 1,
+                    "total": "6800.00",
+                    "created_at": "2026-09-10 11:22:06"
+                }
+            ],
+            "job_order_technicians": [
+                {
+                    "id": 451,
+                    "job_order_id": 482,
+                    "technician_id": 37,
+                    "is_assist": 0,
+                    "assigned_at": "2026-09-10 11:19:53",
+                    "started_at": null,
+                    "completed_at": "2026-09-12 09:31:11",
+                    "work_duration": 6416,
+                    "status": "completed",
+                    "notes": null,
+                    "created_at": "2026-09-10 11:19:53"
+                }
+            ],
+            "work_sessions": [
+                {
+                    "id": 852,
+                    "job_order_technician_id": 451,
+                    "start_time": "2026-09-10 11:19:59",
+                    "end_time": "2026-09-10 12:37:08",
+                    "duration": 4629,
+                    "notes": null,
+                    "created_at": "2026-09-10 11:19:59"
+                },
+                {
+                    "id": 859,
+                    "job_order_technician_id": 451,
+                    "start_time": "2026-09-10 13:04:38",
+                    "end_time": "2026-09-10 13:34:25",
+                    "duration": 6416,
+                    "notes": null,
+                    "created_at": "2026-09-10 13:04:38"
+                }
+            ],
+            "job_order_inspections": [],
+            "technician_points": [],
+            "report_expenses": []
+        }
+    },
+    {
+        "id": "trash_6aa8842c0534f2.19675059",
+        "entity_type": "job_order",
+        "source": "database",
+        "deleted_at": "2026-09-15 07:33:00",
+        "expires_at": "2026-10-15 07:33:00",
+        "shop_key": "autodok_main",
+        "deleted_by": {
+            "id": 2,
+            "name": "Dj Guingue Cortez"
+        },
+        "meta": {
+            "table": "job_orders"
+        },
+        "payload": {
+            "job_order": {
+                "id": 400,
+                "job_order_number": "JO173",
+                "customer_id": 280,
+                "vehicle_id": 402,
+                "service_adviser_id": 23,
+                "status": "cancelled",
+                "priority": "normal",
+                "subtotal": "0.00",
+                "labor_total": "0.00",
+                "parts_total": "0.00",
+                "discount_type": "none",
+                "discount_amount": "0.00",
+                "discount_percentage": "0.00",
+                "partial_amount": "0.00",
+                "total_amount": "0.00",
+                "payment_status": "pending",
+                "payment_method": "cash",
+                "payment_date": null,
+                "notes": "TIME RECEIVED:\n\nTIME STARTED:\n\nTIME FINISHED:",
+                "estimated_completion": null,
+                "actual_completion": null,
+                "status_timer_seconds": 48536,
+                "status_timer_started_at": null,
+                "work_started_at": "2026-09-04 13:07:11",
+                "inspection_started_at": "2026-09-04 23:31:34",
+                "completed_at": null,
+                "created_by": 7,
+                "created_by_type": "user",
+                "created_at": "2026-09-04 13:05:24",
+                "updated_at": "2026-09-12 09:41:19"
+            },
+            "job_order_services": [
+                {
+                    "id": 2194,
+                    "job_order_id": 400,
+                    "service_id": null,
+                    "bundle_id": null,
+                    "service_name": "REPLACE REAR COIL SPRING",
+                    "service_price": "0.00",
+                    "labor_cost": "0.00",
+                    "quantity": 1,
+                    "total": "0.00",
+                    "sub_items_json": null,
+                    "created_at": "2026-09-04 13:06:05"
+                }
+            ],
+            "job_order_products": [],
+            "job_order_technicians": [
+                {
+                    "id": 385,
+                    "job_order_id": 400,
+                    "technician_id": 23,
+                    "is_assist": 0,
+                    "assigned_at": "2026-09-04 13:06:05",
+                    "started_at": null,
+                    "completed_at": "2026-09-05 07:50:04",
+                    "work_duration": 48536,
+                    "status": "completed",
+                    "notes": null,
+                    "created_at": "2026-09-04 13:06:05"
+                },
+                {
+                    "id": 386,
+                    "job_order_id": 400,
+                    "technician_id": 18,
+                    "is_assist": 0,
+                    "assigned_at": "2026-09-04 13:06:05",
+                    "started_at": null,
+                    "completed_at": "2026-09-05 07:50:04",
+                    "work_duration": 48536,
+                    "status": "completed",
+                    "notes": null,
+                    "created_at": "2026-09-04 13:06:05"
+                }
+            ],
+            "work_sessions": [
+                {
+                    "id": 759,
+                    "job_order_technician_id": 385,
+                    "start_time": "2026-09-04 13:07:11",
+                    "end_time": "2026-09-04 18:17:37",
+                    "duration": 18626,
+                    "notes": null,
+                    "created_at": "2026-09-04 13:07:11"
+                },
+                {
+                    "id": 765,
+                    "job_order_technician_id": 385,
+                    "start_time": "2026-09-04 23:31:34",
+                    "end_time": "2026-09-05 07:50:04",
+                    "duration": 48536,
+                    "notes": null,
+                    "created_at": "2026-09-04 23:31:34"
+                },
+                {
+                    "id": 760,
+                    "job_order_technician_id": 386,
+                    "start_time": "2026-09-04 13:07:11",
+                    "end_time": "2026-09-04 18:17:37",
+                    "duration": 18626,
+                    "notes": null,
+                    "created_at": "2026-09-04 13:07:11"
+                },
+                {
+                    "id": 766,
+                    "job_order_technician_id": 386,
+                    "start_time": "2026-09-04 23:31:34",
+                    "end_time": "2026-09-05 07:50:04",
+                    "duration": 48536,
+                    "notes": null,
+                    "created_at": "2026-09-04 23:31:34"
+                }
+            ],
+            "job_order_inspections": [],
+            "technician_points": [
+                {
+                    "id": 347,
+                    "technician_id": 23,
+                    "job_order_id": 400,
+                    "reason": "JO Completed (Lead)",
+                    "points": "10.0",
+                    "created_at": "2026-09-05 07:50:04"
+                },
+                {
+                    "id": 348,
+                    "technician_id": 23,
+                    "job_order_id": 400,
+                    "reason": "Speed Bonus",
+                    "points": "1.0",
+                    "created_at": "2026-09-05 07:50:04"
+                },
+                {
+                    "id": 349,
+                    "technician_id": 23,
+                    "job_order_id": 400,
+                    "reason": "Clean Completion",
+                    "points": "3.0",
+                    "created_at": "2026-09-05 07:50:04"
+                },
+                {
+                    "id": 350,
+                    "technician_id": 18,
+                    "job_order_id": 400,
+                    "reason": "JO Completed (Lead)",
+                    "points": "10.0",
+                    "created_at": "2026-09-05 07:50:04"
+                },
+                {
+                    "id": 351,
+                    "technician_id": 18,
+                    "job_order_id": 400,
+                    "reason": "Speed Bonus",
+                    "points": "1.0",
+                    "created_at": "2026-09-05 07:50:04"
+                },
+                {
+                    "id": 352,
+                    "technician_id": 18,
+                    "job_order_id": 400,
+                    "reason": "Clean Completion",
+                    "points": "3.0",
+                    "created_at": "2026-09-05 07:50:04"
+                }
+            ],
+            "report_expenses": []
+        }
+    },
+    {
+        "id": "trash_6aa884324f2dd6.47997485",
+        "entity_type": "job_order",
+        "source": "database",
+        "deleted_at": "2026-09-15 07:33:06",
+        "expires_at": "2026-10-15 07:33:06",
+        "shop_key": "autodok_main",
+        "deleted_by": {
+            "id": 2,
+            "name": "Dj Guingue Cortez"
+        },
+        "meta": {
+            "table": "job_orders"
+        },
+        "payload": {
+            "job_order": {
+                "id": 394,
+                "job_order_number": "JO167",
+                "customer_id": 274,
+                "vehicle_id": 396,
+                "service_adviser_id": null,
+                "status": "cancelled",
+                "priority": "normal",
+                "subtotal": "8000.00",
+                "labor_total": "0.00",
+                "parts_total": "0.00",
+                "discount_type": "none",
+                "discount_amount": "0.00",
+                "discount_percentage": "0.00",
+                "partial_amount": "0.00",
+                "total_amount": "8000.00",
+                "payment_status": "pending",
+                "payment_method": "cash",
+                "payment_date": null,
+                "notes": "",
+                "estimated_completion": null,
+                "actual_completion": null,
+                "status_timer_seconds": 0,
+                "status_timer_started_at": null,
+                "work_started_at": null,
+                "inspection_started_at": null,
+                "completed_at": null,
+                "created_by": 7,
+                "created_by_type": "user",
+                "created_at": "2026-09-04 09:52:47",
+                "updated_at": "2026-09-04 10:14:25"
+            },
+            "job_order_services": [
+                {
+                    "id": 2130,
+                    "job_order_id": 394,
+                    "service_id": null,
+                    "bundle_id": null,
+                    "service_name": "LABOR",
+                    "service_price": "0.00",
+                    "labor_cost": "3500.00",
+                    "quantity": 1,
+                    "total": "3500.00",
+                    "sub_items_json": "[\"CHECK POWER WINDOW\",\"CHECK POWER WINDOW MOTOR\\/ FRONT DRIVER SIDE\",\"CLEANING POWER WINDOW MOTOR\\/ REAR WINDOW BOTH SIDES\"]",
+                    "created_at": "2026-09-04 09:52:47"
+                },
+                {
+                    "id": 2131,
+                    "job_order_id": 394,
+                    "service_id": null,
+                    "bundle_id": null,
+                    "service_name": "REPLACE RESISTOR BLOCK W/ MATERIALS",
+                    "service_price": "0.00",
+                    "labor_cost": "4500.00",
+                    "quantity": 1,
+                    "total": "4500.00",
+                    "sub_items_json": null,
+                    "created_at": "2026-09-04 09:52:47"
+                }
+            ],
+            "job_order_products": [],
+            "job_order_technicians": [],
+            "work_sessions": [],
+            "job_order_inspections": [],
+            "technician_points": [],
+            "report_expenses": []
+        }
+    },
+    {
+        "id": "trash_6aa890a2ce17b8.81847256",
+        "entity_type": "job_order",
+        "source": "database",
+        "deleted_at": "2026-09-15 08:26:10",
+        "expires_at": "2026-10-15 08:26:10",
+        "shop_key": "autodok_main",
+        "deleted_by": {
+            "id": 2,
+            "name": "Dj Guingue Cortez"
+        },
+        "meta": {
+            "table": "job_orders"
+        },
+        "payload": {
+            "job_order": {
+                "id": 351,
+                "job_order_number": "JO128",
+                "customer_id": 234,
+                "vehicle_id": 353,
+                "service_adviser_id": 17,
+                "status": "cancelled",
+                "priority": "normal",
+                "subtotal": "2200.00",
+                "labor_total": "0.00",
+                "parts_total": "0.00",
+                "discount_type": "none",
+                "discount_amount": "0.00",
+                "discount_percentage": "0.00",
+                "partial_amount": "0.00",
+                "total_amount": "2200.00",
+                "payment_status": "pending",
+                "payment_method": "cash",
+                "payment_date": null,
+                "notes": "TIME RECEIVED:\n\nTIME STARTED:\n\n\n\nTIME FINISHED:",
+                "estimated_completion": null,
+                "actual_completion": null,
+                "status_timer_seconds": 4865,
+                "status_timer_started_at": null,
+                "work_started_at": "2026-08-31 10:24:34",
+                "inspection_started_at": null,
+                "completed_at": null,
+                "created_by": 7,
+                "created_by_type": "user",
+                "created_at": "2026-08-31 10:22:40",
+                "updated_at": "2026-08-31 11:45:45"
+            },
+            "job_order_services": [
+                {
+                    "id": 1845,
+                    "job_order_id": 351,
+                    "service_id": 41,
+                    "bundle_id": null,
+                    "service_name": "WHEEL ALIGNMENT (COMPLETE)",
+                    "service_price": "0.00",
+                    "labor_cost": "2200.00",
+                    "quantity": 1,
+                    "total": "2200.00",
+                    "sub_items_json": null,
+                    "created_at": "2026-08-31 10:23:10"
+                }
+            ],
+            "job_order_products": [],
+            "job_order_technicians": [
+                {
+                    "id": 322,
+                    "job_order_id": 351,
+                    "technician_id": 17,
+                    "is_assist": 0,
+                    "assigned_at": "2026-08-31 10:22:40",
+                    "started_at": null,
+                    "completed_at": "2026-08-31 11:45:45",
+                    "work_duration": 4865,
+                    "status": "completed",
+                    "notes": null,
+                    "created_at": "2026-08-31 10:22:40"
+                },
+                {
+                    "id": 323,
+                    "job_order_id": 351,
+                    "technician_id": 10,
+                    "is_assist": 1,
+                    "assigned_at": "2026-08-31 10:22:40",
+                    "started_at": null,
+                    "completed_at": "2026-08-31 11:45:45",
+                    "work_duration": 4865,
+                    "status": "completed",
+                    "notes": null,
+                    "created_at": "2026-08-31 10:22:40"
+                }
+            ],
+            "work_sessions": [
+                {
+                    "id": 665,
+                    "job_order_technician_id": 322,
+                    "start_time": "2026-08-31 10:24:34",
+                    "end_time": "2026-08-31 11:45:39",
+                    "duration": 4865,
+                    "notes": null,
+                    "created_at": "2026-08-31 10:24:34"
+                },
+                {
+                    "id": 666,
+                    "job_order_technician_id": 323,
+                    "start_time": "2026-08-31 10:24:34",
+                    "end_time": "2026-08-31 11:45:39",
+                    "duration": 4865,
+                    "notes": null,
+                    "created_at": "2026-08-31 10:24:34"
+                }
+            ],
+            "job_order_inspections": [],
+            "technician_points": [],
+            "report_expenses": []
+        }
+    },
+    {
+        "id": "trash_6aaccefc217d99.12593435",
+        "entity_type": "report_expense",
+        "source": "json",
+        "deleted_at": "2026-09-18 13:41:16",
+        "expires_at": "2026-10-18 13:41:16",
+        "shop_key": "autodok_main",
+        "deleted_by": {
+            "id": 7,
+            "name": "Iloisa Joy P. Mejias"
+        },
+        "meta": [],
+        "payload": {
+            "id": "exp_6aaccef1a02694.62205456",
+            "expense_date": "2026-09-18",
+            "category": "Others",
+            "description": "",
+            "amount": 3500,
+            "payment_method": "Cash",
+            "job_order_id": null,
+            "plate_number": "",
+            "shop_key": "autodok_main",
+            "created_by": "Iloisa Joy P. Mejias",
+            "created_at": "2026-09-18 13:41:05"
+        }
+    },
+    {
+        "id": "trash_6aad01d8ebd866.10519707",
+        "entity_type": "manual_income",
+        "source": "json",
+        "deleted_at": "2026-09-18 17:18:16",
+        "expires_at": "2026-10-18 17:18:16",
+        "shop_key": "autodok_main",
+        "deleted_by": {
+            "id": 7,
+            "name": "Iloisa Joy P. Mejias"
+        },
+        "meta": [],
+        "payload": {
+            "id": "inc_6aacfd56dd65e5.18464262",
+            "income_date": "2026-09-18",
+            "description": "ECO SPORT",
+            "amount": 500,
+            "payment_method": "GCash",
+            "shop_key": "autodok_main",
+            "created_by": "Iloisa Joy P. Mejias",
+            "created_at": "2026-09-18 16:59:02"
+        }
+    },
+    {
+        "id": "trash_6aae2a4a9c35b6.86890367",
+        "entity_type": "report_expense",
+        "source": "json",
+        "deleted_at": "2026-09-19 14:23:06",
+        "expires_at": "2026-10-19 14:23:06",
+        "shop_key": "autodok_main",
+        "deleted_by": {
+            "id": 7,
+            "name": "Iloisa Joy P. Mejias"
+        },
+        "meta": [],
+        "payload": {
+            "id": "exp_6aae2a1ac78c46.32831147",
+            "expense_date": "2026-09-19",
+            "category": "Outsource",
+            "description": "ATF MATIC -S",
+            "amount": 740,
+            "payment_method": "Cash",
+            "job_order_id": 559,
+            "plate_number": "PQP-866",
+            "shop_key": "autodok_main",
+            "created_by": "Iloisa Joy P. Mejias",
+            "created_at": "2026-09-19 14:22:18"
+        }
+    },
+    {
+        "id": "trash_6ab0fbbabd26d2.29744945",
+        "entity_type": "report_expense",
+        "source": "json",
+        "deleted_at": "2026-09-21 17:41:14",
+        "expires_at": "2026-10-21 17:41:14",
+        "shop_key": "autodok_main",
+        "deleted_by": {
+            "id": 7,
+            "name": "Iloisa Joy P. Mejias"
+        },
+        "meta": [],
+        "payload": {
+            "id": "exp_6ab0fbae7d1276.26352345",
+            "expense_date": "2026-09-21",
+            "category": "Others",
+            "description": "PAM",
+            "amount": 20,
+            "payment_method": "Cash",
+            "job_order_id": null,
+            "plate_number": "",
+            "shop_key": "autodok_main",
+            "created_by": "Iloisa Joy P. Mejias",
+            "created_at": "2026-09-21 17:41:02"
+        }
+    },
+    {
+        "id": "trash_6ab237b6966ea6.31806725",
+        "entity_type": "report_expense",
+        "source": "json",
+        "deleted_at": "2026-09-22 16:09:26",
+        "expires_at": "2026-10-22 16:09:26",
+        "shop_key": "autodok_main",
+        "deleted_by": {
+            "id": 7,
+            "name": "Iloisa Joy P. Mejias"
+        },
+        "meta": [],
+        "payload": {
+            "id": "exp_6ab23789f146d2.08950236",
+            "expense_date": "2026-09-22",
+            "category": "Outsource",
+            "description": "1 PC FLASHER RELAY",
+            "amount": 295,
+            "payment_method": "Cash",
+            "job_order_id": 307,
+            "plate_number": "WCV-827",
+            "shop_key": "autodok_main",
+            "created_by": "Iloisa Joy P. Mejias",
+            "created_at": "2026-09-22 16:08:41"
+        }
+    },
+    {
+        "id": "trash_6ab4ef4574ff15.22497314",
+        "entity_type": "report_expense",
+        "source": "json",
+        "deleted_at": "2026-09-24 17:37:09",
+        "expires_at": "2026-10-24 17:37:09",
+        "shop_key": "autodok_main",
+        "deleted_by": {
+            "id": 7,
+            "name": "Iloisa Joy P. Mejias"
+        },
+        "meta": [],
+        "payload": {
+            "id": "exp_6ab4d26696c513.11516212",
+            "expense_date": "2026-09-24",
+            "category": "Carwash",
+            "description": "",
+            "amount": 150,
+            "payment_method": "Cash",
+            "job_order_id": 590,
+            "plate_number": "LAN-6333",
+            "shop_key": "autodok_main",
+            "created_by": "Iloisa Joy P. Mejias",
+            "created_at": "2026-09-24 15:33:58"
+        }
+    },
+    {
+        "id": "trash_6ab63f2284fff7.49061171",
+        "entity_type": "report_expense",
+        "source": "json",
+        "deleted_at": "2026-09-25 17:30:10",
+        "expires_at": "2026-10-25 17:30:10",
+        "shop_key": "autodok_main",
+        "deleted_by": {
+            "id": 7,
+            "name": "Iloisa Joy P. Mejias"
+        },
+        "meta": [],
+        "payload": {
+            "id": "exp_6ab63f166f3a92.39311512",
+            "expense_date": "2026-09-25",
+            "category": "Outsource",
+            "description": "1 SET WHEE",
+            "amount": 500,
+            "payment_method": "GCash",
+            "job_order_id": 593,
+            "plate_number": "XBX-375",
+            "shop_key": "autodok_main",
+            "created_by": "Iloisa Joy P. Mejias",
+            "created_at": "2026-09-25 17:29:58"
+        }
+    },
+    {
+        "id": "trash_6ab63fed623273.69693323",
+        "entity_type": "report_expense",
+        "source": "json",
+        "deleted_at": "2026-09-25 17:33:33",
+        "expires_at": "2026-10-25 17:33:33",
+        "shop_key": "autodok_main",
+        "deleted_by": {
+            "id": 7,
+            "name": "Iloisa Joy P. Mejias"
+        },
+        "meta": [],
+        "payload": {
+            "id": "exp_6ab63fd61f7257.05777563",
+            "expense_date": "2026-09-25",
+            "category": "Outsource",
+            "description": "1 PC BE",
+            "amount": 380,
+            "payment_method": "Cash",
+            "job_order_id": 593,
+            "plate_number": "XBX-375",
+            "shop_key": "autodok_main",
+            "created_by": "Iloisa Joy P. Mejias",
+            "created_at": "2026-09-25 17:33:10"
+        }
+    },
+    {
+        "id": "trash_6ab65562a938a8.80876990",
+        "entity_type": "report_expense",
+        "source": "json",
+        "deleted_at": "2026-09-25 19:05:06",
+        "expires_at": "2026-10-25 19:05:06",
+        "shop_key": "autodok_main",
+        "deleted_by": {
+            "id": 7,
+            "name": "Iloisa Joy P. Mejias"
+        },
+        "meta": [],
+        "payload": {
+            "id": "exp_6ab65494bdb159.54042891",
+            "expense_date": "2026-09-25",
+            "category": "Others",
+            "description": "NTC (ID SCANNER)",
+            "amount": 1506,
+            "payment_method": "Cash",
+            "job_order_id": null,
+            "plate_number": "",
+            "shop_key": "autodok_main",
+            "created_by": "Iloisa Joy P. Mejias",
+            "created_at": "2026-09-25 19:01:40"
+        }
+    },
+    {
+        "id": "trash_6ab7392656ad27.45795916",
+        "entity_type": "manual_income",
+        "source": "json",
+        "deleted_at": "2026-09-26 11:16:54",
+        "expires_at": "2026-10-26 11:16:54",
+        "shop_key": "autodok_main",
+        "deleted_by": {
+            "id": 7,
+            "name": "Iloisa Joy P. Mejias"
+        },
+        "meta": [],
+        "payload": {
+            "id": "inc_6ab7368e3aa3f9.65211547",
+            "income_date": "2026-09-26",
+            "description": "EVEREST LABOR",
+            "amount": 900,
+            "payment_method": "Cash",
+            "shop_key": "autodok_main",
+            "created_by": "Iloisa Joy P. Mejias",
+            "created_at": "2026-09-26 11:05:50"
+        }
+    },
+    {
+        "id": "trash_6ab7953aef5ae8.38505542",
+        "entity_type": "report_expense",
+        "source": "json",
+        "deleted_at": "2026-09-26 17:49:46",
+        "expires_at": "2026-10-26 17:49:46",
+        "shop_key": "autodok_main",
+        "deleted_by": {
+            "id": 7,
+            "name": "Iloisa Joy P. Mejias"
+        },
+        "meta": [],
+        "payload": {
+            "id": "exp_6ab795003d9247.81686275",
+            "expense_date": "2026-09-23",
+            "category": "Others",
+            "description": "LUNCH BUDGET SEPT. (28-30)",
+            "amount": 3250,
+            "payment_method": "Cash",
+            "job_order_id": null,
+            "plate_number": "",
+            "shop_key": "autodok_main",
+            "created_by": "Iloisa Joy P. Mejias",
+            "created_at": "2026-09-26 17:48:48"
+        }
+    }
+]

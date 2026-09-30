@@ -27,15 +27,31 @@ try {
         exit;
     }
 
-    $requestedShop = resolveShopOption($_GET['shop_key'] ?? '');
-    $shopDbName = $requestedShop['db_name'] ?? DB_NAME;
+    $requestedShopKey = trim((string)($_GET['shop_key'] ?? ''));
+    $shopOptions = getShopOptions();
+    if ($requestedShopKey === '' || !isset($shopOptions[$requestedShopKey])) {
+        http_response_code(422);
+        echo json_encode(['success' => false, 'message' => 'Please select a valid branch.']);
+        exit;
+    }
+
+    $requestedShop = resolveShopOption($requestedShopKey);
+    $shopDbName = $requestedShop['db_name'] ?? '';
+    $shopDbUser = $requestedShop['db_user'] ?? DB_USER;
+    $shopDbPass = $requestedShop['db_pass'] ?? DB_PASS;
+    if ($shopDbName === '') {
+        http_response_code(422);
+        echo json_encode(['success' => false, 'message' => 'Branch database is not configured.']);
+        exit;
+    }
 
     $dsn = "mysql:host=" . DB_HOST . ";dbname=" . $shopDbName . ";charset=" . DB_CHARSET;
-    $pdo = new PDO($dsn, DB_USER, DB_PASS, [
+    $pdo = new PDO($dsn, $shopDbUser, $shopDbPass, [
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
         PDO::ATTR_EMULATE_PREPARES => false,
     ]);
+    $pdo->exec("SET time_zone = " . $pdo->quote(DB_TIMEZONE_OFFSET));
 
     $like = '%' . $query . '%';
 
@@ -62,6 +78,8 @@ try {
 
     echo json_encode([
         'success' => true,
+        'shop_key' => $requestedShop['key'] ?? $requestedShopKey,
+        'shop_name' => $requestedShop['name'] ?? APP_NAME,
         'count' => count($rows),
         'data' => $rows,
     ]);

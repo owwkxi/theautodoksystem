@@ -22,57 +22,31 @@ if (!isset($_SESSION['user_id'])) {
 try {
     $db = Database::getInstance();
 
-    $tableHasColumn = static function ($table, $column) use ($db) {
+    // These tables are part of the application schema. Avoid SHOW COLUMNS on
+    // every poll; it is expensive on shared hosting and can block navigation.
+    $getTableSignal = static function ($table, $timeColumn) use ($db) {
         $allowedTables = ['activity_logs', 'job_orders', 'inventory_transactions', 'notifications'];
-        if (!in_array($table, $allowedTables, true)) {
-            return false;
-        }
-
-        try {
-            $row = $db->fetch("SHOW COLUMNS FROM {$table} LIKE ?", [$column]);
-            return !empty($row);
-        } catch (Throwable $e) {
-            return false;
-        }
-    };
-
-    $getTableSignal = static function ($table) use ($db, $tableHasColumn) {
-        $allowedTables = ['activity_logs', 'job_orders', 'inventory_transactions', 'notifications'];
-        if (!in_array($table, $allowedTables, true)) {
+        if (!in_array($table, $allowedTables, true) || !in_array($timeColumn, ['created_at', 'updated_at'], true)) {
             return ['last_change' => '1970-01-01 00:00:00', 'total_rows' => 0, 'max_id' => 0];
         }
 
-        $timeColumn = null;
-        if ($tableHasColumn($table, 'updated_at')) {
-            $timeColumn = 'updated_at';
-        } elseif ($tableHasColumn($table, 'created_at')) {
-            $timeColumn = 'created_at';
-        }
-
-        if ($timeColumn !== null) {
-            $row = $db->fetch(
-                "SELECT COALESCE(MAX({$timeColumn}), '1970-01-01 00:00:00') AS last_change, COUNT(*) AS total_rows FROM {$table}"
-            );
-            return [
-                'last_change' => (string)($row['last_change'] ?? '1970-01-01 00:00:00'),
-                'total_rows' => (int)($row['total_rows'] ?? 0),
-                'max_id' => 0,
-            ];
-        }
-
-        $row = $db->fetch("SELECT COALESCE(MAX(id), 0) AS max_id, COUNT(*) AS total_rows FROM {$table}");
+        $row = $db->fetch(
+            "SELECT COALESCE(MAX({$timeColumn}), '1970-01-01 00:00:00') AS last_change,
+                    COUNT(*) AS total_rows
+             FROM {$table}"
+        );
         return [
-            'last_change' => '1970-01-01 00:00:00',
+            'last_change' => (string)($row['last_change'] ?? '1970-01-01 00:00:00'),
             'total_rows' => (int)($row['total_rows'] ?? 0),
-            'max_id' => (int)($row['max_id'] ?? 0),
+            'max_id' => 0,
         ];
     };
 
     // Global cross-role signals.
-    $activity = $getTableSignal('activity_logs');
-    $jobOrders = $getTableSignal('job_orders');
-    $inventoryTx = $getTableSignal('inventory_transactions');
-    $notificationsGlobal = $getTableSignal('notifications');
+    $activity = $getTableSignal('activity_logs', 'created_at');
+    $jobOrders = $getTableSignal('job_orders', 'updated_at');
+    $inventoryTx = $getTableSignal('inventory_transactions', 'created_at');
+    $notificationsGlobal = $getTableSignal('notifications', 'created_at');
 
     $userId = (int)$_SESSION['user_id'];
     $notif = $db->fetch(
@@ -103,7 +77,7 @@ try {
     echo json_encode([
         'success' => true,
         'token' => sha1(json_encode($tokenPayload)),
-        'server_time' => gmdate('c'),
+        'server_time' => date('c'),
     ]);
 } catch (Throwable $e) {
     http_response_code(500);

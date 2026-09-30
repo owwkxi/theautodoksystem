@@ -8,9 +8,11 @@ if (!defined('APP_ACCESS')) {
     die('Direct access not permitted');
 }
 
-// ============================================================================
-// CSRF PROTECTION
-// ============================================================================
+if (!function_exists('csrfField')) {
+
+    // ============================================================================
+    // CSRF PROTECTION
+    // ============================================================================
 
 /**
  * Generate CSRF field for forms
@@ -133,7 +135,7 @@ function requirePermission($permissionCode) {
     if (!hasPermission($permissionCode)) {
         http_response_code(403);
         setMessage('Access denied: Insufficient permissions', 'error');
-        redirect(APP_URL . '/views/dashboard/index.php');
+        redirect(routeUrl('dashboard'));
     }
 }
 
@@ -145,7 +147,7 @@ function requireAnyRole($roles) {
     if (!hasAnyRole($roles)) {
         http_response_code(403);
         setMessage('Access denied: Insufficient permissions', 'error');
-        redirect(APP_URL . '/views/dashboard/index.php');
+        redirect(routeUrl('dashboard'));
     }
 }
 
@@ -271,7 +273,6 @@ function isValidImage($file) {
     // Check MIME type
     $finfo = finfo_open(FILEINFO_MIME_TYPE);
     $mimeType = finfo_file($finfo, $file['tmp_name']);
-    finfo_close($finfo);
     
     if (!in_array($mimeType, $allowedTypes)) {
         return false;
@@ -313,7 +314,7 @@ function uploadImage($file, $maxSize = 2097152) { // 2MB default
         return ['success' => false, 'message' => $uploadErrorMessages[$file['error']] ?? 'File upload error'];
     }
 
-    if (empty($file['tmp_name']) || !is_uploaded_file($file['tmp_name'])) {
+    if (empty($file['tmp_name']) || !is_string($file['tmp_name']) || !is_file($file['tmp_name']) || !is_readable($file['tmp_name'])) {
         return ['success' => false, 'message' => 'Invalid temporary upload file'];
     }
     
@@ -330,29 +331,48 @@ function uploadImage($file, $maxSize = 2097152) { // 2MB default
     // Generate unique filename
     $extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
     $filename = uniqid() . '_' . time() . '.' . $extension;
-    $destination = UPLOAD_PATH . $filename;
+    if (function_exists('getUploadFilePath')) {
+        $destination = getUploadFilePath($filename);
+    } else {
+        $destination = rtrim(UPLOAD_PATH, '/') . '/' . $filename;
+    }
 
-    if (!is_dir(UPLOAD_PATH) && !mkdir(UPLOAD_PATH, 0755, true) && !is_dir(UPLOAD_PATH)) {
+    if ($destination === false || !is_dir(dirname($destination))) {
         return ['success' => false, 'message' => 'Upload directory is not writable'];
     }
 
-    if (!is_writable(UPLOAD_PATH)) {
+    if (!is_writable(dirname($destination))) {
         return ['success' => false, 'message' => 'Upload directory is not writable'];
     }
     
     // Move uploaded file
-    if (move_uploaded_file($file['tmp_name'], $destination)) {
+    $moved = false;
+    if (is_uploaded_file($file['tmp_name'])) {
+        $moved = move_uploaded_file($file['tmp_name'], $destination);
+    } else {
+        $moved = @copy($file['tmp_name'], $destination);
+    }
+
+    if ($moved) {
         @chmod($destination, 0644);
+        $resolvedUrl = function_exists('getScopedUploadUrl')
+            ? getScopedUploadUrl($filename)
+            : rtrim(UPLOAD_URL, '/') . '/' . rawurlencode($filename);
+
         return [
             'success' => true,
             'filename' => $filename,
             'path' => $destination,
-            'url' => UPLOAD_URL . $filename
+            'url' => $resolvedUrl
         ];
     }
     
     return ['success' => false, 'message' => 'Failed to move uploaded file'];
 }
+
+}
+
+if (!function_exists('setSecurityHeaders')) {
 
 // ============================================================================
 // SECURITY HEADERS
@@ -374,9 +394,11 @@ function setSecurityHeaders() {
     // Referrer Policy
     header('Referrer-Policy: strict-origin-when-cross-origin');
     
-    // Content Security Policy (adjust as needed)
-    header("Content-Security-Policy: default-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com;");
+    // Content Security Policy: keep scripts/styles restricted, but allow data/blob images for local previews.
+    header("Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; img-src 'self' data: blob: https:; font-src 'self' data: https://cdn.jsdelivr.net https://cdnjs.cloudflare.com;");
 }
 
 // Apply security headers
 setSecurityHeaders();
+
+}

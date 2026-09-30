@@ -1,0 +1,209 @@
+[
+    {
+        "id": "inc_6a841d7c4a2630.19666534",
+        "income_date": "2026-08-18",
+        "description": "SCANNING-FORD ESCAPE",
+        "amount": 480,
+        "created_by": "Iloisa Joy P. Mejias",
+        "created_at": "2026-08-18 16:53:16"
+    },
+    {
+        "id": "inc_6a841fdcaea014.04289348",
+        "income_date": "2026-08-18",
+        "description": "MINIVAN MBF7463",
+        "amount": 2800,
+        "created_by": "Iloisa Joy P. Mejias",
+        "created_at": "2026-08-18 17:03:24"
+    },
+    {
+        "id": "inc_6a853ba5a63914.78284563",
+        "income_date": "2026-08-19",
+        "description": "SUZUKI SWIFT",
+        "amount": 300,
+        "created_by": "Iloisa Joy P. Mejias",
+        "created_at": "2026-08-19 13:14:13"
+    },
+    {
+        "id": "inc_6a853bbce5a303.30604378",
+        "income_date": "2026-08-19",
+        "description": "MUX LABOR",
+        "amount": 500,
+        "created_by": "Iloisa Joy P. Mejias",
+        "created_at": "2026-08-19 13:14:36"
+    },
+    {
+        "id": "inc_6a85830f4f9310.10044386",
+        "income_date": "2026-08-19",
+        "description": "ADVENTURE- RESCUE",
+        "amount": 1200,
+        "created_by": "Iloisa Joy P. Mejias",
+        "created_at": "2026-08-19 18:18:55"
+    },
+    {
+        "id": "inc_6a868ad2315072.70335139",
+        "income_date": "2026-08-20",
+        "description": "PARTIAL- MG ZS",
+        "amount": 7000,
+        "created_by": "Iloisa Joy P. Mejias",
+        "created_at": "2026-08-20 13:04:18"
+    },
+    {
+        "id": "inc_6a86996c2b0d79.63359922",
+        "income_date": "2026-08-20",
+        "description": "HILUX- NO JO",
+        "amount": 300,
+        "created_by": "Iloisa Joy P. Mejias",
+        "created_at": "2026-08-20 14:06:36"
+    },
+    {
+        "id": "inc_6a87deb27aed56.41853077",
+        "income_date": "2026-08-21",
+        "description": "ISUZU DMAX",
+        "amount": 300,
+        "created_by": "Iloisa Joy P. Mejias",
+        "created_at": "2026-08-21 13:14:26"
+    },
+    {
+        "id": "inc_6a87f905665201.29560657",
+        "income_date": "2026-08-21",
+        "description": "WIGO",
+        "amount": 1500,
+        "created_by": "Iloisa Joy P. Mejias",
+        "created_at": "2026-08-21 15:06:45"
+    },
+    {
+        "id": "inc_6a895e22f091d3.03084683",
+        "income_date": "2026-08-22",
+        "description": "MIRAGE",
+        "amount": 600,
+        "payment_method": "Bank Transfer",
+        "created_by": "Iloisa Joy P. Mejias",
+        "created_at": "2026-08-22 16:30:26"
+    },
+    {
+        "id": "inc_6a8cee3cce8f03.01705922",
+        "income_date": "2026-08-25",
+        "description": "HONDA JAZZ - LABOR",
+        "amount": 300,
+        "payment_method": "Cash",
+        "created_by": "Iloisa Joy P. Mejias",
+        "created_at": "2026-08-25 09:22:04"
+    },
+    {
+        "id": "inc_6a8d0a88955dd7.62029760",
+        "income_date": "2026-08-25",
+        "description": "ALMERA LABOR",
+        "amount": 150,
+        "payment_method": "Cash",
+        "created_by": "Iloisa Joy P. Mejias",
+        "created_at": "2026-08-25 11:22:48"
+    },
+    {
+        "id": "inc_6a8d30f270c3a7.56124466",
+        "income_date": "2026-08-25",
+        "description": "JIMNY LABOR",
+        "amount": 300,
+        "payment_method": "Cash",
+        "created_by": "Iloisa Joy P. Mejias",
+        "created_at": "2026-08-25 14:06:42"
+    },
+    {
+        "id": "inc_6a8e7a25371095.65829930",
+        "income_date": "2026-08-26",
+        "description": "SENTA LABOR",
+        "amount": 300,
+        "payment_method": "Cash",
+        "created_by": "Iloisa Joy P. Mejias",
+        "created_at": "2026-08-26 13:31:17"
+    },
+    {
+        "id": "inc_6a8e85388c5639.56352920",
+        "income_date": "2026-08-26",
+        "description": "ACCENT-LABOR",
+        "amount": 1152,
+        "payment_method": "Cash",
+        "created_by": "Iloisa Joy P. Mejias",
+        "created_at": "2026-08-26 14:18:32"
+    },
+    {
+        "id": "inc_6a8f94e01ab2c3.78898199",
+        "income_date": "2026-08-27",
+        "description": "MUX-RESCUE",
+        "amount": 1000,
+        "payment_method": "Cash",
+        "created_by": "Iloisa Joy P. Mejias",
+        "created_at": "2026-08-27 09:37:36"
+    },
+    {
+        "id": "inc_6a8fb66f895b34.40192865",
+        "income_date": "2026-08-27",
+        "description": "HI ACE LABOR",
+        "amount": 800,
+        "payment_method": "Cash",
+        "created_by": "Iloisa Joy P. Mejias",
+        "created_at": "2026-08-27 12:00:47"
+    },
+    {
+        "id": "inc_6a917d384da2b4.70446964",
+        "income_date": "2026-08-28",
+        "description": "MIRAGE/RESCUE",
+        "amount": 1000,
+        "payment_method": "Cash",
+        "created_by": "Erin Patricia Martinez",
+        "created_at": "2026-08-28 20:21:12"
+    },
+    {
+        "id": "inc_6a917d45211101.11899040",
+        "income_date": "2026-08-28",
+        "description": "PLASTIC",
+        "amount": 100,
+        "payment_method": "Cash",
+        "created_by": "Erin Patricia Martinez",
+        "created_at": "2026-08-28 20:21:25"
+    },
+    {
+        "id": "inc_6a9297c4b12212.39513497",
+        "income_date": "2026-08-29",
+        "description": "MUX LABOR",
+        "amount": 300,
+        "payment_method": "Cash",
+        "created_by": "Iloisa Joy P. Mejias",
+        "created_at": "2026-08-29 16:26:44"
+    },
+    {
+        "id": "inc_6a94ddec827893.08678538",
+        "income_date": "2026-08-31",
+        "description": "FRONTIER LABOR",
+        "amount": 600,
+        "payment_method": "Cash",
+        "created_by": "Iloisa Joy P. Mejias",
+        "created_at": "2026-08-31 09:50:36"
+    },
+    {
+        "id": "inc_6a95432f22a130.66369108",
+        "income_date": "2026-08-31",
+        "description": "EVEREST LABOR",
+        "amount": 400,
+        "payment_method": "Cash",
+        "created_by": "Iloisa Joy P. Mejias",
+        "created_at": "2026-08-31 17:02:39"
+    },
+    {
+        "id": "inc_6a964a0e80d785.29836126",
+        "income_date": "2026-09-01",
+        "description": "PARTIAL- HILUX KAGAWAD",
+        "amount": 1000,
+        "payment_method": "Cash",
+        "created_by": "Iloisa Joy P. Mejias",
+        "created_at": "2026-09-01 11:44:14"
+    },
+    {
+        "id": "inc_6a96740932a138.20912868",
+        "income_date": "2026-09-01",
+        "description": "SANTA FE-RESCUE",
+        "amount": 500,
+        "payment_method": "Cash",
+        "created_by": "Iloisa Joy P. Mejias",
+        "created_at": "2026-09-01 14:43:21"
+    }
+]

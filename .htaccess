@@ -1,0 +1,111 @@
+Options -Indexes
+
+<IfModule mod_rewrite.c>
+RewriteEngine On
+# Do not hardcode RewriteBase so this works both at domain root and in subfolder.
+
+# Block direct web access to internal-only folders.
+RewriteRule ^(includes|controllers|models|database)/ - [F,L,NC]
+
+# Canonical clean URLs: redirect legacy PHP endpoints to extensionless routes.
+RewriteCond %{THE_REQUEST} \s/+[^\s]*index\.php(?:\?[^\s]*)?\s [NC]
+RewriteRule ^index\.php$ ./ [R=301,L]
+
+RewriteCond %{THE_REQUEST} \s/+[^\s]*views/auth/login\.php(?:\?[^\s]*)?\s [NC]
+RewriteRule ^views/auth/login\.php$ login [R=301,L]
+
+RewriteCond %{THE_REQUEST} \s/+[^\s]*views/auth/logout\.php(?:\?[^\s]*)?\s [NC]
+RewriteRule ^views/auth/logout\.php$ logout [R=301,L]
+
+RewriteCond %{THE_REQUEST} \s/+[^\s]*views/dashboard/index\.php(?:\?[^\s]*)?\s [NC]
+RewriteRule ^views/dashboard/index\.php$ dashboard [R=301,L]
+
+RewriteCond %{THE_REQUEST} \s/+[^\s]*views/services/manage\.php(?:\?[^\s]*)?\s [NC]
+RewriteRule ^views/services/manage\.php$ services [R=301,L]
+
+RewriteCond %{THE_REQUEST} \s/+[^\s]*views/reports/index\.php(?:\?[^\s]*)?\s [NC]
+RewriteRule ^views/reports/index\.php$ reports [R=301,L]
+
+RewriteCond %{THE_REQUEST} \s/+[^\s]*views/inventory/index\.php(?:\?[^\s]*)?\s [NC]
+RewriteRule ^views/inventory/index\.php$ inventory [R=301,L]
+
+RewriteCond %{THE_REQUEST} \s/+[^\s]*views/staff/index\.php(?:\?[^\s]*)?\s [NC]
+RewriteRule ^views/staff/index\.php$ staff [R=301,L]
+
+RewriteCond %{THE_REQUEST} \s/+[^\s]*views/settings/index\.php(?:\?[^\s]*)?\s [NC]
+RewriteRule ^views/settings/index\.php$ settings [R=301,L]
+
+RewriteCond %{THE_REQUEST} \s/+[^\s]*views/settings/print_template\.php(?:\?[^\s]*)?\s [NC]
+RewriteRule ^views/settings/print_template\.php$ settings/print-template [R=301,L]
+
+RewriteCond %{THE_REQUEST} \s/+[^\s]*views/settings/system_logo\.php(?:\?[^\s]*)?\s [NC]
+RewriteRule ^views/settings/system_logo\.php$ settings/system-logo [R=301,L]
+
+RewriteCond %{THE_REQUEST} \s/+[^\s]*views/settings/role_permissions\.php(?:\?[^\s]*)?\s [NC]
+RewriteRule ^views/settings/role_permissions\.php$ settings/role-permissions [R=301,L]
+
+RewriteCond %{THE_REQUEST} \s/+[^\s]*views/settings/announcement\.php(?:\?[^\s]*)?\s [NC]
+RewriteRule ^views/settings/announcement\.php$ settings/announcement [R=301,L]
+
+RewriteCond %{THE_REQUEST} \s/+[^\s]*views/settings/completion_email\.php(?:\?[^\s]*)?\s [NC]
+RewriteRule ^views/settings/completion_email\.php$ settings/completion-email [R=301,L]
+
+RewriteCond %{THE_REQUEST} \s/+[^\s]*views/settings/deleted_archive\.php(?:\?[^\s]*)?\s [NC]
+RewriteRule ^views/settings/deleted_archive\.php$ settings/deleted-archive [R=301,L]
+
+RewriteCond %{THE_REQUEST} \s/+[^\s]*views/settings/notes\.php(?:\?[^\s]*)?\s [NC]
+RewriteRule ^views/settings/notes\.php$ settings/notes [R=301,L]
+
+RewriteCond %{THE_REQUEST} \s/+[^\s]*views/profile/index\.php(?:\?[^\s]*)?\s [NC]
+RewriteRule ^views/profile/index\.php$ profile [R=301,L]
+
+RewriteCond %{THE_REQUEST} \s/+[^\s]*views/job_orders/index\.php(?:\?[^\s]*)?\s [NC]
+RewriteRule ^views/job_orders/index\.php$ job-orders [R=301,L]
+
+RewriteCond %{THE_REQUEST} \s/+[^\s]*views/job_orders/create\.php(?:\?[^\s]*)?\s [NC]
+RewriteRule ^views/job_orders/create\.php$ job-orders/create [R=301,L]
+
+RewriteCond %{THE_REQUEST} \s/+[^\s]*views/job_orders/view\.php(?:\?[^\s]*)?\s [NC]
+RewriteRule ^views/job_orders/view\.php$ job-orders/view [R=301,L]
+
+RewriteCond %{THE_REQUEST} \s/+[^\s]*views/job_orders/edit\.php(?:\?[^\s]*)?\s [NC]
+RewriteRule ^views/job_orders/edit\.php$ job-orders/edit [R=301,L]
+
+# Clean route mapping.
+RewriteCond %{HTTP_HOST} ^tautodokattendance\.theautodok\.com(?::\d+)?$ [NC]
+RewriteRule ^$ views/attendance/nfc.php [L,QSA]
+RewriteRule ^$ index.php [L,QSA]
+RewriteRule ^login/?$ views/auth/login.php [L,QSA]
+RewriteRule ^logout/?$ views/auth/logout.php [L,QSA]
+RewriteRule ^dashboard/?$ views/dashboard/index.php [L,QSA]
+RewriteRule ^services/?$ views/services/manage.php [L,QSA]
+RewriteRule ^reports/?$ views/reports/index.php [L,QSA]
+RewriteRule ^inventory/?$ views/inventory/index.php [L,QSA]
+RewriteRule ^staff/?$ views/staff/index.php [L,QSA]
+RewriteRule ^settings/?$ views/settings/index.php [L,QSA]
+RewriteRule ^settings/print-template/?$ views/settings/print_template.php [L,QSA]
+RewriteRule ^settings/system-logo/?$ views/settings/system_logo.php [L,QSA]
+RewriteRule ^settings/role-permissions/?$ views/settings/role_permissions.php [L,QSA]
+RewriteRule ^settings/announcement/?$ views/settings/announcement.php [L,QSA]
+RewriteRule ^settings/completion-email/?$ views/settings/completion_email.php [L,QSA]
+RewriteRule ^settings/deleted-archive/?$ views/settings/deleted_archive.php [L,QSA]
+RewriteRule ^settings/notes/?$ views/settings/notes.php [L,QSA]
+RewriteRule ^attendance/?$ views/attendance/index.php [L,QSA]
+RewriteRule ^attendance/nfc/?$ views/attendance/nfc.php [L,QSA]
+RewriteRule ^profile/?$ views/profile/index.php [L,QSA]
+RewriteRule ^maintenance/?$ views/maintenance.php [L,QSA]
+RewriteRule ^job-orders/?$ views/job_orders/index.php [L,QSA]
+RewriteRule ^job-orders/create/?$ views/job_orders/create.php [L,QSA]
+RewriteRule ^job-orders/view/?$ views/job_orders/view.php [L,QSA]
+RewriteRule ^job-orders/edit/?$ views/job_orders/edit.php [L,QSA]
+
+# Fallback: allow extensionless access to real PHP files when explicitly needed.
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_FILENAME}.php -f
+RewriteRule ^(.+)$ $1.php [L,QSA]
+</IfModule>
+
+# Protect sensitive files.
+<FilesMatch "^(\.env|composer\.(json|lock)|package(-lock)?\.json|yarn\.lock)$">
+    Require all denied
+</FilesMatch>

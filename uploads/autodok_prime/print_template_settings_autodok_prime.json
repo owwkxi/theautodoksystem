@@ -1,0 +1,9 @@
+{
+    "company_name": "Regression Test",
+    "company_subtitle": "Automotive Care Services",
+    "contact_line": "Tel: (02) XXX-XXXX | autodok@email.com",
+    "logo_url": "http://localhost/theautodoksystem/assets/images/logo.png",
+    "footer_note": "Thank you for choosing The Autodok - Automotive Care Services",
+    "header_template": "<table style=\"width:100%;border-collapse:collapse;margin-bottom:8px;\"><tr><td style=\"width:70px;vertical-align:middle;padding-right:12px;\"><img src=\"{{logo_url}}\" style=\"width:60px;height:60px;object-fit:contain;\" alt=\"Logo\"></td><td style=\"vertical-align:middle;\"><div style=\"font-size:17pt;font-weight:700;letter-spacing:2px;line-height:1.1;\">{{company_name}}</div><div style=\"font-size:9pt;color:#444;\">{{company_subtitle}}</div><div style=\"font-size:8.5pt;color:#666;\">{{contact_line}}</div></td><td style=\"text-align:right;vertical-align:middle;font-size:9pt;\"><div style=\"font-size:12pt;font-weight:700;\">{{document_title}}</div><div style=\"color:#555;\"># {{document_number}}</div><div style=\"margin-top:4px;\"><strong>Date:</strong> {{document_date}}</div></td></tr></table><hr style=\"border:none;border-top:1.5px solid #333;margin-bottom:10px;\">",
+    "footer_template": "<div style=\"text-align:center;font-size:8pt;color:#999;margin-top:10px;border-top:1px solid #ddd;padding-top:5px;\">{{footer_note}}</div>"
+}

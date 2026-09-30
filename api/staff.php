@@ -23,12 +23,26 @@ if (!hasAnyRole(['admin', 'cashier', 'chief_mechanic', 'service_adviser'])) {
     jsonResponse(['success' => false, 'message' => 'Insufficient permissions'], 403);
 }
 
-$currentRole = $_SESSION['user_role'] ?? '';
-$isCashier = ($currentRole === 'cashier');
+$isCashier = hasRole('cashier');
 $canManageStaff = hasAnyRole(['admin', 'cashier']);
 
 $staffModel = new Staff();
 $method = $_SERVER['REQUEST_METHOD'];
+
+function dispatchStaffChangeNotification($title, $action, $subject, $details = '', $referenceId = null) {
+    $actorName = sanitize($_SESSION['full_name'] ?? $_SESSION['username'] ?? 'Staff');
+    notifyRoles(
+        'staff_update',
+        $title,
+        buildNotificationMessageTemplate($actorName, $action, $subject, $details),
+        ['admin', 'cashier'],
+        [
+            'exclude_user_id' => (int)($_SESSION['user_id'] ?? 0),
+            'reference_type' => 'staff',
+            'reference_id' => $referenceId !== null ? (int)$referenceId : null,
+        ]
+    );
+}
 
 // Allow method override for multipart form PUT requests
 if ($method === 'POST' && !empty($_POST['_method'])) {
@@ -38,10 +52,21 @@ if ($method === 'POST' && !empty($_POST['_method'])) {
 try {
     switch ($method) {
         case 'GET':
+            if (!empty($_GET['attendance_date'])) {
+                handleAttendanceByDate($_GET['attendance_date']);
+                break;
+            }
             handleGet($staffModel);
             break;
         
         case 'POST':
+            if (($_POST['action'] ?? '') === 'save_attendance') {
+                if (!hasAnyRole(['admin', 'cashier'])) {
+                    jsonResponse(['success' => false, 'message' => 'Only admin or cashier can save attendance'], 403);
+                }
+                handleAttendance();
+                break;
+            }
             if (!$canManageStaff) {
                 jsonResponse(['success' => false, 'message' => 'Insufficient permissions'], 403);
             }
@@ -65,9 +90,132 @@ try {
         default:
             jsonResponse(['success' => false, 'message' => 'Method not allowed'], 405);
     }
-} catch (Exception $e) {
+} catch (Throwable $e) {
     error_log("Staff API Error: " . $e->getMessage());
-    jsonResponse(['success' => false, 'message' => 'An error occurred'], 500);
+    $message = $e->getMessage();
+    $statusCode = $message === 'Select at least one attendance status before saving' ? 400 : 500;
+    jsonResponse(['success' => false, 'message' => $message ?: 'Unable to save attendance'], $statusCode);
+}
+
+/**
+ * Save one attendance status per staff member for the selected date.
+ */
+function handleAttendance() {
+    $date = trim((string)($_POST['date'] ?? ''));
+    $dateObject = DateTime::createFromFormat('Y-m-d', $date);
+    if (!$dateObject || $dateObject->format('Y-m-d') !== $date) {
+        jsonResponse(['success' => false, 'message' => 'A valid attendance date is required'], 400);
+    }
+
+    $statuses = $_POST['status'] ?? [];
+    $notes = $_POST['notes'] ?? [];
+    $times = $_POST['time'] ?? [];
+    $timeOuts = $_POST['time_out'] ?? [];
+    if (!is_array($statuses) || empty($statuses)) {
+        jsonResponse(['success' => false, 'message' => 'Attendance records are required'], 400);
+    }
+
+    $allowedStatuses = ['present', 'late', 'absent', 'on_leave', 'other'];
+    $db = Database::getInstance();
+    $savedRecords = 0;
+    $db->getConnection()->beginTransaction();
+    try {
+        foreach (['morning' => '08:00:00', 'afternoon' => '13:00:00'] as $period => $defaultTime) {
+            foreach (($statuses[$period] ?? []) as $staffId => $status) {
+            $staffId = (int)$staffId;
+            $status = strtolower(trim((string)$status));
+            if ($staffId < 1 || ($status !== '' && !in_array($status, $allowedStatuses, true))) {
+                throw new Exception('Invalid attendance record');
+            }
+            if (!$db->fetch("SELECT id FROM staff WHERE id = ?", [$staffId])) {
+                throw new Exception('Staff member not found');
+            }
+
+            $existing = $db->fetch(
+                "SELECT id FROM attendance WHERE staff_id = ? AND date = ? AND time_in " . ($period === 'morning' ? "< '12:00:00'" : ">= '12:00:00'") . " ORDER BY id DESC LIMIT 1",
+                [$staffId, $date]
+            );
+            if ($status === '') {
+                if ($existing) {
+                    $db->query("DELETE FROM attendance WHERE id = ?", [(int)$existing['id']]);
+                    $savedRecords++;
+                }
+                continue;
+            }
+
+            $nonTimedStatus = in_array($status, ['absent', 'on_leave', 'other'], true);
+            $timeIn = $defaultTime;
+            $timeOut = '';
+            if (!$nonTimedStatus) {
+                $timeIn = trim((string)($times[$period][$staffId] ?? ''));
+                if ($timeIn === '') {
+                    $timeIn = $defaultTime;
+                } elseif (!preg_match('/^(?:[01]\d|2[0-3]):[0-5]\d$/', $timeIn)) {
+                    throw new Exception('Invalid attendance time');
+                } else {
+                    $timeIn .= ':00';
+                }
+                $timeOut = trim((string)($timeOuts[$period][$staffId] ?? ''));
+                if ($timeOut !== '') {
+                    if (!preg_match('/^(?:[01]\d|2[0-3]):[0-5]\d$/', $timeOut)) {
+                        throw new Exception('Invalid time out');
+                    }
+                    $timeOut .= ':00';
+                }
+            }
+
+            $note = sanitize(trim((string)($notes[$period][$staffId] ?? '')));
+            if ($status === 'other' && $note === '') {
+                throw new Exception('Details are required for Other attendance');
+            }
+            if ($status !== 'other') {
+                $note = '';
+            }
+
+        if ($existing) {
+            $db->query(
+                "UPDATE attendance SET status = ?, notes = ?, time_in = ?, time_out = ? WHERE id = ?",
+                [$status, $note, $timeIn, $timeOut !== '' ? $timeOut : null, (int)$existing['id']]
+            );
+        } else {
+            $db->query(
+                "INSERT INTO attendance (staff_id, date, time_in, time_out, status, notes) VALUES (?, ?, ?, ?, ?, ?)",
+                [$staffId, $date, $timeIn, $timeOut !== '' ? $timeOut : null, $status, $note]
+            );
+        }
+                $savedRecords++;
+            }
+        }
+        if ($savedRecords === 0) {
+            throw new Exception('Select at least one attendance status before saving');
+        }
+        $db->getConnection()->commit();
+    } catch (Throwable $e) {
+        if ($db->getConnection()->inTransaction()) {
+            $db->getConnection()->rollBack();
+        }
+        throw $e;
+    }
+
+    logActivity($_SESSION['user_id'], 'update_attendance', 'Updated staff attendance for ' . $date);
+    jsonResponse(['success' => true, 'message' => 'Attendance saved successfully']);
+}
+
+function handleAttendanceByDate($date) {
+    $date = trim((string)$date);
+    $dateObject = DateTime::createFromFormat('Y-m-d', $date);
+    if (!$dateObject || $dateObject->format('Y-m-d') !== $date) {
+        jsonResponse(['success' => false, 'message' => 'A valid attendance date is required'], 400);
+    }
+
+    $records = Database::getInstance()->fetchAll(
+        "SELECT staff_id, time_in, time_out, status, notes
+         FROM attendance
+         WHERE date = ?
+         ORDER BY time_in ASC",
+        [$date]
+    );
+    jsonResponse(['success' => true, 'data' => $records]);
 }
 
 /**
@@ -86,8 +234,19 @@ function handleGet($staffModel) {
         unset($staff['password']);
 
         $staff['assigned_job_orders'] = [];
+        $staff['attendance'] = [];
+        $db = Database::getInstance();
+        if (($staff['role'] ?? '') !== 'admin') {
+            $staff['attendance'] = $db->fetchAll(
+                "SELECT id, date, time_in, time_out, status, notes
+                 FROM attendance
+                 WHERE staff_id = ?
+                 ORDER BY date DESC, time_in DESC",
+                [(int)$staff['id']]
+            );
+        }
+
         if (($staff['role'] ?? '') === 'technician') {
-            $db = Database::getInstance();
             $assignedJobOrders = $db->fetchAll(
                 "SELECT jo.id,
                         jo.job_order_number,
@@ -95,6 +254,10 @@ function handleGet($staffModel) {
                         jo.created_at,
                         jo.status_timer_seconds,
                         jo.status_timer_started_at,
+                        jot.work_duration AS tech_work_duration,
+                        jot.started_at AS tech_started_at,
+                        jot.status AS tech_status,
+                        jot.id AS jot_id,
                         c.full_name AS customer_name,
                         v.plate_number
                  FROM job_orders jo
@@ -102,19 +265,40 @@ function handleGet($staffModel) {
                  LEFT JOIN customers c ON c.id = jo.customer_id
                  LEFT JOIN vehicles v ON v.id = jo.vehicle_id
                  WHERE jot.technician_id = ?
+                   AND jot.id = (
+                       SELECT MAX(j2.id) FROM job_order_technicians j2
+                       WHERE j2.job_order_id = jot.job_order_id
+                         AND j2.technician_id = jot.technician_id
+                   )
                  ORDER BY jo.created_at DESC",
                 [(int)$staff['id']]
             );
 
             foreach ($assignedJobOrders as &$jo) {
+                // Technician's own elapsed time
+                $techBanked = max(0, (int)($jo['tech_work_duration'] ?? 0));
+                $techLive = 0;
+                if (in_array($jo['tech_status'], ['assigned', 'working'], true) && !empty($jo['tech_started_at'])) {
+                    $techLive = max(0, time() - strtotime($jo['tech_started_at']));
+                }
+                $techTotal = $techBanked + $techLive;
+                $jo['tech_elapsed_display'] = sprintf('%02d:%02d:%02d', floor($techTotal / 3600), floor(($techTotal % 3600) / 60), $techTotal % 60);
+
+                // JO timer (for reference)
                 $elapsedSeconds = (int)($jo['status_timer_seconds'] ?? 0);
-                if (in_array($jo['status'] ?? '', ['ongoing', 'under_inspection'], true) && !empty($jo['status_timer_started_at'])) {
+                if (in_array($jo['status'] ?? '', ['ongoing', 'under_inspection', 'returned_for_revision'], true) && !empty($jo['status_timer_started_at'])) {
                     $elapsedSeconds += max(0, time() - strtotime($jo['status_timer_started_at']));
                 }
-                $hours = floor($elapsedSeconds / 3600);
-                $minutes = floor(($elapsedSeconds % 3600) / 60);
-                $seconds = $elapsedSeconds % 60;
-                $jo['elapsed_display'] = sprintf('%02d:%02d:%02d', $hours, $minutes, $seconds);
+                $jo['elapsed_display'] = sprintf('%02d:%02d:%02d', floor($elapsedSeconds / 3600), floor(($elapsedSeconds % 3600) / 60), $elapsedSeconds % 60);
+
+                // Fetch work sessions for activity log
+                $jo['work_sessions'] = $db->fetchAll(
+                    "SELECT start_time, end_time, duration, notes
+                     FROM work_sessions
+                     WHERE job_order_technician_id = ?
+                     ORDER BY start_time ASC",
+                    [(int)$jo['jot_id']]
+                );
             }
             unset($jo);
 
@@ -182,7 +366,7 @@ function handlePost($staffModel) {
     }
 
     // Validate role value
-    $allowedRoles = ['admin', 'cashier', 'chief_mechanic', 'service_adviser', 'technician'];
+    $allowedRoles = ['admin', 'cashier', 'chief_mechanic', 'service_adviser', 'technician', 'lead_man', 'stockman'];
     if (!in_array($_POST['role'], $allowedRoles, true)) {
         jsonResponse(['success' => false, 'message' => 'Invalid staff role'], 400);
     }
@@ -192,8 +376,8 @@ function handlePost($staffModel) {
     
     // Handle profile image upload
     $profileImage = null;
-    if (isset($_FILES['profile_image']) && $_FILES['profile_image']['error'] === UPLOAD_ERR_OK) {
-        $uploadResult = uploadFile($_FILES['profile_image'], ['jpg', 'jpeg', 'png'], MAX_FILE_SIZE);
+    if (!empty($_FILES['profile_image']['name'])) {
+        $uploadResult = uploadFile($_FILES['profile_image'], ['jpg', 'jpeg', 'png', 'webp'], MAX_FILE_SIZE);
         
         if (!$uploadResult['success']) {
             jsonResponse(['success' => false, 'message' => $uploadResult['message']], 400);
@@ -223,6 +407,13 @@ function handlePost($staffModel) {
     
     // Log activity
     logActivity($_SESSION['user_id'], 'create_staff', 'Created staff: ' . $data['full_name']);
+    dispatchStaffChangeNotification(
+        'Staff Added',
+        'added',
+        'staff ' . $data['full_name'],
+        'Role: ' . strtoupper((string)($data['role'] ?? '')) . ', Status: ' . strtoupper((string)($data['status'] ?? 'active')),
+        (int)$staffId
+    );
     
     jsonResponse([
         'success' => true,
@@ -255,6 +446,14 @@ function handlePut($staffModel) {
     if (!$existingStaff) {
         jsonResponse(['success' => false, 'message' => 'Staff not found'], 404);
     }
+
+    $expectedUpdatedAt = trim((string)($_PUT['expected_updated_at'] ?? ''));
+    if ($expectedUpdatedAt !== '' && (string)($existingStaff['updated_at'] ?? '') !== $expectedUpdatedAt) {
+        jsonResponse([
+            'success' => false,
+            'message' => 'Conflict: this staff record was updated by another user. Please refresh and try again.'
+        ], 409);
+    }
     
     // If this is a status-only update, allow it without full validation
     if (!empty($_PUT['status']) && empty($_PUT['full_name']) && empty($_PUT['email']) && empty($_PUT['contact_number']) && empty($_PUT['role'])) {
@@ -265,7 +464,18 @@ function handlePut($staffModel) {
             jsonResponse(['success' => false, 'message' => 'Failed to update staff status'], 500);
         }
         
-        logActivity($_SESSION['user_id'], 'update_staff_status', 'Updated staff status: ' . $existingStaff['full_name']);
+        logActivity(
+            $_SESSION['user_id'],
+            'update_staff_status',
+            'Updated staff status: ' . $existingStaff['full_name'] . ' (' . ($existingStaff['status'] ?? 'unknown') . ' -> ' . ($data['status'] ?? 'unknown') . ')'
+        );
+        dispatchStaffChangeNotification(
+            'Staff Status Updated',
+            'updated status for',
+            'staff ' . ($existingStaff['full_name'] ?? ('#' . $staffId)),
+            'Status: ' . strtoupper((string)($existingStaff['status'] ?? 'unknown')) . ' -> ' . strtoupper((string)($data['status'] ?? 'unknown')),
+            $staffId
+        );
         jsonResponse(['success' => true, 'message' => 'Staff status updated successfully']);
     }
     
@@ -299,7 +509,7 @@ function handlePut($staffModel) {
     }
 
     // Validate role value
-    $allowedRoles = ['admin', 'cashier', 'chief_mechanic', 'service_adviser', 'technician'];
+    $allowedRoles = ['admin', 'cashier', 'chief_mechanic', 'service_adviser', 'technician', 'lead_man', 'stockman'];
     if (!in_array($_PUT['role'], $allowedRoles, true)) {
         jsonResponse(['success' => false, 'message' => 'Invalid staff role'], 400);
     }
@@ -308,8 +518,8 @@ function handlePut($staffModel) {
     }
     
     // Handle profile image upload if provided
-    if (isset($_FILES['profile_image']) && $_FILES['profile_image']['error'] === UPLOAD_ERR_OK) {
-        $uploadResult = uploadFile($_FILES['profile_image'], ['jpg', 'jpeg', 'png'], MAX_FILE_SIZE);
+    if (!empty($_FILES['profile_image']['name'])) {
+        $uploadResult = uploadFile($_FILES['profile_image'], ['jpg', 'jpeg', 'png', 'webp'], MAX_FILE_SIZE);
         if (!$uploadResult['success']) {
             jsonResponse(['success' => false, 'message' => $uploadResult['message']], 400);
         }
@@ -344,6 +554,17 @@ function handlePut($staffModel) {
     
     // Log activity
     logActivity($_SESSION['user_id'], 'update_staff', 'Updated staff: ' . $data['full_name']);
+    $oldRole = strtoupper((string)($existingStaff['role'] ?? ''));
+    $newRole = strtoupper((string)($data['role'] ?? ''));
+    $oldStatus = strtoupper((string)($existingStaff['status'] ?? ''));
+    $newStatus = strtoupper((string)($data['status'] ?? ''));
+    dispatchStaffChangeNotification(
+        'Staff Updated',
+        'updated',
+        'staff ' . $data['full_name'],
+        'Role: ' . $oldRole . ' -> ' . $newRole . '; Status: ' . $oldStatus . ' -> ' . $newStatus,
+        $staffId
+    );
     
     jsonResponse([
         'success' => true,
@@ -372,20 +593,28 @@ function handleDelete($staffModel) {
         jsonResponse(['success' => false, 'message' => 'Staff not found'], 404);
     }
     
-    // Delete profile image if exists
-    if (!empty($staff['profile_image'])) {
-        deleteFile($staff['profile_image']);
+    $archiveId = archiveDeletedRecord('staff', $staff, ['source' => 'database', 'meta' => ['table' => 'staff']]);
+    if (!$archiveId) {
+        jsonResponse(['success' => false, 'message' => 'Failed to archive staff record before deletion'], 500);
     }
     
     // Delete staff
     $success = $staffModel->delete($staffId);
     
     if (!$success) {
+        deleteArchivedRecordById($archiveId);
         jsonResponse(['success' => false, 'message' => 'Failed to delete staff'], 500);
     }
     
     // Log activity
     logActivity($_SESSION['user_id'], 'delete_staff', 'Deleted staff: ' . $staff['full_name']);
+    dispatchStaffChangeNotification(
+        'Staff Removed',
+        'removed',
+        'staff ' . ($staff['full_name'] ?? ('#' . $staffId)),
+        'Role: ' . strtoupper((string)($staff['role'] ?? '')),
+        $staffId
+    );
     
     jsonResponse([
         'success' => true,

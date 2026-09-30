@@ -28,7 +28,22 @@ include __DIR__ . '/../partials/header.php';
                     <h6 class="mb-2"><i class="bi bi-printer me-2"></i>Print Template</h6>
                     <p class="text-muted small mb-3">Edit print header/footer branding and preview template used in Job Order and Estimate printouts.</p>
                     <div class="mt-auto">
-                        <a href="<?php echo APP_URL; ?>/views/settings/print_template.php" class="btn btn-dark btn-sm">
+                        <a href="<?php echo routeUrl('settings_print_template'); ?>" class="btn btn-dark btn-sm">
+                            <i class="bi bi-pencil-square"></i> Open Editor
+                        </a>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-lg-4">
+            <div class="card h-100">
+                <div class="card-body d-flex flex-column">
+                    <h6 class="mb-2"><i class="bi bi-envelope me-2"></i>Completion Email</h6>
+                    <p class="text-muted small mb-3">Customize the automatic email sent to customers when a job order is completed.</p>
+                    <div class="mt-auto">
+                        <a href="<?php echo routeUrl('settings_completion_email'); ?>" class="btn btn-dark btn-sm">
                             <i class="bi bi-pencil-square"></i> Open Editor
                         </a>
                     </div>
@@ -42,7 +57,21 @@ include __DIR__ . '/../partials/header.php';
                     <h6 class="mb-2"><i class="bi bi-image me-2"></i>System Logo</h6>
                     <p class="text-muted small mb-3">Manage logo used in sidebar, top bar, login page, and browser tab icon.</p>
                     <div class="mt-auto">
-                        <a href="<?php echo APP_URL; ?>/views/settings/system_logo.php" class="btn btn-dark btn-sm">
+                        <a href="<?php echo routeUrl('settings_system_logo'); ?>" class="btn btn-dark btn-sm">
+                            <i class="bi bi-pencil-square"></i> Open Editor
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-lg-4">
+            <div class="card h-100">
+                <div class="card-body d-flex flex-column">
+                    <h6 class="mb-2"><i class="bi bi-megaphone me-2"></i>Announcement</h6>
+                    <p class="text-muted small mb-3">Set a message that appears to all users after they log in.</p>
+                    <div class="mt-auto">
+                        <a href="<?php echo routeUrl('settings_announcement'); ?>" class="btn btn-dark btn-sm">
                             <i class="bi bi-pencil-square"></i> Open Editor
                         </a>
                     </div>
@@ -54,11 +83,11 @@ include __DIR__ . '/../partials/header.php';
         <div class="col-md-6 col-lg-4">
             <div class="card h-100">
                 <div class="card-body d-flex flex-column">
-                    <h6 class="mb-2"><i class="bi bi-shield-check me-2"></i>Role Permissions Matrix</h6>
-                    <p class="text-muted small mb-3">View what each role can and cannot do based on current runtime access rules.</p>
+                    <h6 class="mb-2"><i class="bi bi-archive me-2"></i>Deleted Archive</h6>
+                    <p class="text-muted small mb-3">Review deleted records and restore them within 30 days before permanent cleanup.</p>
                     <div class="mt-auto">
-                        <a href="<?php echo APP_URL; ?>/views/settings/role_permissions.php" class="btn btn-dark btn-sm">
-                            <i class="bi bi-table"></i> View Matrix
+                        <a href="<?php echo routeUrl('settings_deleted_archive'); ?>" class="btn btn-dark btn-sm">
+                            <i class="bi bi-clock-history"></i> Open Archive
                         </a>
                     </div>
                 </div>

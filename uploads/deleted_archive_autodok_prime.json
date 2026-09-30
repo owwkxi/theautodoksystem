@@ -1,0 +1,28 @@
+[
+    {
+        "id": "trash_6aa0c595333267.48766849",
+        "entity_type": "report_expense",
+        "source": "json",
+        "deleted_at": "2026-09-09 10:33:57",
+        "expires_at": "2026-10-09 10:33:57",
+        "shop_key": "autodok_prime",
+        "deleted_by": {
+            "id": 6,
+            "name": "LOVELY JOYCE"
+        },
+        "meta": [],
+        "payload": {
+            "id": "exp_6aa0c585c1fec8.11918823",
+            "expense_date": "2026-09-09",
+            "category": "Outsource",
+            "description": "2 PCS OXYGEN SENSOR",
+            "amount": 5000,
+            "payment_method": "Cash",
+            "job_order_id": 12,
+            "plate_number": "LFW628",
+            "shop_key": "autodok_prime",
+            "created_by": "LOVELY JOYCE",
+            "created_at": "2026-09-09 10:33:41"
+        }
+    }
+]

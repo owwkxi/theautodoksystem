@@ -1,6 +1,9 @@
 <?php
 session_start();
 require_once __DIR__ . '/../includes/config.php';
+require_once __DIR__ . '/../includes/Database.php';
+require_once __DIR__ . '/../includes/functions.php';
+require_once __DIR__ . '/../includes/session.php';
 require_once __DIR__ . '/../models/ServiceBundle.php';
 
 header('Content-Type: application/json');
@@ -14,6 +17,22 @@ if (!isset($_SESSION['user_id'])) {
 
 $bundleModel = new ServiceBundle();
 $method = $_SERVER['REQUEST_METHOD'];
+$sessionRole = normalizeRole($_SESSION['role'] ?? $_SESSION['user_role'] ?? '');
+
+function dispatchBundleChangeNotification($title, $action, $subject, $details = '', $referenceId = null) {
+    $actorName = sanitize($_SESSION['full_name'] ?? $_SESSION['username'] ?? 'Staff');
+    notifyRoles(
+        'system',
+        $title,
+        buildNotificationMessageTemplate($actorName, $action, $subject, $details),
+        ['admin', 'cashier', 'service_adviser'],
+        [
+            'exclude_user_id' => (int)($_SESSION['user_id'] ?? 0),
+            'reference_type' => 'service_bundle',
+            'reference_id' => $referenceId !== null ? (int)$referenceId : null,
+        ]
+    );
+}
 
 try {
     switch ($method) {
@@ -49,7 +68,7 @@ try {
             
         case 'POST':
             // Check admin permission
-            if ($_SESSION['role'] !== 'admin') {
+            if ($sessionRole !== 'admin') {
                 http_response_code(403);
                 echo json_encode(['success' => false, 'message' => 'Admin access required']);
                 exit;
@@ -79,7 +98,19 @@ try {
             $bundleId = $bundleModel->create($data, $data['service_ids']);
             
             if ($bundleId) {
+                // Save products if provided
+                if (!empty($data['products']) && is_array($data['products'])) {
+                    $bundleModel->updateProducts($bundleId, $data['products']);
+                }
                 $bundle = $bundleModel->findById($bundleId);
+                logActivity((int)($_SESSION['user_id'] ?? 0), 'create_service_bundle', 'Created service bundle: ' . ($bundle['bundle_name'] ?? 'Unknown'));
+                dispatchBundleChangeNotification(
+                    'Service Bundle Added',
+                    'added',
+                    'bundle ' . ($bundle['bundle_name'] ?? ('#' . $bundleId)),
+                    'Price: ₱' . number_format((float)($bundle['package_price'] ?? 0), 2),
+                    (int)$bundleId
+                );
                 echo json_encode([
                     'success' => true,
                     'message' => 'Service bundle created successfully',
@@ -93,7 +124,7 @@ try {
             
         case 'PUT':
             // Check admin permission
-            if ($_SESSION['role'] !== 'admin') {
+            if ($sessionRole !== 'admin') {
                 http_response_code(403);
                 echo json_encode(['success' => false, 'message' => 'Admin access required']);
                 exit;
@@ -114,15 +145,43 @@ try {
             }
             
             // Update bundle
+            $existingBundle = $bundleModel->findById($data['id']);
+            if (!$existingBundle) {
+                http_response_code(404);
+                echo json_encode(['success' => false, 'message' => 'Bundle not found']);
+                exit;
+            }
+
+            $expectedUpdatedAt = trim((string)($data['expected_updated_at'] ?? ''));
+            if ($expectedUpdatedAt !== '' && (string)($existingBundle['updated_at'] ?? '') !== $expectedUpdatedAt) {
+                http_response_code(409);
+                echo json_encode(['success' => false, 'message' => 'Conflict: this bundle was updated by another user. Please refresh and try again.']);
+                exit;
+            }
             $result = $bundleModel->update($data['id'], $data);
             
             // Update services if provided
             if ($result && isset($data['service_ids']) && is_array($data['service_ids'])) {
                 $bundleModel->updateServices($data['id'], $data['service_ids']);
             }
+
+            // Update products if provided
+            if ($result && isset($data['products']) && is_array($data['products'])) {
+                $bundleModel->updateProducts($data['id'], $data['products']);
+            }
             
             if ($result) {
                 $bundle = $bundleModel->findById($data['id']);
+                $oldStatus = strtoupper((string)($existingBundle['status'] ?? ''));
+                $newStatus = strtoupper((string)($bundle['status'] ?? ''));
+                logActivity((int)($_SESSION['user_id'] ?? 0), 'update_service_bundle', 'Updated service bundle: ' . ($bundle['bundle_name'] ?? ('#' . $data['id'])));
+                dispatchBundleChangeNotification(
+                    'Service Bundle Updated',
+                    'updated',
+                    'bundle ' . ($bundle['bundle_name'] ?? ('#' . $data['id'])),
+                    'Status: ' . $oldStatus . ' -> ' . $newStatus . '; Price: ₱' . number_format((float)($bundle['package_price'] ?? 0), 2),
+                    (int)$data['id']
+                );
                 echo json_encode([
                     'success' => true,
                     'message' => 'Service bundle updated successfully',
@@ -136,7 +195,7 @@ try {
             
         case 'DELETE':
             // Check admin permission
-            if ($_SESSION['role'] !== 'admin') {
+            if ($sessionRole !== 'admin') {
                 http_response_code(403);
                 echo json_encode(['success' => false, 'message' => 'Admin access required']);
                 exit;
@@ -148,11 +207,59 @@ try {
                 exit;
             }
             
+            $existingBundle = $bundleModel->findById($_GET['id']);
+            if (!$existingBundle) {
+                http_response_code(404);
+                echo json_encode(['success' => false, 'message' => 'Bundle not found']);
+                exit;
+            }
+            $bundleId = (int)$_GET['id'];
+            $db = Database::getInstance();
+            $bundleRow = $db->fetch("SELECT * FROM service_bundles WHERE id = ? LIMIT 1", [$bundleId]);
+            if (!is_array($bundleRow) || empty($bundleRow)) {
+                http_response_code(404);
+                echo json_encode(['success' => false, 'message' => 'Bundle payload not found']);
+                exit;
+            }
+            $bundleServices = $db->fetchAll("SELECT * FROM bundle_services WHERE bundle_id = ?", [$bundleId]);
+            $bundleProducts = $db->fetchAll("SELECT * FROM bundle_products WHERE bundle_id = ?", [$bundleId]);
+            $bundleInJobOrders = $db->fetch("SELECT COUNT(*) AS count FROM job_order_services WHERE bundle_id = ?", [$bundleId]);
+            if ((int)($bundleInJobOrders['count'] ?? 0) > 0) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => 'Cannot delete bundle. It may be in use in job orders.']);
+                exit;
+            }
+
+            $expectedUpdatedAt = trim((string)($_GET['expected_updated_at'] ?? ''));
+            if ($expectedUpdatedAt !== '' && (string)($existingBundle['updated_at'] ?? '') !== $expectedUpdatedAt) {
+                http_response_code(409);
+                echo json_encode(['success' => false, 'message' => 'Conflict: this bundle was updated by another user. Please refresh and try again.']);
+                exit;
+            }
+            $archiveId = archiveDeletedRecord('service_bundle', [
+                'bundle' => $bundleRow,
+                'bundle_services' => $bundleServices,
+                'bundle_products' => $bundleProducts,
+            ], ['source' => 'database', 'meta' => ['table' => 'service_bundles']]);
+            if (!$archiveId) {
+                http_response_code(500);
+                echo json_encode(['success' => false, 'message' => 'Failed to archive bundle before deletion']);
+                exit;
+            }
             $result = $bundleModel->delete($_GET['id']);
             
             if ($result) {
+                logActivity((int)($_SESSION['user_id'] ?? 0), 'delete_service_bundle', 'Deleted service bundle: ' . ($existingBundle['bundle_name'] ?? ('#' . $_GET['id'])));
+                dispatchBundleChangeNotification(
+                    'Service Bundle Removed',
+                    'removed',
+                    'bundle ' . ($existingBundle['bundle_name'] ?? ('#' . $_GET['id'])),
+                    '',
+                    (int)$_GET['id']
+                );
                 echo json_encode(['success' => true, 'message' => 'Service bundle deleted successfully']);
             } else {
+                deleteArchivedRecordById($archiveId);
                 http_response_code(400);
                 echo json_encode(['success' => false, 'message' => 'Cannot delete bundle. It may be in use in job orders.']);
             }
@@ -160,7 +267,7 @@ try {
             
         case 'PATCH':
             // Check admin permission
-            if ($_SESSION['role'] !== 'admin') {
+            if ($sessionRole !== 'admin') {
                 http_response_code(403);
                 echo json_encode(['success' => false, 'message' => 'Admin access required']);
                 exit;
@@ -174,10 +281,33 @@ try {
                 exit;
             }
             
+            $existingBundle = $bundleModel->findById($data['id']);
+            if (!$existingBundle) {
+                http_response_code(404);
+                echo json_encode(['success' => false, 'message' => 'Bundle not found']);
+                exit;
+            }
+
+            $expectedUpdatedAt = trim((string)($data['expected_updated_at'] ?? ''));
+            if ($expectedUpdatedAt !== '' && (string)($existingBundle['updated_at'] ?? '') !== $expectedUpdatedAt) {
+                http_response_code(409);
+                echo json_encode(['success' => false, 'message' => 'Conflict: this bundle was updated by another user. Please refresh and try again.']);
+                exit;
+            }
             $result = $bundleModel->toggleStatus($data['id']);
             
             if ($result) {
                 $bundle = $bundleModel->findById($data['id']);
+                $oldStatus = strtoupper((string)($existingBundle['status'] ?? ''));
+                $newStatus = strtoupper((string)($bundle['status'] ?? ''));
+                logActivity((int)($_SESSION['user_id'] ?? 0), 'update_service_bundle_status', 'Updated service bundle status: ' . ($bundle['bundle_name'] ?? ('#' . $data['id'])) . ' (' . $oldStatus . ' -> ' . $newStatus . ')');
+                dispatchBundleChangeNotification(
+                    'Service Bundle Status Updated',
+                    'updated status for',
+                    'bundle ' . ($bundle['bundle_name'] ?? ('#' . $data['id'])),
+                    'Status: ' . $oldStatus . ' -> ' . $newStatus,
+                    (int)$data['id']
+                );
                 echo json_encode([
                     'success' => true,
                     'message' => 'Bundle status updated successfully',

@@ -23,7 +23,7 @@ $rules = [
     [
         'feature' => 'Access dashboard',
         'description' => 'Open dashboard and view role-specific cards/data.',
-        'allowed' => ['admin', 'cashier', 'chief_mechanic', 'service_adviser', 'technician'],
+        'allowed' => ['admin', 'cashier', 'chief_mechanic', 'technician'],
     ],
     [
         'feature' => 'Open Services module',
@@ -116,6 +116,11 @@ $rules = [
         'allowed' => ['admin', 'cashier'],
     ],
     [
+        'feature' => 'Delete manual income and expense entries',
+        'description' => 'Delete manual income and expense rows from the reports log; deleted entries are sent to Deleted Archive for admin review.',
+        'allowed' => ['admin', 'cashier'],
+    ],
+    [
         'feature' => 'Settings and print template',
         'description' => 'Open settings and update print template content.',
         'allowed' => ['admin', 'cashier'],
@@ -133,7 +138,7 @@ include __DIR__ . '/../partials/header.php';
             <h4 class="mb-0">Role Permissions Matrix</h4>
             <p class="text-muted mb-0 small">Runtime view of access rules currently enforced in UI and API.</p>
         </div>
-        <a href="<?php echo APP_URL; ?>/views/settings/index.php" class="btn btn-outline-secondary btn-sm">
+        <a href="<?php echo routeUrl('settings'); ?>" class="btn btn-outline-secondary btn-sm">
             <i class="bi bi-arrow-left"></i> Back to Settings
         </a>
     </div>

@@ -27,7 +27,7 @@ if ($userType === 'staff') {
 
     if (!$profile) {
         setMessage('Profile not found.', 'error');
-        redirect(APP_URL . '/views/dashboard/index.php');
+        redirect(routeUrl('dashboard'));
     }
 
     if (!empty($profile['profile_photo'])) {
@@ -45,7 +45,7 @@ if ($userType === 'staff') {
 
     if (!$profile) {
         setMessage('Profile not found.', 'error');
-        redirect(APP_URL . '/views/dashboard/index.php');
+        redirect(routeUrl('dashboard'));
     }
 
     $adminPhotoKey = 'user_profile_photo_admin_' . $userId;
@@ -84,11 +84,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save_
         }
 
         if ($userType === 'staff') {
-            $firstName = sanitize($_POST['first_name'] ?? '');
-            $lastName = sanitize($_POST['last_name'] ?? '');
-            $email = sanitize($_POST['email'] ?? '');
-            $phone = sanitize($_POST['phone'] ?? '');
-            $address = sanitize($_POST['address'] ?? '');
+            $firstName = sanitizeTextValue($_POST['first_name'] ?? '');
+            $lastName = sanitizeTextValue($_POST['last_name'] ?? '');
+            $email = sanitizeTextValue($_POST['email'] ?? '');
+            $phone = sanitizeTextValue($_POST['phone'] ?? '');
+            $address = sanitizeTextValue($_POST['address'] ?? '');
             $newPassword = $_POST['new_password'] ?? '';
             $confirmPassword = $_POST['confirm_password'] ?? '';
 
@@ -141,9 +141,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save_
 
             $_SESSION['full_name'] = trim($firstName . ' ' . $lastName);
         } else {
-            $fullName = sanitize($_POST['full_name'] ?? '');
-            $email = sanitize($_POST['email'] ?? '');
-            $phone = sanitize($_POST['phone'] ?? '');
+            $fullName = sanitizeTextValue($_POST['full_name'] ?? '');
+            $email = sanitizeTextValue($_POST['email'] ?? '');
+            $phone = sanitizeTextValue($_POST['phone'] ?? '');
             $newPassword = $_POST['new_password'] ?? '';
             $confirmPassword = $_POST['confirm_password'] ?? '';
 
@@ -211,7 +211,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save_
 
         logActivity($userId, 'update_profile', 'Updated own profile details');
         setMessage('Profile updated successfully.', 'success');
-        redirect(APP_URL . '/views/profile/index.php');
+        redirect(routeUrl('profile'));
     } catch (Exception $e) {
         setMessage('Error: ' . $e->getMessage(), 'error');
     }
@@ -270,11 +270,11 @@ include __DIR__ . '/../partials/header.php';
                 <div class="row g-3 align-items-start">
                     <div class="col-lg-3 col-md-4">
                         <div class="text-center">
-                            <div class="mb-2">
+                            <div class="mb-2" id="profilePhotoPreviewWrap">
                                 <?php if ($profileImageUrl): ?>
-                                    <img src="<?php echo escape($profileImageUrl); ?>" alt="Profile Photo" style="width:120px;height:120px;border-radius:50%;object-fit:cover;border:1px solid #ddd;">
+                                    <img id="profilePhotoPreviewImg" src="<?php echo escape($profileImageUrl); ?>" alt="Profile Photo" style="width:120px;height:120px;border-radius:50%;object-fit:cover;border:1px solid #ddd;">
                                 <?php else: ?>
-                                    <div style="width:120px;height:120px;border-radius:50%;background:#6c757d;color:#fff;display:flex;align-items:center;justify-content:center;font-size:34px;font-weight:700;margin:0 auto;">
+                                    <div id="profilePhotoPreviewImg" style="width:120px;height:120px;border-radius:50%;background:#6c757d;color:#fff;display:flex;align-items:center;justify-content:center;font-size:34px;font-weight:700;margin:0 auto;">
                                         <?php echo escape(strtoupper(substr($profile['full_name'] ?? ($_SESSION['full_name'] ?? 'U'), 0, 2))); ?>
                                     </div>
                                 <?php endif; ?>
@@ -283,7 +283,7 @@ include __DIR__ . '/../partials/header.php';
                                 Login ID: <strong><?php echo escape($profile['username'] ?? $profile['staff_id'] ?? ''); ?></strong>
                             </div>
                             <label class="form-label">Profile Photo</label>
-                            <input type="file" class="form-control" name="profile_photo" accept="image/png,image/jpeg,image/webp">
+                            <input type="file" class="form-control" id="profilePhotoInput" name="profile_photo" accept="image/png,image/jpeg,image/webp">
                             <small class="text-muted">PNG, JPG, WEBP up to 5MB.</small>
                         </div>
                     </div>
@@ -359,5 +359,25 @@ include __DIR__ . '/../partials/header.php';
         </div>
     </div>
 </div>
+
+<script>
+document.getElementById('profilePhotoInput')?.addEventListener('change', function (e) {
+    const file = e.target.files[0];
+    const wrap = document.getElementById('profilePhotoPreviewWrap');
+    if (!file || !wrap) return;
+
+    if (file.size > 5242880) {
+        alert('File size must not exceed 5MB');
+        e.target.value = '';
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = function (ev) {
+        wrap.innerHTML = '<img id="profilePhotoPreviewImg" src="' + ev.target.result + '" alt="Profile Photo" style="width:120px;height:120px;border-radius:50%;object-fit:cover;border:1px solid #ddd;">';
+    };
+    reader.readAsDataURL(file);
+});
+</script>
 
 <?php include __DIR__ . '/../partials/footer.php'; ?>

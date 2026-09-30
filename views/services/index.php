@@ -5,7 +5,7 @@ require_once __DIR__ . '/../../includes/config.php';
 
 // Check if user is logged in
 if (!isset($_SESSION['user_id'])) {
-    header('Location: ' . APP_URL . '/views/auth/login.php');
+    header('Location: ' . routeUrl('login'));
     exit;
 }
 
@@ -31,12 +31,12 @@ include __DIR__ . '/../partials/header.php';
             <div class="row g-3">
                 <div class="col-md-8">
                     <input type="text" class="form-control" id="searchServices" 
-                           placeholder="Search services or bundles...">
+                           placeholder="Search services or packages...">
                 </div>
                 <div class="col-md-4">
                     <select class="form-select" id="filterType">
                         <option value="">All Services</option>
-                        <option value="bundles">Bundles Only</option>
+                        <option value="bundles">Packages Only</option>
                         <option value="individual">Individual Only</option>
                     </select>
                 </div>
@@ -44,9 +44,9 @@ include __DIR__ . '/../partials/header.php';
         </div>
     </div>
 
-    <!-- Service Bundles Section -->
+    <!-- Service Packages Section -->
     <div class="mb-5" id="bundlesSection">
-        <h5 class="mb-3">Service Bundles</h5>
+        <h5 class="mb-3">Service Packages</h5>
         <div class="row g-3" id="bundlesContainer">
             <div class="col-12 text-center py-4">
                 <div class="spinner-border text-secondary" role="status">
@@ -56,9 +56,9 @@ include __DIR__ . '/../partials/header.php';
         </div>
     </div>
 
-    <!-- Individual Services Section -->
+    <!-- Services Section -->
     <div class="mb-5" id="servicesSection">
-        <h5 class="mb-3">Individual Services</h5>
+        <h5 class="mb-3">Services</h5>
         <div class="row g-3" id="servicesContainer">
             <div class="col-12 text-center py-4">
                 <div class="spinner-border text-secondary" role="status">
@@ -95,7 +95,7 @@ include __DIR__ . '/../partials/header.php';
                                         </div>
                                         <div class="col-md-6">
                                             <label class="form-label">Phone *</label>
-                                            <input type="tel" class="form-control" name="customer_phone" required>
+                                            <input type="tel" class="form-control" name="customer_phone" required inputmode="numeric" pattern="[0-9]*" oninput="this.value = this.value.replace(/\D/g, '')">
                                         </div>
                                         <div class="col-md-6">
                                             <label class="form-label">Email</label>
@@ -203,8 +203,9 @@ include __DIR__ . '/../partials/header.php';
                                         <label class="form-label small">Payment Method</label>
                                         <select class="form-select form-select-sm" name="payment_method">
                                             <option value="cash">Cash</option>
-                                            <option value="card">Card</option>
-                                            <option value="online_payment">Online Payment</option>
+                                            <option value="gcash">GCash</option>
+                                            <option value="bank_transfer">Bank Transfer</option>
+                                            <option value="card">Swipe/Card</option>
                                         </select>
                                     </div>
                                     <div class="mb-3">

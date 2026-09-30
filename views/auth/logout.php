@@ -9,4 +9,4 @@ require_once __DIR__ . '/../../controllers/AuthController.php';
 $authController = new AuthController();
 $authController->logout();
 
-redirect(APP_URL . '/views/auth/login.php');
+redirect(routeUrl('login'));

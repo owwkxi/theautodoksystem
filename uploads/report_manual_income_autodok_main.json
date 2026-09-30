@@ -1,0 +1,523 @@
+[
+    {
+        "id": "inc_6a841d7c4a2630.19666534",
+        "income_date": "2026-08-18",
+        "description": "SCANNING-FORD ESCAPE",
+        "amount": 480,
+        "created_by": "Iloisa Joy P. Mejias",
+        "created_at": "2026-08-18 16:53:16",
+        "shop_key": "autodok_main"
+    },
+    {
+        "id": "inc_6a841fdcaea014.04289348",
+        "income_date": "2026-08-18",
+        "description": "MINIVAN MBF7463",
+        "amount": 2800,
+        "created_by": "Iloisa Joy P. Mejias",
+        "created_at": "2026-08-18 17:03:24",
+        "shop_key": "autodok_main"
+    },
+    {
+        "id": "inc_6a853ba5a63914.78284563",
+        "income_date": "2026-08-19",
+        "description": "SUZUKI SWIFT",
+        "amount": 300,
+        "created_by": "Iloisa Joy P. Mejias",
+        "created_at": "2026-08-19 13:14:13",
+        "shop_key": "autodok_main"
+    },
+    {
+        "id": "inc_6a853bbce5a303.30604378",
+        "income_date": "2026-08-19",
+        "description": "MUX LABOR",
+        "amount": 500,
+        "created_by": "Iloisa Joy P. Mejias",
+        "created_at": "2026-08-19 13:14:36",
+        "shop_key": "autodok_main"
+    },
+    {
+        "id": "inc_6a85830f4f9310.10044386",
+        "income_date": "2026-08-19",
+        "description": "ADVENTURE- RESCUE",
+        "amount": 1200,
+        "created_by": "Iloisa Joy P. Mejias",
+        "created_at": "2026-08-19 18:18:55",
+        "shop_key": "autodok_main"
+    },
+    {
+        "id": "inc_6a868ad2315072.70335139",
+        "income_date": "2026-08-20",
+        "description": "PARTIAL- MG ZS",
+        "amount": 7000,
+        "created_by": "Iloisa Joy P. Mejias",
+        "created_at": "2026-08-20 13:04:18",
+        "shop_key": "autodok_main"
+    },
+    {
+        "id": "inc_6a86996c2b0d79.63359922",
+        "income_date": "2026-08-20",
+        "description": "HILUX- NO JO",
+        "amount": 300,
+        "created_by": "Iloisa Joy P. Mejias",
+        "created_at": "2026-08-20 14:06:36",
+        "shop_key": "autodok_main"
+    },
+    {
+        "id": "inc_6a87deb27aed56.41853077",
+        "income_date": "2026-08-21",
+        "description": "ISUZU DMAX",
+        "amount": 300,
+        "created_by": "Iloisa Joy P. Mejias",
+        "created_at": "2026-08-21 13:14:26",
+        "shop_key": "autodok_main"
+    },
+    {
+        "id": "inc_6a87f905665201.29560657",
+        "income_date": "2026-08-21",
+        "description": "WIGO",
+        "amount": 1500,
+        "created_by": "Iloisa Joy P. Mejias",
+        "created_at": "2026-08-21 15:06:45",
+        "shop_key": "autodok_main"
+    },
+    {
+        "id": "inc_6a895e22f091d3.03084683",
+        "income_date": "2026-08-22",
+        "description": "MIRAGE",
+        "amount": 600,
+        "payment_method": "Bank Transfer",
+        "created_by": "Iloisa Joy P. Mejias",
+        "created_at": "2026-08-22 16:30:26",
+        "shop_key": "autodok_main"
+    },
+    {
+        "id": "inc_6a8cee3cce8f03.01705922",
+        "income_date": "2026-08-25",
+        "description": "HONDA JAZZ - LABOR",
+        "amount": 300,
+        "payment_method": "Cash",
+        "created_by": "Iloisa Joy P. Mejias",
+        "created_at": "2026-08-25 09:22:04",
+        "shop_key": "autodok_main"
+    },
+    {
+        "id": "inc_6a8d0a88955dd7.62029760",
+        "income_date": "2026-08-25",
+        "description": "ALMERA LABOR",
+        "amount": 150,
+        "payment_method": "Cash",
+        "created_by": "Iloisa Joy P. Mejias",
+        "created_at": "2026-08-25 11:22:48",
+        "shop_key": "autodok_main"
+    },
+    {
+        "id": "inc_6a8d30f270c3a7.56124466",
+        "income_date": "2026-08-25",
+        "description": "JIMNY LABOR",
+        "amount": 300,
+        "payment_method": "Cash",
+        "created_by": "Iloisa Joy P. Mejias",
+        "created_at": "2026-08-25 14:06:42",
+        "shop_key": "autodok_main"
+    },
+    {
+        "id": "inc_6a8e7a25371095.65829930",
+        "income_date": "2026-08-26",
+        "description": "SENTA LABOR",
+        "amount": 300,
+        "payment_method": "Cash",
+        "created_by": "Iloisa Joy P. Mejias",
+        "created_at": "2026-08-26 13:31:17",
+        "shop_key": "autodok_main"
+    },
+    {
+        "id": "inc_6a8e85388c5639.56352920",
+        "income_date": "2026-08-26",
+        "description": "ACCENT-LABOR",
+        "amount": 1152,
+        "payment_method": "Cash",
+        "created_by": "Iloisa Joy P. Mejias",
+        "created_at": "2026-08-26 14:18:32",
+        "shop_key": "autodok_main"
+    },
+    {
+        "id": "inc_6a8f94e01ab2c3.78898199",
+        "income_date": "2026-08-27",
+        "description": "MUX-RESCUE",
+        "amount": 1000,
+        "payment_method": "Cash",
+        "created_by": "Iloisa Joy P. Mejias",
+        "created_at": "2026-08-27 09:37:36",
+        "shop_key": "autodok_main"
+    },
+    {
+        "id": "inc_6a8fb66f895b34.40192865",
+        "income_date": "2026-08-27",
+        "description": "HI ACE LABOR",
+        "amount": 800,
+        "payment_method": "Cash",
+        "created_by": "Iloisa Joy P. Mejias",
+        "created_at": "2026-08-27 12:00:47",
+        "shop_key": "autodok_main"
+    },
+    {
+        "id": "inc_6a917d384da2b4.70446964",
+        "income_date": "2026-08-28",
+        "description": "MIRAGE/RESCUE",
+        "amount": 1000,
+        "payment_method": "Cash",
+        "created_by": "Erin Patricia Martinez",
+        "created_at": "2026-08-28 20:21:12",
+        "shop_key": "autodok_main"
+    },
+    {
+        "id": "inc_6a917d45211101.11899040",
+        "income_date": "2026-08-28",
+        "description": "PLASTIC",
+        "amount": 100,
+        "payment_method": "Cash",
+        "created_by": "Erin Patricia Martinez",
+        "created_at": "2026-08-28 20:21:25",
+        "shop_key": "autodok_main"
+    },
+    {
+        "id": "inc_6a9297c4b12212.39513497",
+        "income_date": "2026-08-29",
+        "description": "MUX LABOR",
+        "amount": 300,
+        "payment_method": "Cash",
+        "created_by": "Iloisa Joy P. Mejias",
+        "created_at": "2026-08-29 16:26:44",
+        "shop_key": "autodok_main"
+    },
+    {
+        "id": "inc_6a94ddec827893.08678538",
+        "income_date": "2026-08-31",
+        "description": "FRONTIER LABOR",
+        "amount": 600,
+        "payment_method": "Cash",
+        "created_by": "Iloisa Joy P. Mejias",
+        "created_at": "2026-08-31 09:50:36",
+        "shop_key": "autodok_main"
+    },
+    {
+        "id": "inc_6a95432f22a130.66369108",
+        "income_date": "2026-08-31",
+        "description": "EVEREST LABOR",
+        "amount": 400,
+        "payment_method": "Cash",
+        "created_by": "Iloisa Joy P. Mejias",
+        "created_at": "2026-08-31 17:02:39",
+        "shop_key": "autodok_main"
+    },
+    {
+        "id": "inc_6a964a0e80d785.29836126",
+        "income_date": "2026-09-01",
+        "description": "PARTIAL- HILUX KAGAWAD",
+        "amount": 1000,
+        "payment_method": "Cash",
+        "created_by": "Iloisa Joy P. Mejias",
+        "created_at": "2026-09-01 11:44:14",
+        "shop_key": "autodok_main"
+    },
+    {
+        "id": "inc_6a96740932a138.20912868",
+        "income_date": "2026-09-01",
+        "description": "SANTA FE-RESCUE",
+        "amount": 500,
+        "payment_method": "Cash",
+        "created_by": "Iloisa Joy P. Mejias",
+        "created_at": "2026-09-01 14:43:21",
+        "shop_key": "autodok_main"
+    },
+    {
+        "id": "inc_6a9920f9b17db1.54309932",
+        "income_date": "2026-09-03",
+        "description": "DMAX- RESCUE",
+        "amount": 500,
+        "payment_method": "Cash",
+        "shop_key": "autodok_main",
+        "created_by": "Iloisa Joy P. Mejias",
+        "created_at": "2026-09-03 15:25:45"
+    },
+    {
+        "id": "inc_6a9a1b88046836.69186575",
+        "income_date": "2026-09-04",
+        "description": "LANCER LABOR",
+        "amount": 300,
+        "payment_method": "GCash",
+        "shop_key": "autodok_main",
+        "created_by": "Iloisa Joy P. Mejias",
+        "created_at": "2026-09-04 09:14:48"
+    },
+    {
+        "id": "inc_6a9a541d8db147.00000957",
+        "income_date": "2026-09-04",
+        "description": "CHARGE BATTERY",
+        "amount": 150,
+        "payment_method": "Cash",
+        "shop_key": "autodok_main",
+        "created_by": "Iloisa Joy P. Mejias",
+        "created_at": "2026-09-04 13:16:13"
+    },
+    {
+        "id": "inc_6a9a542e450af5.08088760",
+        "income_date": "2026-09-04",
+        "description": "MIRAGE LABOR",
+        "amount": 1000,
+        "payment_method": "Cash",
+        "shop_key": "autodok_main",
+        "created_by": "Iloisa Joy P. Mejias",
+        "created_at": "2026-09-04 13:16:30"
+    },
+    {
+        "id": "inc_6a9a64cc4b76a1.48172213",
+        "income_date": "2026-09-04",
+        "description": "CHERRY TIGO- ALLEN",
+        "amount": 4000,
+        "payment_method": "GCash",
+        "shop_key": "autodok_main",
+        "created_by": "Iloisa Joy P. Mejias",
+        "created_at": "2026-09-04 14:27:24"
+    },
+    {
+        "id": "inc_6a9a64eb4f81f3.73921326",
+        "income_date": "2026-09-04",
+        "description": "MIRAGE- SIR JULY",
+        "amount": 4000,
+        "payment_method": "GCash",
+        "shop_key": "autodok_main",
+        "created_by": "Iloisa Joy P. Mejias",
+        "created_at": "2026-09-04 14:27:55"
+    },
+    {
+        "id": "inc_6a9a6521025dc9.85576945",
+        "income_date": "2026-09-04",
+        "description": "FORTUNER-AGAS",
+        "amount": 950,
+        "payment_method": "GCash",
+        "shop_key": "autodok_main",
+        "created_by": "Iloisa Joy P. Mejias",
+        "created_at": "2026-09-04 14:28:49"
+    },
+    {
+        "id": "inc_6a9b8d39a395f0.75738034",
+        "income_date": "2026-09-05",
+        "description": "COROLLA LABOR",
+        "amount": 600,
+        "payment_method": "Cash",
+        "shop_key": "autodok_main",
+        "created_by": "Iloisa Joy P. Mejias",
+        "created_at": "2026-09-05 11:32:09"
+    },
+    {
+        "id": "inc_6a9c0e48d1c9d0.07528878",
+        "income_date": "2026-09-05",
+        "description": "HILUX/ RESCUE",
+        "amount": 500,
+        "payment_method": "Cash",
+        "shop_key": "autodok_main",
+        "created_by": "Iloisa Joy P. Mejias",
+        "created_at": "2026-09-05 20:42:48"
+    },
+    {
+        "id": "inc_6aa0f80f615ae1.99858627",
+        "income_date": "2026-09-09",
+        "description": "KIA RIO RESCUE",
+        "amount": 500,
+        "payment_method": "Cash",
+        "shop_key": "autodok_main",
+        "created_by": "Iloisa Joy P. Mejias",
+        "created_at": "2026-09-09 14:09:19"
+    },
+    {
+        "id": "inc_6aa0fc50a06a32.42708237",
+        "income_date": "2026-09-09",
+        "description": "CROSSWIND LABOR",
+        "amount": 200,
+        "payment_method": "Cash",
+        "shop_key": "autodok_main",
+        "created_by": "Iloisa Joy P. Mejias",
+        "created_at": "2026-09-09 14:27:28"
+    },
+    {
+        "id": "inc_6aa283f127a4a1.12970297",
+        "income_date": "2026-09-10",
+        "description": "MONTERO/ TERRA- VIMZ",
+        "amount": 5750,
+        "payment_method": "Bank Transfer",
+        "shop_key": "autodok_main",
+        "created_by": "Iloisa Joy P. Mejias",
+        "created_at": "2026-09-10 18:18:25"
+    },
+    {
+        "id": "inc_6aa516a60d21c0.61911737",
+        "income_date": "2026-09-12",
+        "description": "JIMNY LABOR",
+        "amount": 800,
+        "payment_method": "Cash",
+        "shop_key": "autodok_main",
+        "created_by": "Iloisa Joy P. Mejias",
+        "created_at": "2026-09-12 17:08:54"
+    },
+    {
+        "id": "inc_6aa76f88376ca9.09982254",
+        "income_date": "2026-09-14",
+        "description": "INNOVA-RESCUE",
+        "amount": 300,
+        "payment_method": "Cash",
+        "shop_key": "autodok_main",
+        "created_by": "Iloisa Joy P. Mejias",
+        "created_at": "2026-09-14 11:52:40"
+    },
+    {
+        "id": "inc_6aa7752b1d11d2.60137070",
+        "income_date": "2026-09-14",
+        "description": "VIOS",
+        "amount": 400,
+        "payment_method": "Cash",
+        "shop_key": "autodok_main",
+        "created_by": "Iloisa Joy P. Mejias",
+        "created_at": "2026-09-14 12:16:43"
+    },
+    {
+        "id": "inc_6aa8b431cfcb87.43980306",
+        "income_date": "2026-09-15",
+        "description": "MIRAGE-RESCUE",
+        "amount": 1500,
+        "payment_method": "Cash",
+        "shop_key": "autodok_main",
+        "created_by": "Iloisa Joy P. Mejias",
+        "created_at": "2026-09-15 10:57:53"
+    },
+    {
+        "id": "inc_6aa8daba7fa312.96632772",
+        "income_date": "2026-09-15",
+        "description": "INNOVA LABOR",
+        "amount": 150,
+        "payment_method": "GCash",
+        "shop_key": "autodok_main",
+        "created_by": "Iloisa Joy P. Mejias",
+        "created_at": "2026-09-15 13:42:18"
+    },
+    {
+        "id": "inc_6aab5c6701c7f0.89352650",
+        "income_date": "2026-09-17",
+        "description": "PARTIAL- HILUX KAGAWAD",
+        "amount": 1000,
+        "payment_method": "Cash",
+        "shop_key": "autodok_main",
+        "created_by": "Iloisa Joy P. Mejias",
+        "created_at": "2026-09-17 11:20:07"
+    },
+    {
+        "id": "inc_6aab74ce21bff5.12420060",
+        "income_date": "2026-09-17",
+        "description": "RUSH LABOR",
+        "amount": 500,
+        "payment_method": "Cash",
+        "shop_key": "autodok_main",
+        "created_by": "Iloisa Joy P. Mejias",
+        "created_at": "2026-09-17 13:04:14"
+    },
+    {
+        "id": "inc_6aab9d730045d6.74694295",
+        "income_date": "2026-09-17",
+        "description": "CELERIO",
+        "amount": 50,
+        "payment_method": "Cash",
+        "shop_key": "autodok_main",
+        "created_by": "Iloisa Joy P. Mejias",
+        "created_at": "2026-09-17 15:57:39"
+    },
+    {
+        "id": "inc_6aabab71311ae3.95805103",
+        "income_date": "2026-09-17",
+        "description": "CEBUANA",
+        "amount": 150,
+        "payment_method": "Cash",
+        "shop_key": "autodok_main",
+        "created_by": "Iloisa Joy P. Mejias",
+        "created_at": "2026-09-17 16:57:21"
+    },
+    {
+        "id": "inc_6aae1efc754075.75229473",
+        "income_date": "2026-09-19",
+        "description": "TIERRA",
+        "amount": 500,
+        "payment_method": "GCash",
+        "shop_key": "autodok_main",
+        "created_by": "Iloisa Joy P. Mejias",
+        "created_at": "2026-09-19 13:34:52"
+    },
+    {
+        "id": "inc_6ab5cff2cec687.74979039",
+        "income_date": "2026-09-25",
+        "description": "FORTUNER",
+        "amount": 300,
+        "payment_method": "GCash",
+        "shop_key": "autodok_main",
+        "created_by": "Iloisa Joy P. Mejias",
+        "created_at": "2026-09-25 09:35:46"
+    },
+    {
+        "id": "inc_6ab64aa3d3bb86.42392830",
+        "income_date": "2026-09-25",
+        "description": "AVANZA-RESCUE",
+        "amount": 2000,
+        "payment_method": "Cash",
+        "shop_key": "autodok_main",
+        "created_by": "Iloisa Joy P. Mejias",
+        "created_at": "2026-09-25 18:19:15"
+    },
+    {
+        "id": "inc_6ab76fb2e94033.80185412",
+        "income_date": "2026-09-26",
+        "description": "JIMNY",
+        "amount": 100,
+        "payment_method": "Cash",
+        "shop_key": "autodok_main",
+        "created_by": "Iloisa Joy P. Mejias",
+        "created_at": "2026-09-26 15:09:38"
+    },
+    {
+        "id": "inc_6aba0b0c0d2493.03059767",
+        "income_date": "2026-09-28",
+        "description": "AVANZA RESCUE",
+        "amount": 500,
+        "payment_method": "Cash",
+        "shop_key": "autodok_main",
+        "created_by": "Iloisa Joy P. Mejias",
+        "created_at": "2026-09-28 14:37:00"
+    },
+    {
+        "id": "inc_6abb1e2355a484.47702353",
+        "income_date": "2026-09-29",
+        "description": "EVEREST LABOR",
+        "amount": 300,
+        "payment_method": "Cash",
+        "shop_key": "autodok_main",
+        "created_by": "Iloisa Joy P. Mejias",
+        "created_at": "2026-09-29 10:10:43"
+    },
+    {
+        "id": "inc_6abb8c69de4dc7.28682175",
+        "income_date": "2026-09-29",
+        "description": "FB BATUCAN-COLLECTION",
+        "amount": 9700,
+        "payment_method": "Bank Transfer",
+        "shop_key": "autodok_main",
+        "created_by": "Iloisa Joy P. Mejias",
+        "created_at": "2026-09-29 18:01:13"
+    },
+    {
+        "id": "inc_6abc7ae6a8ce85.06937099",
+        "income_date": "2026-09-30",
+        "description": "MINIVAN-RESCUE",
+        "amount": 1000,
+        "payment_method": "Cash",
+        "shop_key": "autodok_main",
+        "created_by": "Iloisa Joy P. Mejias",
+        "created_at": "2026-09-30 10:58:46"
+    }
+]

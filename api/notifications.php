@@ -51,9 +51,12 @@ try {
                         break;
 
                     case 'all':
-                        // Get all notifications and include current dynamic alerts
-                        $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 50;
-                        $storedNotifications = $notification->getUserNotifications($userId, $limit);
+                        // Get all notifications and include current dynamic alerts.
+                        // The "View More" action should not apply a hidden cap.
+                        $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 0;
+                        $storedNotifications = $limit > 0
+                            ? $notification->getUserNotifications($userId, $limit)
+                            : $notification->getUserNotifications($userId);
                         $dynamicNotifications = $notification->getDynamicNotifications($userId);
                         $notifications = array_merge($dynamicNotifications, $storedNotifications);
                         echo json_encode([

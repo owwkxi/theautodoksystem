@@ -6,12 +6,44 @@ require_once __DIR__ . '/../../includes/functions.php';
 require_once __DIR__ . '/../../includes/session.php';
 require_once __DIR__ . '/../../models/JobOrder.php';
 require_once __DIR__ . '/../../models/User.php';
+require_once __DIR__ . '/../../models/Staff.php';
 
 requireLogin();
 
 $pageTitle = 'Create Job Order';
 
 $userModel = new User();
+$staffModel = new Staff();
+
+$technicians = [];
+try {
+    $staffRows = $staffModel->getAll([
+        'role' => 'technician',
+        'status' => 'active',
+    ]);
+
+    foreach ($staffRows as $row) {
+        $firstName = trim((string)($row['first_name'] ?? ''));
+        $lastName = trim((string)($row['last_name'] ?? ''));
+        $fullName = trim($firstName . ' ' . $lastName);
+
+        if ($fullName === '') {
+            $fullName = (string)($row['username'] ?? ('Technician #' . (int)($row['id'] ?? 0)));
+        }
+
+        $technicians[] = [
+            'id' => (int)($row['id'] ?? 0),
+            'full_name' => $fullName,
+        ];
+    }
+
+    usort($technicians, function ($a, $b) {
+        return strcasecmp((string)($a['full_name'] ?? ''), (string)($b['full_name'] ?? ''));
+    });
+} catch (Throwable $e) {
+    // Keep form functional even if technician loading fails.
+    $technicians = [];
+}
 
 $error = '';
 $success = '';
@@ -49,11 +81,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'created_by' => $_SESSION['user_id']
         ];
 
-        $result = $jobOrderModel->create($data);
+        $normalizedPhone = preg_replace('/\D+/', '', $data['customer_phone']);
+        if (!preg_match('/^09\d{9}$/', $normalizedPhone)) {
+            $error = 'Phone number must contain exactly 11 digits and start with 09.';
+        } else {
+            $data['customer_phone'] = $normalizedPhone;
+            $result = $jobOrderModel->create($data);
+        }
         
-        if ($result) {
+        if (!empty($result)) {
             setMessage('Job order created successfully', 'success');
-            redirect(APP_URL . '/views/job_orders/index.php');
+                redirect(routeUrl('job_orders'));
         } else {
             $error = 'Failed to create job order. Please try again.';
         }
@@ -71,7 +109,7 @@ include __DIR__ . '/../partials/header.php';
                 <h4 class="mb-0">Create New Job Order</h4>
                 <p class="text-muted small mb-0">Fill in the details below to create a new job order</p>
             </div>
-            <a href="<?php echo APP_URL; ?>/views/job_orders/index.php" class="btn btn-secondary">
+            <a href="<?php echo routeUrl('job_orders'); ?>" class="btn btn-secondary">
                 <i class="bi bi-arrow-left"></i> Back to List
             </a>
         </div>
@@ -117,7 +155,7 @@ include __DIR__ . '/../partials/header.php';
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Phone Number <span class="text-danger">*</span></label>
-                            <input type="tel" class="form-control" name="customer_phone" required>
+                            <input type="tel" class="form-control" name="customer_phone" required inputmode="numeric" maxlength="11" pattern="09[0-9]{9}" oninput="this.value = this.value.replace(/\D/g, '').slice(0, 11)">
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Email</label>
@@ -257,18 +295,22 @@ include __DIR__ . '/../partials/header.php';
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Payment</label>
-                        <div class="d-flex gap-2">
+                        <div class="d-flex flex-wrap gap-2">
                             <div class="form-check">
                                 <input class="form-check-input" type="radio" name="payment_method" value="cash" id="cash" checked>
                                 <label class="form-check-label" for="cash">Cash</label>
                             </div>
                             <div class="form-check">
-                                <input class="form-check-input" type="radio" name="payment_method" value="card" id="card">
-                                <label class="form-check-label" for="card">Card</label>
+                                <input class="form-check-input" type="radio" name="payment_method" value="gcash" id="gcash">
+                                <label class="form-check-label" for="gcash">GCash</label>
                             </div>
                             <div class="form-check">
-                                <input class="form-check-input" type="radio" name="payment_method" value="online_payment" id="online">
-                                <label class="form-check-label" for="online">Online</label>
+                                <input class="form-check-input" type="radio" name="payment_method" value="bank_transfer" id="bank_transfer">
+                                <label class="form-check-label" for="bank_transfer">Bank Transfer</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="payment_method" value="card" id="card">
+                                <label class="form-check-label" for="card">Swipe/Card</label>
                             </div>
                         </div>
                     </div>

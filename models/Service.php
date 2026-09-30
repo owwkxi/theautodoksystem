@@ -106,7 +106,7 @@ class Service {
             }
             
             // Order by
-            $sql .= " ORDER BY created_at DESC";
+            $sql .= " ORDER BY service_name ASC";
             
             // Pagination
             if (isset($filters['limit'])) {

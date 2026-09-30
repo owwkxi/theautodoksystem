@@ -1,0 +1,22 @@
+[
+    {
+        "id": "note_6aa736ed143565.20524372",
+        "owner_id": 2,
+        "title": "Records Delete",
+        "content": "Older than 1 year\r\n- JO\r\n- JE \r\n- Activity Logs\r\n\r\nDeleted Archive\r\n- Archived records are automatically purged after 30 days.\r\n- Staff profile images are also deleted when their archived staff record expires.\r\n\r\nNotifications\r\n- Notifications older than 30 days can be deleted through the notification cleanup action.\r\n\r\nManually deleted records\r\n- Notes\r\n- Products\r\n- Product categories\r\n- Suppliers\r\n- Services\r\n- Service bundles\r\n- Staff records\r\n- Estimates\r\n- Job orders\r\n- Expenses\r\n- Manual income\r\n- Announcements\r\n- Notifications",
+        "image_urls": [],
+        "shared_with": [],
+        "created_at": "2026-09-14 07:51:09",
+        "updated_at": "2026-09-14 07:51:09"
+    },
+    {
+        "id": "note_6aa5595cde44a1.29705730",
+        "owner_id": 2,
+        "title": "Future Features",
+        "content": "- NFC ID Attendance\r\n- Payroll\r\n- Money",
+        "image_urls": [],
+        "shared_with": [],
+        "created_at": "2026-09-12 21:53:32",
+        "updated_at": "2026-09-12 21:53:32"
+    }
+]

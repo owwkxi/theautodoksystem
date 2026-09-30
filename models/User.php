@@ -18,16 +18,23 @@ class User {
      * @return int|false User ID on success, false on failure
      */
     public function create($data) {
-        $sql = "INSERT INTO users (username, password, role) VALUES (?, ?, ?)";
+        $sql = "INSERT INTO users (username, password, full_name, email, role, status) VALUES (?, ?, ?, ?, ?, ?)";
         
         // Hash password securely
         $hashedPassword = password_hash($data['password'], PASSWORD_BCRYPT, ['cost' => 12]);
+        $role = (($data['role'] ?? 'admin') === 'admin') ? 'admin' : 'admin';
+        $fullName = trim((string)($data['full_name'] ?? $data['username'] ?? 'User'));
+        $email = $data['email'] ?? null;
+        $status = (($data['status'] ?? 'active') === 'inactive') ? 'inactive' : 'active';
         
         try {
             $this->db->query($sql, [
                 $data['username'],
                 $hashedPassword,
-                $data['role'] ?? 'staff'
+                $fullName,
+                $email,
+                $role,
+                $status
             ]);
             
             return $this->db->lastInsertId();
@@ -251,7 +258,7 @@ class User {
         $sql = "SELECT 
                     COUNT(*) as total_users,
                     SUM(CASE WHEN role = 'admin' THEN 1 ELSE 0 END) as admin_count,
-                    SUM(CASE WHEN role = 'staff' THEN 1 ELSE 0 END) as staff_count
+                    0 as staff_count
                 FROM users";
         
         return $this->db->fetch($sql);

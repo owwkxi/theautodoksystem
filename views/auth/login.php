@@ -7,7 +7,7 @@ require_once __DIR__ . '/../../includes/session.php';
 require_once __DIR__ . '/../../controllers/AuthController.php';
 
 if (isLoggedIn()) {
-    redirect(APP_URL . '/views/dashboard/index.php');
+    redirect(routeUrl('dashboard'));
 }
 
 $error = '';
@@ -58,7 +58,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $result = $authController->login($loginId, $password);
 
         if ($result['success']) {
-            redirect(APP_URL . '/views/dashboard/index.php');
+            redirect(routeUrl('dashboard'));
         } else {
             $error = $result['message'];
         }
@@ -342,6 +342,12 @@ $themeClass = ($selectedShopKey === 'autodok_prime') ? 'theme-prime' : 'theme-ma
             display: none;
         }
 
+        .customer-check-branch {
+            margin-top: 8px;
+            font-size: 11px;
+            color: #4b4b4b;
+        }
+
         @media (max-width: 768px) {
             .login-shell {
                 align-items: flex-start;
@@ -405,6 +411,9 @@ $themeClass = ($selectedShopKey === 'autodok_prime') ? 'theme-prime' : 'theme-ma
                     class="form-control customer-check-input"
                     placeholder="Search plate, name, or JO ID">
                 <button class="btn btn-outline-secondary" type="button" id="customerStatusSearchBtn">Search</button>
+            </div>
+            <div id="customerCheckBranch" class="customer-check-branch">
+                Searching in: <?php echo escape($displayShopName); ?>
             </div>
             <div id="customerCheckError" class="customer-check-error"></div>
             <div id="customerCheckEmpty" class="customer-check-empty">No matching job orders found.</div>
@@ -530,6 +539,7 @@ $themeClass = ($selectedShopKey === 'autodok_prime') ? 'theme-prime' : 'theme-ma
             const resultsWrap = document.getElementById('customerStatusResults');
             const emptyText = document.getElementById('customerCheckEmpty');
             const errorText = document.getElementById('customerCheckError');
+            const branchText = document.getElementById('customerCheckBranch');
 
             if (floating && trigger) {
                 trigger.addEventListener('click', function (ev) {
@@ -563,6 +573,14 @@ $themeClass = ($selectedShopKey === 'autodok_prime') ? 'theme-prime' : 'theme-ma
             function clearMessages() {
                 errorText.style.display = 'none';
                 emptyText.style.display = 'none';
+            }
+
+            function clearResultsForBranchChange() {
+                clearMessages();
+                if (resultsWrap) {
+                    resultsWrap.innerHTML = '';
+                    resultsWrap.style.display = 'none';
+                }
             }
 
             function renderRows(rows) {
@@ -624,6 +642,10 @@ $themeClass = ($selectedShopKey === 'autodok_prime') ? 'theme-prime' : 'theme-ma
                         return;
                     }
 
+                    if (branchText && data.shop_name) {
+                        branchText.textContent = 'Searching in: ' + data.shop_name;
+                    }
+
                     renderRows(data.data || []);
                 } catch (e) {
                     showError('Network error while searching.');
@@ -635,6 +657,15 @@ $themeClass = ($selectedShopKey === 'autodok_prime') ? 'theme-prime' : 'theme-ma
             }
 
             searchBtn.addEventListener('click', runCustomerLookup);
+            if (shopSelect) {
+                shopSelect.addEventListener('change', function () {
+                    const selectedOption = shopSelect.options[shopSelect.selectedIndex];
+                    if (branchText && selectedOption) {
+                        branchText.textContent = 'Searching in: ' + (selectedOption.dataset.shopName || selectedOption.text || 'Selected branch');
+                    }
+                    clearResultsForBranchChange();
+                });
+            }
             queryInput.addEventListener('keydown', function (ev) {
                 if (ev.key === 'Enter') {
                     ev.preventDefault();

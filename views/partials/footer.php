@@ -12,11 +12,64 @@ if (!defined('APP_ACCESS')) {
 <script src="<?php echo APP_URL; ?>/assets/js/main.js?v=<?php echo time(); ?>"></script>
 <script src="<?php echo APP_URL; ?>/assets/js/notifications.js?v=<?php echo time(); ?>"></script>
 <script>
+window.alert = function (message) {
+    if (typeof showToast === "function") {
+        showToast(String(message || "Notification"), "error");
+    }
+};
+</script>
+<script>
 (function () {
     let baselineToken = null;
     let checking = false;
     let pendingRefresh = false;
     let pendingToken = null;
+    const tabId = Math.random().toString(36).slice(2);
+    const pollLockKey = 'autodok_live_poll_lock';
+    const reloadStampKey = 'autodok_live_reload_stamp';
+
+    function nowMs() {
+        return Date.now();
+    }
+
+    function acquirePollLock(ttlMs = 2500) {
+        try {
+            const current = localStorage.getItem(pollLockKey);
+            const parsed = current ? JSON.parse(current) : null;
+            const now = nowMs();
+
+            if (parsed && parsed.tabId !== tabId && typeof parsed.expiresAt === 'number' && parsed.expiresAt > now) {
+                return false;
+            }
+
+            localStorage.setItem(pollLockKey, JSON.stringify({
+                tabId,
+                expiresAt: now + ttlMs
+            }));
+            return true;
+        } catch (_e) {
+            return true;
+        }
+    }
+
+    function markReloadStamp() {
+        try {
+            localStorage.setItem(reloadStampKey, String(nowMs()));
+        } catch (_e) {
+            // ignore storage errors
+        }
+    }
+
+    function hasRecentReload(windowMs = 1500) {
+        try {
+            const raw = localStorage.getItem(reloadStampKey);
+            const stamp = raw ? parseInt(raw, 10) : 0;
+            if (!stamp) return false;
+            return nowMs() - stamp < windowMs;
+        } catch (_e) {
+            return false;
+        }
+    }
 
     function hasOpenModal() {
         return !!document.querySelector('.modal.show');
@@ -63,12 +116,20 @@ if (!defined('APP_ACCESS')) {
     }
 
     async function fetchLiveToken() {
-        const res = await fetch('<?php echo APP_URL; ?>/api/live_updates.php', {
-            method: 'GET',
-            cache: 'no-store',
-            credentials: 'same-origin',
-            headers: { 'X-Requested-With': 'XMLHttpRequest' }
-        });
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 5000);
+        let res;
+        try {
+            res = await fetch('<?php echo APP_URL; ?>/api/live_updates.php', {
+                method: 'GET',
+                cache: 'no-store',
+                credentials: 'same-origin',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                signal: controller.signal
+            });
+        } finally {
+            clearTimeout(timeout);
+        }
         if (!res.ok) return null;
         const data = await res.json();
         return data && data.success ? data.token : null;
@@ -76,6 +137,7 @@ if (!defined('APP_ACCESS')) {
 
     async function checkUpdates() {
         if (checking || document.hidden) return;
+        if (!acquirePollLock()) return;
         checking = true;
         try {
             const token = await fetchLiveToken();
@@ -92,12 +154,22 @@ if (!defined('APP_ACCESS')) {
             }
 
             if (pendingRefresh) {
+                if (window.NotificationManager && typeof window.NotificationManager.loadUnreadCount === 'function') {
+                    window.NotificationManager.loadUnreadCount();
+                }
                 if (!isSafeToRefresh()) {
+                    return;
+                }
+                if (hasRecentReload()) {
+                    baselineToken = pendingToken || token;
+                    pendingRefresh = false;
+                    pendingToken = null;
                     return;
                 }
                 baselineToken = pendingToken || token;
                 pendingRefresh = false;
                 pendingToken = null;
+                markReloadStamp();
                 window.location.reload();
             }
         } catch (e) {
@@ -107,13 +179,35 @@ if (!defined('APP_ACCESS')) {
         }
     }
 
-    setTimeout(checkUpdates, 1200);
-    setInterval(checkUpdates, 3000);
+    setTimeout(checkUpdates, 2000);
+    setInterval(checkUpdates, 10000);
     document.addEventListener('visibilitychange', function () {
         if (!document.hidden) {
             checkUpdates();
         }
     });
+
+    // Close modal state before navigation so a backdrop cannot cover the
+    // destination page during a fast transition.
+    document.addEventListener('click', function (event) {
+        const target = event.target;
+        const link = target instanceof Element ? target.closest('a[href]') : null;
+        if (!link || link.target === '_blank' || link.hasAttribute('download')) return;
+        // In-page links (including Bootstrap tabs) must not close the modal.
+        const href = link.getAttribute('href') || '';
+        if (href.startsWith('#')) return;
+        if (link.origin !== window.location.origin) return;
+
+        document.querySelectorAll('.modal.show').forEach(function (modalEl) {
+            const modal = bootstrap.Modal.getInstance(modalEl);
+            if (modal) modal.hide();
+        });
+        document.querySelectorAll('.modal-backdrop').forEach(function (backdrop) {
+            backdrop.remove();
+        });
+        document.body.classList.remove('modal-open');
+        document.body.style.removeProperty('padding-right');
+    }, true);
 
     // If there is a pending refresh, trigger a quick re-check after user interaction ends.
     ['input', 'change', 'blur'].forEach(function (evtName) {

@@ -1,0 +1,24 @@
+[
+    {
+        "id": "ann_6a970e6e1bb2c7.96101340",
+        "category": "Update",
+        "title": "Upcoming Features",
+        "message": "<p class=\"p1\" style=\"caret-color: rgb(0, 0, 0); color: rgb(0, 0, 0);\"><b style=\"text-align: var(--bs-body-text-align);\">Staff Salary Records</b><span style=\"text-align: var(--bs-body-text-align);\">&nbsp;</span><span style=\"text-align: var(--bs-body-text-align);\">and</span><span style=\"text-align: var(--bs-body-text-align);\">&nbsp;</span><span class=\"s2\" style=\"text-align: var(--bs-body-text-align);\"><b>Money Inventory</b></span><span style=\"text-align: var(--bs-body-text-align);\">&nbsp;will be added to improve financial tracking and management.</span><br></p>",
+        "enabled": true,
+        "audience": "everyone",
+        "shop_key": "",
+        "updated_at": "2026-09-02 01:42:06",
+        "updated_by": "Dj Guingue Cortez"
+    },
+    {
+        "id": "ann_6a81da0a167928.91796916",
+        "category": "Reminder",
+        "title": "Account Information Update",
+        "message": "\r\n\r\n\r\n\r\n<p class=\"p1\">We recommend changing your password for better account security.</p>\r\n<p class=\"p1\">Please also update your account details and make sure your information is correct.</p>\r\n<p class=\"p2\"><b>Thank you!</b></p>",
+        "enabled": true,
+        "updated_at": "2026-08-18 00:02:26",
+        "updated_by": "Dj Guingue Cortez",
+        "audience": "everyone",
+        "shop_key": ""
+    }
+]

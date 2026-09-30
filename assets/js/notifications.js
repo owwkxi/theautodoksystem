@@ -143,6 +143,7 @@ const NotificationManager = {
     const dropdown = document.createElement("div");
     dropdown.id = "notificationDropdown";
     dropdown.className = "notification-dropdown";
+    dropdown.style.zIndex = "2000";
     dropdown.innerHTML = `
             <div class="notification-header">
                 <h6>Notifications</h6>
@@ -265,6 +266,20 @@ const NotificationManager = {
   },
 
   /**
+   * Open the announcement modal and scroll to the specific announcement
+   */
+  openAnnouncementsModal() {
+    try {
+      const modalEl = document.getElementById("announcementModal");
+      if (!modalEl) return;
+      const bsModal = bootstrap.Modal.getOrCreateInstance(modalEl);
+      bsModal.show();
+    } catch (e) {
+      console.error("Error opening announcements modal:", e);
+    }
+  },
+
+  /**
    * Get icon for notification type
    */
   getNotificationIcon(type) {
@@ -296,11 +311,36 @@ const NotificationManager = {
       });
       const data = await response.json();
       if (data.success) {
+        // Update unread count badge
         this.loadUnreadCount();
-        this.loadNotifications();
+        // Reflect read state in-place instead of reloading the list (prevents disappearance)
+        this.setItemRead(notificationId);
       }
     } catch (error) {
       console.error("Error marking notification as read:", error);
+    }
+  },
+
+  /**
+   * Mark a notification item DOM as read (no removal)
+   */
+  setItemRead(notificationId) {
+    try {
+      const listContainer = document.getElementById("notificationList");
+      if (!listContainer) return;
+      const selector = `.notification-item[data-id="${notificationId}"]`;
+      const item = listContainer.querySelector(selector);
+      if (item) {
+        item.classList.remove("unread");
+        item.classList.add("read");
+        // remove onclick handler that caused marking-as-read
+        item.removeAttribute("onclick");
+        // make cursor default
+        item.style.cursor = "default";
+      }
+    } catch (e) {
+      // fallback: reload list if anything unexpected happens
+      this.loadNotifications();
     }
   },
 
@@ -336,7 +376,21 @@ const NotificationManager = {
 
       if (data && data.success) {
         this.updateBadge(0);
-        await this.loadNotifications();
+        // reflect read state in-place to avoid removing items from the list
+        try {
+          const list = document.getElementById("notificationList");
+          if (list) {
+            const items = list.querySelectorAll(".notification-item");
+            items.forEach((it) => {
+              it.classList.remove("unread");
+              it.classList.add("read");
+              it.removeAttribute("onclick");
+              it.style.cursor = "default";
+            });
+          }
+        } catch (e) {
+          /* ignore and continue */
+        }
       } else {
         this.notifyResult(
           data?.message || "Failed to mark all notifications as read",
@@ -457,7 +511,7 @@ const NotificationManager = {
     if (!listContainer) return;
 
     try {
-      const response = await fetch(`${this.apiUrl}?action=all&limit=50`, {
+      const response = await fetch(`${this.apiUrl}?action=all`, {
         credentials: "same-origin",
       });
       const raw = await response.text();

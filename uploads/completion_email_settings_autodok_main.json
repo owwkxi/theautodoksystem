@@ -1,0 +1,8 @@
+{
+    "subject": "Job Order #{job_order_number} completed",
+    "message": "<span style=\"color:rgb(1, 107, 213);\"><span style=\"color:rgb(45, 48, 52);\">Dear {customer_name},<br>\r\n<br>\r\nWe are pleased to inform you that your vehicle, {vehicle}, under Job Order #{job_order_number}, has been completed and is now <b>ready for release</b>.<br>\r\n<br><b>\r\nTotal Amount: </b>PHP {total_amount}<br>\r\n<br>\r\nPlease visit our service center at your convenience to proceed with the vehicle release. If you have any questions or concerns regarding the completed service, please feel free to contact us.<br>\r\n<br>\r\nThank you for choosing <b>{company_name}</b>. We appreciate your trust and continued support.</span></span><div><span style=\"color:#2d3034;\"><br></span><div><i><span style=\"color:rgb(241, 9, 9);\">This is an automated message. Please do not reply directly to this email.</span></i></div><br><div><strong>Company Contact:</strong> The Autodok<br><strong>Contact Number:</strong> 09269659259 | 09163971517<br><strong>Email:</strong> automotivetheautodok@gmail.com<br><strong>Address:</strong> Kawayan Drive, Matina Crossing, Davao City (8000)</div></div>",
+    "company_contact": "The Autodok",
+    "company_contact_number": "09269659259",
+    "company_email": "automotivetheautodok@gmail.com",
+    "company_address": "Kawayan Drive, Matina Crossing"
+}

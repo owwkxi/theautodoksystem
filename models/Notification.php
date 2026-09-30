@@ -104,14 +104,25 @@ class Notification {
                     'system',
                     'Low Stock Alert',
                     $lowStockCount === 1 ? '1 product is low on stock.' : "{$lowStockCount} products are low on stock.",
-                    '/views/inventory/index.php',
+                    '/inventory',
                     "low_stock:{$lowStockCount}"
                 );
             }
         }
 
         if (in_array($userRole, ['admin', 'cashier', 'service_adviser'], true)) {
-            $paidSql = "SELECT COUNT(*) as count FROM job_orders WHERE payment_status = 'paid' AND DATE(created_at) = CURDATE()";
+            $paidSql = "SELECT COUNT(DISTINCT jo.id) as count
+                        FROM job_orders jo
+                        LEFT JOIN job_order_payments jp ON jp.job_order_id = jo.id
+                        WHERE jo.status != 'cancelled'
+                          AND (
+                              (DATE(jp.payment_date) = CURDATE() AND jp.id IS NOT NULL)
+                              OR (
+                                  jo.payment_status IN ('paid', 'partial')
+                                  AND DATE(COALESCE(jo.payment_date, jo.created_at)) = CURDATE()
+                                  AND jo.id NOT IN (SELECT DISTINCT job_order_id FROM job_order_payments)
+                              )
+                          )";
             $paidResult = $this->db->fetch($paidSql);
             $paidCount = (int)($paidResult['count'] ?? 0);
 
@@ -121,7 +132,7 @@ class Notification {
                     'payment',
                     'Paid Job Orders',
                     $paidCount === 1 ? '1 job order was paid today.' : "{$paidCount} job orders were paid today.",
-                    '/views/job_orders/index.php?status=paid',
+                    '/job-orders?status=paid',
                     'paid_today:' . date('Y-m-d') . ":{$paidCount}"
                 );
             }
@@ -138,7 +149,7 @@ class Notification {
                     'job_assigned',
                     'Assigned Job Orders',
                     $assignedCount === 1 ? 'You have 1 assigned job order.' : "You have {$assignedCount} assigned job orders.",
-                    '/views/job_orders/index.php?assigned=me',
+                    '/job-orders?assigned=me',
                     "assigned_jobs:{$assignedCount}"
                 );
             }
@@ -158,7 +169,7 @@ class Notification {
                     'job_assigned',
                     'Your Assigned Job Orders',
                     $techAssignedCount === 1 ? 'You have 1 active assigned job order.' : "You have {$techAssignedCount} active assigned job orders.",
-                    '/views/services/manage.php?tab=job_orders',
+                    '/services?tab=job_orders',
                     "tech_assigned_jobs:{$techAssignedCount}"
                 );
             }
@@ -186,13 +197,20 @@ class Notification {
     /**
      * Get all notifications for a user
      */
-    public function getUserNotifications($userId, $limit = 50) {
+    public function getUserNotifications($userId, $limit = 0) {
+        if ($limit > 0) {
+            $sql = "SELECT * FROM notifications 
+                    WHERE user_id = ? 
+                    ORDER BY created_at DESC 
+                    LIMIT ?";
+            return $this->db->fetchAll($sql, [$userId, (int)$limit]);
+        }
+
         $sql = "SELECT * FROM notifications 
                 WHERE user_id = ? 
-                ORDER BY created_at DESC 
-                LIMIT ?";
-        
-        return $this->db->fetchAll($sql, [$userId, (int)$limit]);
+                ORDER BY created_at DESC";
+
+        return $this->db->fetchAll($sql, [$userId]);
     }
 
     /**
@@ -273,9 +291,10 @@ class Notification {
                 SET is_read = 1 
                 WHERE user_id = ? AND is_read = 0";
 
-        $result = $this->db->execute($sql, [$userId]);
-        $this->dismissCurrentDynamicNotifications($userId);
-        return $result;
+        // Mark all stored notifications as read without hiding the visible
+        // items from the bell dropdown; clear/delete actions are the ones that
+        // should remove notifications from the UI.
+        return $this->db->execute($sql, [$userId]);
     }
 
     /**
@@ -379,7 +398,7 @@ class Notification {
             'message' => function_exists('buildNotificationMessageTemplate')
                 ? buildNotificationMessageTemplate('System', 'updated', 'your account', $message)
                 : $message,
-            'link' => '/views/profile/index.php'
+            'link' => '/profile'
         ]);
     }
 
@@ -398,7 +417,7 @@ class Notification {
             'type' => 'cash_advance',
             'title' => $title,
             'message' => $message,
-            'link' => '/views/cash_advance/index.php'
+            'link' => '/cash-advance'
         ]);
     }
 
@@ -414,7 +433,7 @@ class Notification {
             'message' => function_exists('buildNotificationMessageTemplate')
                 ? buildNotificationMessageTemplate('System', 'assigned', 'job order #' . $jobOrderNumber)
                 : "You have been assigned to Job Order #{$jobOrderNumber}",
-            'link' => "/views/job_orders/view.php?id={$jobOrderId}"
+            'link' => "/job-orders/view?id={$jobOrderId}"
         ]);
     }
 
@@ -432,7 +451,7 @@ class Notification {
             'message' => function_exists('buildNotificationMessageTemplate')
                 ? buildNotificationMessageTemplate('System', 'updated', 'job order #' . $jobOrderNumber, 'Status: ' . $statusText)
                 : "Job Order #{$jobOrderNumber} status changed to {$statusText}",
-            'link' => "/views/job_orders/view.php?id={$jobOrderId}"
+            'link' => "/job-orders/view?id={$jobOrderId}"
         ]);
     }
 
@@ -448,7 +467,7 @@ class Notification {
             'message' => function_exists('buildNotificationMessageTemplate')
                 ? buildNotificationMessageTemplate('System', 'received payment for', 'job order #' . $jobOrderNumber, 'Amount: ₱' . number_format($amount, 2))
                 : "Payment of ₱" . number_format($amount, 2) . " received for Job Order #{$jobOrderNumber}",
-            'link' => '/views/job_orders/index.php'
+            'link' => '/job-orders'
         ]);
     }
 
@@ -471,7 +490,7 @@ class Notification {
             'type' => 'staff_update',
             'title' => $title,
             'message' => $message,
-            'link' => '/views/profile/index.php'
+            'link' => '/profile'
         ]);
     }
 

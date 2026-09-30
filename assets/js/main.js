@@ -3,6 +3,31 @@
  * The Autodok - Automotive Care Services
  */
 
+// Bootstrap can leave a backdrop behind when a modal is opened while the
+// page is navigating or another modal is closing. Remove only orphaned
+// backdrops so they cannot cover the application indefinitely.
+(function () {
+  function removeOrphanedModalState() {
+    const visibleModal = Array.from(document.querySelectorAll(".modal")).some(
+      (modal) =>
+        modal.classList.contains("show") ||
+        modal.getAttribute("aria-hidden") === "false",
+    );
+
+    if (visibleModal) return;
+
+    document.querySelectorAll(".modal-backdrop").forEach((backdrop) => {
+      backdrop.remove();
+    });
+    document.body.classList.remove("modal-open");
+    document.body.style.removeProperty("padding-right");
+  }
+
+  document.addEventListener("hidden.bs.modal", removeOrphanedModalState);
+  window.addEventListener("pageshow", removeOrphanedModalState);
+  window.setTimeout(removeOrphanedModalState, 0);
+})();
+
 // Auto-dismiss alerts after 5 seconds
 document.addEventListener("DOMContentLoaded", function () {
   const alerts = document.querySelectorAll(".alert:not(.alert-permanent)");
@@ -253,7 +278,38 @@ function showToast(message, type = "info") {
   const toast = new bootstrap.Toast(toastElement);
   toast.show();
 
-  toastElement.addEventListener("hidden.bs.toast", function () {
+  // Guard: remove stray modal backdrops or modal-open body state when no modal is actually visible.
+  const cleanupBackdrops = () => {
+    const anyModalVisible = Array.from(document.querySelectorAll('.modal')).some(m => {
+      return m.classList.contains('show') || (m.style.display && m.style.display !== 'none') || m.offsetParent !== null;
+    });
+    if (!anyModalVisible) {
+      const backdrops = document.querySelectorAll('.modal-backdrop');
+      if (backdrops.length > 0) {
+        console.warn("cleanupBackdrops: removing", backdrops.length, "stray modal-backdrop(s)");
+      }
+      backdrops.forEach(el => el.remove());
+      document.body.classList.remove('modal-open');
+    }
+  };
+
+  // Retry the cleanup a few times to handle race conditions where other code briefly re-adds the backdrop.
+  setTimeout(cleanupBackdrops, 20);
+  (function retryCleanup(retries = 8, delay = 50) {
+    if (retries <= 0) return;
+    const id = setTimeout(() => {
+      cleanupBackdrops();
+      // If there are still backdrops and retries remain, schedule another attempt
+      const hasBackdrop = document.querySelectorAll('.modal-backdrop').length > 0;
+      if (hasBackdrop) {
+        retryCleanup(retries - 1, delay);
+      }
+    }, delay);
+  })();
+
+  toastElement.addEventListener('hidden.bs.toast', function () {
+    // Ensure cleanup when toast hides as well
+    cleanupBackdrops();
     toastElement.remove();
   });
 }

@@ -1,0 +1,29 @@
+[
+    {
+        "id": "exp_6a78844bcc5834.99526983",
+        "expense_date": "2026-08-09",
+        "category": "General",
+        "description": "Test",
+        "amount": 12.34,
+        "created_by": "tester",
+        "created_at": "2026-08-09 21:44:43"
+    },
+    {
+        "id": "exp_6a78848e152bd2.71328938",
+        "expense_date": "2026-08-09",
+        "category": "General",
+        "description": "Regression test expense",
+        "amount": 12.34,
+        "created_by": "tester",
+        "created_at": "2026-08-09 21:45:50"
+    },
+    {
+        "id": "exp_6a788496cd2056.96353912",
+        "expense_date": "2026-08-09",
+        "category": "General",
+        "description": "Regression test expense",
+        "amount": 12.34,
+        "created_by": "tester",
+        "created_at": "2026-08-09 21:45:58"
+    }
+]

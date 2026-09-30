@@ -39,7 +39,7 @@ include __DIR__ . '/../partials/header.php';
         <h4 class="mb-0">Job Orders Management</h4>
         <p class="text-muted small mb-0">Manage all job orders and service requests</p>
     </div>
-    <a href="<?php echo APP_URL; ?>/views/job_orders/create.php" class="btn btn-primary">
+    <a href="<?php echo routeUrl('job_orders_create'); ?>" class="btn btn-primary">
         <i class="bi bi-plus-circle"></i> New Job Order
     </a>
 </div>
@@ -68,7 +68,7 @@ include __DIR__ . '/../partials/header.php';
                 </button>
             </div>
             <div class="col-md-2">
-                <a href="<?php echo APP_URL; ?>/views/job_orders/index.php" class="btn btn-secondary w-100">
+                <a href="<?php echo routeUrl('job_orders'); ?>" class="btn btn-secondary w-100">
                     <i class="bi bi-x-circle"></i> Clear
                 </a>
             </div>
@@ -101,7 +101,7 @@ include __DIR__ . '/../partials/header.php';
                         <td colspan="10" class="text-center py-5">
                             <i class="bi bi-inbox display-4 text-muted"></i>
                             <p class="text-muted mt-3">No job orders found</p>
-                            <a href="<?php echo APP_URL; ?>/views/job_orders/create.php" class="btn btn-primary">
+                            <a href="<?php echo routeUrl('job_orders_create'); ?>" class="btn btn-primary">
                                 <i class="bi bi-plus-circle"></i> Create First Job Order
                             </a>
                         </td>
@@ -134,11 +134,11 @@ include __DIR__ . '/../partials/header.php';
                             <td><?php echo formatDate($job['created_at']); ?></td>
                             <td>
                                 <div class="btn-group btn-group-sm d-none d-md-inline-flex">
-                                    <a href="<?php echo APP_URL; ?>/views/job_orders/view.php?id=<?php echo $job['id']; ?>" 
+                                    <a href="<?php echo appUrl('job-orders/view'); ?>?id=<?php echo $job['id']; ?>" 
                                        class="btn btn-outline-primary" title="View">
                                         <i class="bi bi-eye"></i>
                                     </a>
-                                    <a href="<?php echo APP_URL; ?>/views/job_orders/edit.php?id=<?php echo $job['id']; ?>" 
+                                    <a href="<?php echo appUrl('job-orders/edit'); ?>?id=<?php echo $job['id']; ?>" 
                                        class="btn btn-outline-warning" title="Edit">
                                         <i class="bi bi-pencil"></i>
                                     </a>
@@ -155,12 +155,12 @@ include __DIR__ . '/../partials/header.php';
                                     </button>
                                     <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="jobActionsMobile<?php echo $job['id']; ?>">
                                         <li>
-                                            <a class="dropdown-item" href="<?php echo APP_URL; ?>/views/job_orders/view.php?id=<?php echo $job['id']; ?>">
+                                            <a class="dropdown-item" href="<?php echo appUrl('job-orders/view'); ?>?id=<?php echo $job['id']; ?>">
                                                 <i class="bi bi-eye me-2"></i>View
                                             </a>
                                         </li>
                                         <li>
-                                            <a class="dropdown-item" href="<?php echo APP_URL; ?>/views/job_orders/edit.php?id=<?php echo $job['id']; ?>">
+                                            <a class="dropdown-item" href="<?php echo appUrl('job-orders/edit'); ?>?id=<?php echo $job['id']; ?>">
                                                 <i class="bi bi-pencil me-2"></i>Edit
                                             </a>
                                         </li>
@@ -192,8 +192,14 @@ include __DIR__ . '/../partials/header.php';
                     </a>
                 </li>
                 
-                <?php for ($i = 1; $i <= $pagination['total_pages']; $i++): ?>
-                <li class="page-item <?php echo $i === $pagination['current_page'] ? 'active' : ''; ?>">
+                <?php
+                $totalPages = $pagination['total_pages'];
+                $currentPage = $pagination['current_page'];
+                $startPage = max(1, $currentPage - 2);
+                $endPage = min($totalPages, $startPage + 4);
+                if ($endPage - $startPage < 4) $startPage = max(1, $endPage - 4);
+                for ($i = $startPage; $i <= $endPage; $i++): ?>
+                <li class="page-item <?php echo $i === $currentPage ? 'active' : ''; ?>">
                     <a class="page-link" href="?page=<?php echo $i; ?>&status=<?php echo $filters['status']; ?>&search=<?php echo urlencode($filters['search']); ?>">
                         <?php echo $i; ?>
                     </a>
@@ -219,8 +225,14 @@ include __DIR__ . '/../partials/header.php';
 </div>
 
 <script>
-function deleteJobOrder(id) {
-    appConfirm('Are you sure you want to delete this job order? This action cannot be undone.', {
+async function deleteJobOrder(id) {
+    const response = await fetch('<?php echo APP_URL; ?>/api/job_orders.php?id=' + id);
+    const result = await response.json();
+    const jo = result.success ? result.data : null;
+    const details = jo
+        ? `JO: ${jo.job_order_number || id}\nCustomer: ${jo.customer_name || '—'}\nPlate: ${jo.plate_number || jo.vehicle_license || '—'}\nAmount: ₱${Number(jo.total_amount || 0).toFixed(2)}`
+        : `Job Order ID: ${id}`;
+    appConfirm(`Delete this job order?\n\n${details}`, {
         title: 'Delete Job Order',
         confirmText: 'Delete',
         variant: 'danger'
