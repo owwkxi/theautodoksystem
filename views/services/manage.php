@@ -1,13 +1,13 @@
 <?php
 define('APP_ACCESS', true);
-require_once '../../includes/config.php';
-require_once '../../includes/session.php';
-require_once '../../includes/Database.php';
-require_once '../../includes/functions.php';
-require_once '../../includes/security.php';
-require_once '../../models/Service.php';
-require_once '../../models/ServiceBundle.php';
-require_once '../../models/Staff.php';
+require_once __DIR__ . '/../../includes/config.php';
+require_once __DIR__ . '/../../includes/session.php';
+require_once __DIR__ . '/../../includes/Database.php';
+require_once __DIR__ . '/../../includes/functions.php';
+require_once __DIR__ . '/../../includes/security.php';
+require_once __DIR__ . '/../../models/Service.php';
+require_once __DIR__ . '/../../models/ServiceBundle.php';
+require_once __DIR__ . '/../../models/Staff.php';
 
 // Check authentication
 requireLogin();
@@ -511,7 +511,7 @@ if ($activeTab === 'estimates') {
 
 $totalPages = ceil($totalRecords / $perPage);
 
-include_once '../partials/header.php';
+include_once __DIR__ . '/../partials/header.php';
 ?>
 
 <script>
@@ -9880,4 +9880,4 @@ function convertEstimateToJo(d) {
 }
 </script>
 
-<?php include_once '../partials/footer.php'; ?>
+<?php include_once __DIR__ . '/../partials/footer.php'; ?>
