@@ -189,10 +189,10 @@ class BridgeHandler(BaseHTTPRequestHandler):
         try:
             timeout = float(query.get("timeout", ["2"])[0])
         except (TypeError, ValueError):
-            timeout = 2.0
+            timeout = 0.5
         if not math.isfinite(timeout):
-            timeout = 2.0
-        timeout = min(max(timeout, 0.0), 15.0)
+            timeout = 0.5
+        timeout = min(max(timeout, 0.0), 0.5)
 
         try:
             event = CARD_EVENTS.get(timeout=timeout)

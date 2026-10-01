@@ -1,4 +1,8 @@
 <?php
+error_reporting(E_ALL);
+ini_set('display_errors', '0');
+ini_set('log_errors', '1');
+
 define('APP_ACCESS', true);
 
 header('Content-Type: application/json; charset=utf-8');
@@ -27,11 +31,11 @@ if ($route === 'health') {
     $bridgeUrl = 'http://127.0.0.1:8765/health';
     $timeout = 4;
 } elseif ($route === 'scan') {
-    $scanTimeout = filter_var($_GET['timeout'] ?? 2, FILTER_VALIDATE_FLOAT);
+    $scanTimeout = filter_var($_GET['timeout'] ?? 0.5, FILTER_VALIDATE_FLOAT);
     if ($scanTimeout === false || !is_finite((float)$scanTimeout)) {
-        $scanTimeout = 2;
+        $scanTimeout = 0.5;
     }
-    $scanTimeout = min(max((float)$scanTimeout, 0), 2);
+    $scanTimeout = min(max((float)$scanTimeout, 0), 0.5);
     $bridgeUrl = 'http://127.0.0.1:8765/scan?timeout=' . rawurlencode((string)$scanTimeout);
     $timeout = (int)ceil($scanTimeout) + 2;
 } else {

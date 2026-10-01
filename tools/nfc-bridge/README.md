@@ -59,4 +59,4 @@ NFC_BRIDGE_ALLOWED_ORIGINS="http://localhost,https://attendance.example.com" .ve
 
 If the PC/SC reader name does not contain `ACR122`, set `NFC_BRIDGE_READER_NAME` to a distinctive part of its name. The helper logs reader errors to its terminal but does not log card UIDs.
 
-The attendance page must be served from an origin listed in `NFC_BRIDGE_ALLOWED_ORIGINS`. The helper reads cards locally on the kiosk computer and does not expose the reader to the application server. If the browser asks for local-network access, allow it for the kiosk site.
+The attendance page must be served from an origin listed in `NFC_BRIDGE_ALLOWED_ORIGINS`. The helper reads cards locally on the kiosk computer and does not expose the reader to the application server. It polls for card events in short intervals so switching between Attendance and Staff Management does not leave a long-running scan waiting in another tab. If the browser asks for local-network access, allow it for the kiosk site.

@@ -589,10 +589,11 @@ document.getElementById("startNfcScanButton")?.addEventListener("click", () => {
       onUid: (uid) => {
         uidInput.required = false;
         uidInput.value = uid;
-        status.textContent = "ACR122 card detected. Choose Save Card to register it.";
         stopAcr122Reader?.();
         stopAcr122Reader = null;
         connectAcr122Button.disabled = false;
+        status.textContent = "ACR122 card detected. Saving its registration…";
+        void saveStaffNfcUid(uid);
       },
     });
   });
@@ -628,14 +629,22 @@ async function saveStaffNfcUid(uid) {
     body.append("staff_id", document.getElementById("nfc_staff_id").value);
     body.append("nfc_uid", uid);
     const response = await fetch(`${APP_URL}/api/staff.php`, { method: "POST", body });
-    const data = await response.json();
+    const responseText = await response.text();
+    let data;
+    try {
+      data = JSON.parse(responseText);
+    } catch (_parseError) {
+      throw new Error(`Card registration returned non-JSON HTTP ${response.status}. Check the PHP error log.`);
+    }
     if (!response.ok || !data.success) throw new Error(data.message || "Unable to save NFC card");
     showToast(data.message, "success");
     bootstrap.Modal.getInstance(document.getElementById("registerNfcModal")).hide();
     setTimeout(() => window.location.reload(), 700);
   } catch (error) {
     console.error("NFC registration save error:", error);
-    showToast(error.message || "Unable to save NFC card", "error");
+    const message = error.message || "Unable to save NFC card";
+    document.getElementById("nfcScanStatus").textContent = message;
+    showToast(message, "error");
   } finally {
     saveButton.disabled = false;
   }

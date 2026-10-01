@@ -1410,7 +1410,7 @@ include __DIR__ . '/../partials/header.php';
                     <p class="mb-2">Staff member: <strong id="nfc_staff_name"></strong></p>
                     <label for="nfc_card_uid" class="form-label">Card UID</label>
                     <input type="text" class="form-control" id="nfc_card_uid" maxlength="80" autocomplete="off" placeholder="Click here, then scan the card" required>
-                    <div class="form-text">Click Start Scan, then tap the card. Its UID is registered to this staff member automatically. If needed, enter a UID and choose Save Card.</div>
+                    <div class="form-text">For the ACR122, choose Connect ACR122 and tap the card; its UID will be saved to this staff member automatically. Keyboard-mode readers can use Start Scan, then choose Save Card.</div>
                     <button type="button" class="btn btn-sm btn-outline-dark mt-2" id="startNfcScanButton"><i class="bi bi-broadcast-pin"></i> Start Scan</button>
                     <button type="button" class="btn btn-sm btn-outline-primary mt-2" id="connectAcr122RegistrationButton"><i class="bi bi-usb-drive"></i> Connect ACR122</button>
                     <div class="form-text" id="nfcScanStatus" aria-live="polite">Waiting for a card scan.</div>
