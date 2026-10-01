@@ -175,6 +175,8 @@ class Staff {
     public function update($id, $data) {
         $fields = [];
         $params = [];
+        $userFields = [];
+        $userParams = [];
 
         if (isset($data['full_name'])) {
             list($firstName, $lastName) = $this->splitFullName($data['full_name']);
@@ -182,6 +184,8 @@ class Staff {
             $params[] = $firstName;
             $fields[] = "last_name = ?";
             $params[] = $lastName;
+            $userFields[] = "full_name = ?";
+            $userParams[] = $data['full_name'];
         }
 
         if (isset($data['username'])) {
@@ -200,6 +204,8 @@ class Staff {
             }
             $fields[] = "email = ?";
             $params[] = $data['email'];
+            $userFields[] = "email = ?";
+            $userParams[] = $data['email'];
         }
 
         if (isset($data['contact_number'])) {
@@ -215,6 +221,8 @@ class Staff {
         if (isset($data['role'])) {
             $fields[] = "role = ?";
             $params[] = $data['role'];
+            $userFields[] = "role = ?";
+            $userParams[] = $data['role'];
         }
 
         if (isset($data['profile_image'])) {
@@ -225,11 +233,16 @@ class Staff {
         if (isset($data['status'])) {
             $fields[] = "status = ?";
             $params[] = $data['status'];
+            $userFields[] = "status = ?";
+            $userParams[] = $data['status'] === 'active' ? 'active' : 'inactive';
         }
 
         if (isset($data['password']) && !empty($data['password'])) {
+            $hashedPassword = password_hash($data['password'], PASSWORD_BCRYPT, ['cost' => PASSWORD_COST]);
             $fields[] = "password = ?";
-            $params[] = password_hash($data['password'], PASSWORD_BCRYPT, ['cost' => PASSWORD_COST]);
+            $params[] = $hashedPassword;
+            $userFields[] = "password = ?";
+            $userParams[] = $hashedPassword;
         }
 
         if (empty($fields)) {
@@ -240,9 +253,26 @@ class Staff {
         $sql = "UPDATE staff SET " . implode(', ', $fields) . " WHERE id = ?";
 
         try {
+            $staff = $this->db->fetch("SELECT username FROM staff WHERE id = ?", [$id]);
+            $linkedUser = $staff && !empty($staff['username'])
+                ? $this->db->fetch("SELECT id FROM users WHERE username = ?", [$staff['username']])
+                : false;
+
+            $this->db->beginTransaction();
             $this->db->query($sql, $params);
+            if ($linkedUser && !empty($userFields)) {
+                $userParams[] = $staff['username'];
+                $this->db->query(
+                    "UPDATE users SET " . implode(', ', $userFields) . " WHERE username = ?",
+                    $userParams
+                );
+            }
+            $this->db->commit();
             return true;
         } catch (Exception $e) {
+            if ($this->db->getConnection()->inTransaction()) {
+                $this->db->rollback();
+            }
             error_log("Staff update error: " . $e->getMessage());
             return false;
         }
@@ -254,11 +284,23 @@ class Staff {
      * @return bool Success status
      */
     public function delete($id) {
-        $sql = "DELETE FROM staff WHERE id = ?";
         try {
-            $this->db->query($sql, [$id]);
+            $staff = $this->db->fetch("SELECT username FROM staff WHERE id = ?", [$id]);
+            $linkedUser = $staff && !empty($staff['username'])
+                ? $this->db->fetch("SELECT id FROM users WHERE username = ?", [$staff['username']])
+                : false;
+
+            $this->db->beginTransaction();
+            $this->db->query("DELETE FROM staff WHERE id = ?", [$id]);
+            if ($linkedUser) {
+                $this->db->query("DELETE FROM users WHERE username = ?", [$staff['username']]);
+            }
+            $this->db->commit();
             return true;
         } catch (Exception $e) {
+            if ($this->db->getConnection()->inTransaction()) {
+                $this->db->rollback();
+            }
             error_log("Staff deletion error: " . $e->getMessage());
             return false;
         }
@@ -409,13 +451,28 @@ class Staff {
      * @return bool Success status
      */
     public function changePassword($id, $newPassword) {
-        $sql = "UPDATE staff SET password = ? WHERE id = ?";
         $hashedPassword = password_hash($newPassword, PASSWORD_BCRYPT, ['cost' => PASSWORD_COST]);
         
         try {
-            $this->db->query($sql, [$hashedPassword, $id]);
+            $staff = $this->db->fetch("SELECT username FROM staff WHERE id = ?", [$id]);
+            $linkedUser = $staff && !empty($staff['username'])
+                ? $this->db->fetch("SELECT id FROM users WHERE username = ?", [$staff['username']])
+                : false;
+
+            $this->db->beginTransaction();
+            $this->db->query("UPDATE staff SET password = ? WHERE id = ?", [$hashedPassword, $id]);
+            if ($linkedUser) {
+                $this->db->query(
+                    "UPDATE users SET password = ? WHERE username = ?",
+                    [$hashedPassword, $staff['username']]
+                );
+            }
+            $this->db->commit();
             return true;
         } catch (Exception $e) {
+            if ($this->db->getConnection()->inTransaction()) {
+                $this->db->rollback();
+            }
             error_log("Password change error: " . $e->getMessage());
             return false;
         }
