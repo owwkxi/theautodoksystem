@@ -394,8 +394,13 @@ function setSecurityHeaders() {
     // Referrer Policy
     header('Referrer-Policy: strict-origin-when-cross-origin');
     
+    // Limit local PC/SC bridge access to the attendance and staff-card pages.
+    $requestPath = (string)(parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH) ?: '');
+    $needsNfcBridge = preg_match('~/(?:attendance/nfc|staff)/?$~', $requestPath) === 1;
+    $bridgeConnectSource = $needsNfcBridge ? " connect-src 'self' http://127.0.0.1:8765;" : '';
+
     // Content Security Policy: keep scripts/styles restricted, but allow data/blob images for local previews.
-    header("Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; img-src 'self' data: blob: https:; font-src 'self' data: https://cdn.jsdelivr.net https://cdnjs.cloudflare.com;");
+    header("Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; img-src 'self' data: blob: https:; font-src 'self' data: https://cdn.jsdelivr.net https://cdnjs.cloudflare.com;{$bridgeConnectSource}");
 }
 
 // Apply security headers

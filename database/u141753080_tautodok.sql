@@ -33412,6 +33412,7 @@ CREATE TABLE `staff` (
   `team_id` int(11) DEFAULT NULL,
   `supervisor_id` int(11) DEFAULT NULL,
   `hourly_rate` decimal(10,2) DEFAULT 0.00,
+  `nfc_uid` varchar(64) DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -36613,6 +36614,7 @@ ALTER TABLE `staff`
   ADD UNIQUE KEY `staff_id` (`staff_id`),
   ADD UNIQUE KEY `username` (`username`),
   ADD UNIQUE KEY `email` (`email`),
+  ADD UNIQUE KEY `uq_staff_nfc_uid` (`nfc_uid`),
   ADD KEY `idx_role` (`role`),
   ADD KEY `idx_status` (`status`),
   ADD KEY `idx_team` (`team_id`),

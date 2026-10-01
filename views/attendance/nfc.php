@@ -50,7 +50,7 @@ require_once __DIR__ . '/../../includes/functions.php';
     <div class="mb-4">
         <div>
             <h1 class="display-6 mb-2 fw-bold">Tap Attendance</h1>
-            <p class="text-muted mb-0">Tap a staff card to record time in or time out.</p>
+            <p class="text-muted mb-0">Tap a registered staff card to record time in or time out.</p>
         </div>
     </div>
 
@@ -61,104 +61,126 @@ require_once __DIR__ . '/../../includes/functions.php';
         <div class="card-body text-center p-5">
             <div class="nfc-tap-icon"><i class="bi bi-phone-vibrate"></i></div>
             <h2 class="h4">Ready for the next tap</h2>
-            <p class="opacity-75 mb-4">Use a Web NFC-enabled device or a USB NFC reader.</p>
-            <button type="button" class="btn btn-light btn-lg px-4" id="startNfcButton">
-                <i class="bi bi-broadcast-pin me-2"></i>Enable device NFC
+            <p class="opacity-75 mb-2">Tap a card on the connected reader.</p>
+            <div class="small opacity-75" id="nfcStatus">Ready for USB keyboard reader input.</div>
+            <button class="btn btn-light btn-sm mt-3" type="button" id="connectAcr122Button">
+                <i class="bi bi-usb-drive me-1"></i>Connect ACR122 PC/SC
             </button>
-            <div class="small opacity-75 mt-3" id="nfcStatus">USB readers can type the staff ID below automatically.</div>
         </div>
     </div>
 
     <div class="card border-0 shadow-sm">
         <div class="card-body p-4">
-            <label for="nfcIdentifier" class="form-label fw-semibold">Staff ID</label>
+            <label for="nfcIdentifier" class="form-label fw-semibold">Staff ID or NFC card UID</label>
             <div class="input-group">
                 <input id="nfcIdentifier" class="form-control nfc-reader-input" autocomplete="off"
-                       inputmode="numeric" pattern="\d{5}" minlength="5" maxlength="5"
-                       placeholder="Enter 5-digit staff ID">
+                       maxlength="64" placeholder="Scan card or enter staff ID">
                 <button class="btn btn-dark px-4" type="button" id="submitNfcButton">Record tap</button>
             </div>
             <div id="nfcResult" class="nfc-result d-flex align-items-center justify-content-center text-center mt-3 p-3" aria-live="polite">
                 Waiting for a tap…
             </div>
-            <div class="nfc-help text-center mt-2">Your staff ID is the 5-digit number assigned to your staff account.</div>
+            <div class="nfc-help text-center mt-2">Register each card UID in Staff Management first. ACR122 readers require the local PC/SC bridge to be running on this kiosk computer.</div>
         </div>
     </div>
 </div>
 </main>
 
+<script src="<?php echo escape(APP_URL . '/assets/js/nfc-keyboard-reader.js?v=' . time()); ?>"></script>
+<script>
+    window.NFC_BRIDGE_PROXY_URL = <?php echo json_encode(APP_URL . '/api/nfc-bridge.php?route=', JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>;
+</script>
+<script src="<?php echo escape(APP_URL . '/assets/js/nfc-pcsc-bridge.js?v=' . time()); ?>"></script>
 <script>
 (() => {
+    const appUrl = <?php echo json_encode(APP_URL, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>;
     const input = document.getElementById('nfcIdentifier');
     const submit = document.getElementById('submitNfcButton');
+    const connectAcr122 = document.getElementById('connectAcr122Button');
     const result = document.getElementById('nfcResult');
     const status = document.getElementById('nfcStatus');
     let processing = false;
+    let stopAcr122Reader = null;
 
     const showResult = (message, type = '') => {
         result.className = `nfc-result d-flex align-items-center justify-content-center text-center mt-3 p-3 ${type}`;
         result.textContent = message;
     };
 
-    const recordTap = async () => {
-        if (processing || !input.value.trim()) return;
+    const recordTap = async (identifier = input.value.trim()) => {
+        if (processing || !identifier) return;
         processing = true;
         submit.disabled = true;
         showResult('Recording tap…');
         try {
             const body = new FormData();
-            body.append('identifier', input.value.trim());
-            const response = await fetch(`${window.APP_URL}/api/attendance.php`, { method: 'POST', body });
+            body.append('identifier', identifier);
+            const response = await fetch(`${appUrl}/api/attendance.php`, { method: 'POST', body });
             const data = await response.json();
             if (!response.ok || !data.success) throw new Error(data.message || 'Unable to record tap');
             showResult(data.message, 'success');
+            status.textContent = data.message;
             input.value = '';
         } catch (error) {
             showResult(error.message, 'error');
+            status.textContent = error.message;
         } finally {
+            if (input.value === identifier) input.value = '';
             processing = false;
             submit.disabled = false;
             input.focus();
-            input.addEventListener('input', () => {
-                input.value = input.value.replace(/\D/g, '').slice(0, 5);
-            });
         }
     };
 
-    submit.addEventListener('click', recordTap);
+    submit.addEventListener('click', () => recordTap());
     input.addEventListener('keydown', event => {
         if (event.key === 'Enter') {
             event.preventDefault();
-            recordTap();
+            recordTap(input.value.trim());
         }
     });
-    input.focus();
+    const focusReaderInput = () => {
+        if (document.activeElement !== input) input.focus();
+    };
+    window.addEventListener('focus', focusReaderInput);
+    document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) focusReaderInput();
+    });
+    focusReaderInput();
 
-    document.getElementById('startNfcButton').addEventListener('click', async () => {
-        if (!('NDEFReader' in window)) {
-            status.textContent = 'Web NFC is not available here. Use a USB reader or enter the staff ID.';
-            return;
-        }
-        try {
-            const reader = new NDEFReader();
-            await reader.scan();
-            status.textContent = 'Device NFC enabled. Tap a staff card.';
-            reader.addEventListener('reading', ({ message }) => {
-                for (const record of message.records) {
-                    if (record.recordType === 'text' || record.recordType === 'url' || record.recordType === 'mime') {
-                        try {
-                            const value = new TextDecoder(record.encoding || 'utf-8').decode(record.data);
-                            const staffId = value.match(/\b\d{5}\b/);
-                            input.value = staffId ? staffId[0] : value.replace(/^.*?:\/\//, '').trim();
-                            recordTap();
-                            return;
-                        } catch (_) {}
-                    }
+    connectAcr122.addEventListener('click', () => {
+        if (stopAcr122Reader) return;
+        connectAcr122.disabled = true;
+        status.textContent = 'Connecting to the local ACR122 bridge…';
+        stopAcr122Reader = window.NfcPcscBridge.start({
+            onStatus: (message) => {
+                status.textContent = message;
+                if (message.startsWith('Cannot connect')) {
+                    stopAcr122Reader?.();
+                    stopAcr122Reader = null;
+                    connectAcr122.disabled = false;
                 }
-            });
-        } catch (error) {
-            status.textContent = error.message || 'Unable to enable device NFC.';
-        }
+            },
+            onUid: (uid) => {
+                status.textContent = 'ACR122 card detected. Recording attendance…';
+                recordTap(uid);
+            },
+        });
+    });
+
+    window.NfcKeyboardReader.attach({
+        getInput: () => input,
+        allowStaffId: true,
+        onScan: (uid) => {
+            status.textContent = 'Card UID detected. Recording attendance…';
+            recordTap(uid);
+        },
+        onInput: (value) => {
+            status.textContent = `USB reader sent: ${value.slice(-64)}`;
+        },
+        onInvalid: (value) => {
+            if (value) status.textContent = `Reader sent unsupported data: ${value.slice(-64)}`;
+        },
     });
 })();
 </script>

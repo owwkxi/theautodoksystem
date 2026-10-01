@@ -67,6 +67,13 @@ try {
                 handleAttendance();
                 break;
             }
+            if (($_POST['action'] ?? '') === 'register_nfc') {
+                if (!$canManageStaff) {
+                    jsonResponse(['success' => false, 'message' => 'Insufficient permissions'], 403);
+                }
+                handleNfcRegistration($staffModel);
+                break;
+            }
             if (!$canManageStaff) {
                 jsonResponse(['success' => false, 'message' => 'Insufficient permissions'], 403);
             }
@@ -216,6 +223,45 @@ function handleAttendanceByDate($date) {
         [$date]
     );
     jsonResponse(['success' => true, 'data' => $records]);
+}
+
+function handleNfcRegistration($staffModel) {
+    $staffId = (int)($_POST['staff_id'] ?? 0);
+    if ($staffId <= 0) {
+        jsonResponse(['success' => false, 'message' => 'A valid staff record is required'], 400);
+    }
+
+    $staff = $staffModel->findById($staffId);
+    if (!$staff) {
+        jsonResponse(['success' => false, 'message' => 'Staff member not found'], 404);
+    }
+
+    $uid = strtoupper(trim((string)($_POST['nfc_uid'] ?? '')));
+    $uid = preg_replace('/^(?:CARD\s*)?UID\s*[:=#-]\s*/i', '', $uid);
+    $uid = preg_replace('/^0X/i', '', $uid);
+    $uid = preg_replace('/[\s:-]+/', '', $uid);
+    $uid = strtoupper($uid);
+    if ($uid !== '' && !preg_match('/^(?:[A-F0-9]{8}(?:[A-F0-9]{6}|[A-F0-9]{12})?|\d{10})$/', $uid)) {
+        jsonResponse(['success' => false, 'message' => 'Scan a valid NFC UID, or clear the field to remove the card'], 400);
+    }
+
+    if ($uid !== '') {
+        $existing = $staffModel->findByNfcUid($uid);
+        if ($existing && (int)$existing['id'] !== $staffId) {
+            jsonResponse(['success' => false, 'message' => 'This NFC card is already registered to another staff member'], 409);
+        }
+    }
+
+    if (!$staffModel->updateNfcUid($staffId, $uid === '' ? null : $uid)) {
+        jsonResponse(['success' => false, 'message' => 'Unable to save NFC card registration'], 500);
+    }
+
+    $action = $uid === '' ? 'Removed NFC card from staff: ' : 'Registered NFC card for staff: ';
+    logActivity((int)$_SESSION['user_id'], 'update_staff_nfc', $action . ($staff['full_name'] ?? $staff['staff_id']));
+    jsonResponse([
+        'success' => true,
+        'message' => $uid === '' ? 'NFC card removed from staff member' : 'NFC card registered successfully'
+    ]);
 }
 
 /**

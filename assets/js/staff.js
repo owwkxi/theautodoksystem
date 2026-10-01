@@ -520,6 +520,127 @@ async function editStaff(id) {
   }
 }
 
+async function registerStaffNfc(id) {
+  try {
+    const response = await fetch(`${APP_URL}/api/staff.php?id=${id}`);
+    const data = await response.json();
+    if (!data.success) throw new Error(data.message || "Unable to load staff member");
+
+    const staff = data.data;
+    document.getElementById("nfc_staff_id").value = staff.id;
+    document.getElementById("nfc_staff_name").textContent = staff.full_name || staff.staff_id;
+    document.getElementById("nfc_card_uid").value = staff.nfc_uid || "";
+    document.getElementById("nfc_card_uid").required = !staff.nfc_uid;
+    document.getElementById("nfcScanStatus").textContent = "Waiting for a card scan.";
+    const modalElement = document.getElementById("registerNfcModal");
+    modalElement.addEventListener("shown.bs.modal", () => {
+      document.getElementById("nfc_card_uid").focus();
+    }, { once: true });
+    bootstrap.Modal.getOrCreateInstance(modalElement).show();
+  } catch (error) {
+    console.error("NFC registration load error:", error);
+    showToast(error.message || "Unable to load staff member", "error");
+  }
+}
+
+document.getElementById("registerNfcForm")?.addEventListener("submit", async function (event) {
+  event.preventDefault();
+  await saveStaffNfcUid(document.getElementById("nfc_card_uid").value.trim());
+});
+
+document.getElementById("clearNfcUidButton")?.addEventListener("click", async () => {
+  await saveStaffNfcUid("");
+});
+
+document.getElementById("nfc_card_uid")?.addEventListener("keydown", (event) => {
+  if (event.key === "Enter") {
+    event.preventDefault();
+    document.getElementById("registerNfcForm").requestSubmit();
+  }
+});
+
+document.getElementById("startNfcScanButton")?.addEventListener("click", () => {
+  document.getElementById("nfcScanStatus").textContent = "Ready—scan the card now.";
+  document.getElementById("nfc_card_uid").focus();
+});
+
+(() => {
+  const modal = document.getElementById("registerNfcModal");
+  const uidInput = document.getElementById("nfc_card_uid");
+  const status = document.getElementById("nfcScanStatus");
+  const connectAcr122Button = document.getElementById("connectAcr122RegistrationButton");
+  if (!modal || !uidInput || !status || !connectAcr122Button) return;
+
+  let stopAcr122Reader = null;
+
+  connectAcr122Button.addEventListener("click", () => {
+    if (stopAcr122Reader) return;
+    connectAcr122Button.disabled = true;
+    status.textContent = "Connecting to the local ACR122 bridge…";
+    stopAcr122Reader = window.NfcPcscBridge.start({
+      onStatus: (message) => {
+        status.textContent = message;
+        if (message.startsWith("Cannot connect")) {
+          stopAcr122Reader?.();
+          stopAcr122Reader = null;
+          connectAcr122Button.disabled = false;
+        }
+      },
+      onUid: (uid) => {
+        uidInput.required = false;
+        uidInput.value = uid;
+        status.textContent = "ACR122 card detected. Choose Save Card to register it.";
+        stopAcr122Reader?.();
+        stopAcr122Reader = null;
+        connectAcr122Button.disabled = false;
+      },
+    });
+  });
+
+  modal.addEventListener("hidden.bs.modal", () => {
+    stopAcr122Reader?.();
+    stopAcr122Reader = null;
+    connectAcr122Button.disabled = false;
+  });
+
+  window.NfcKeyboardReader.attach({
+    getInput: () => modal.classList.contains("show") ? uidInput : null,
+    onScan: (uid, input) => {
+      uidInput.required = false;
+      input.value = uid;
+      status.textContent = "Card UID detected. Confirm it in the field, then choose Save Card.";
+    },
+    onInput: (value) => {
+      status.textContent = `USB reader input received (${value.length} characters)…`;
+    },
+    onInvalid: (value) => {
+      if (value) status.textContent = "Card details received; waiting for the UID line…";
+    },
+  });
+})();
+
+async function saveStaffNfcUid(uid) {
+  const saveButton = document.getElementById("saveNfcUidButton");
+  saveButton.disabled = true;
+  try {
+    const body = new FormData();
+    body.append("action", "register_nfc");
+    body.append("staff_id", document.getElementById("nfc_staff_id").value);
+    body.append("nfc_uid", uid);
+    const response = await fetch(`${APP_URL}/api/staff.php`, { method: "POST", body });
+    const data = await response.json();
+    if (!response.ok || !data.success) throw new Error(data.message || "Unable to save NFC card");
+    showToast(data.message, "success");
+    bootstrap.Modal.getInstance(document.getElementById("registerNfcModal")).hide();
+    setTimeout(() => window.location.reload(), 700);
+  } catch (error) {
+    console.error("NFC registration save error:", error);
+    showToast(error.message || "Unable to save NFC card", "error");
+  } finally {
+    saveButton.disabled = false;
+  }
+}
+
 // Edit Staff Form Submission
 document
   .getElementById("editStaffForm")

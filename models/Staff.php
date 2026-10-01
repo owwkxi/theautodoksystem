@@ -110,6 +110,20 @@ class Staff {
         return $this->db->fetch($sql, [$username]);
     }
 
+    public function findByNfcUid($uid) {
+        return $this->db->fetch("SELECT id, staff_id, full_name FROM staff WHERE nfc_uid = ?", [$uid]);
+    }
+
+    public function updateNfcUid($id, $uid) {
+        try {
+            $this->db->query("UPDATE staff SET nfc_uid = ? WHERE id = ?", [$uid, $id]);
+            return true;
+        } catch (Exception $e) {
+            error_log("Staff NFC UID update error: " . $e->getMessage());
+            return false;
+        }
+    }
+
     /**
      * Find staff by email
      * @param string $email Email

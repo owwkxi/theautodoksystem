@@ -9,7 +9,8 @@ header('Content-Type: application/json');
 
 $host = strtolower((string)($_SERVER['HTTP_HOST'] ?? ''));
 $isPublicKiosk = preg_match('/^tautodokattendance\.theautodok\.com(?::\d+)?$/', $host) === 1;
-if (!$isPublicKiosk && (!isLoggedIn() || !hasAnyRole(['admin', 'cashier']))) {
+$isLocalKiosk = preg_match('/^(localhost|127\.0\.0\.1)(?::\d+)?$/', $host) === 1;
+if (!$isPublicKiosk && !$isLocalKiosk && (!isLoggedIn() || !hasAnyRole(['admin', 'cashier']))) {
     jsonResponse(['success' => false, 'message' => 'Attendance kiosk access is restricted'], 403);
 }
 
@@ -17,27 +18,25 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     jsonResponse(['success' => false, 'message' => 'Method not allowed'], 405);
 }
 
-$identifier = trim((string)($_POST['identifier'] ?? ''));
-$identifierMatch = [];
-if (preg_match('/\b\d{5}\b/', $identifier, $identifierMatch)) {
-    $identifier = $identifierMatch[0];
-}
-$identifier = preg_replace('/[^a-zA-Z0-9._-]/', '', $identifier);
-if ($identifier === '' || strlen($identifier) > 50) {
-    jsonResponse(['success' => false, 'message' => 'A valid NFC staff ID is required'], 400);
+$identifier = strtoupper(trim((string)($_POST['identifier'] ?? '')));
+$identifier = preg_replace('/^(?:CARD\s*)?UID\s*[:=#-]\s*/i', '', $identifier);
+$identifier = preg_replace('/^0X/i', '', $identifier);
+$identifier = preg_replace('/[\s:-]+/', '', $identifier);
+if ($identifier === '' || strlen($identifier) > 64 || !preg_match('/^[A-Z0-9._-]+$/', $identifier)) {
+    jsonResponse(['success' => false, 'message' => 'A valid staff ID or NFC card UID is required'], 400);
 }
 
 $db = Database::getInstance();
 $staff = $db->fetch(
     "SELECT id, staff_id, first_name, last_name, role, status
      FROM staff
-     WHERE staff_id = ? AND LOWER(role) <> 'admin'
+     WHERE (nfc_uid = ? OR (? REGEXP '^[0-9]{5}$' AND staff_id = ? AND LOWER(role) <> 'admin'))
      LIMIT 1",
-    [$identifier]
+    [$identifier, $identifier, $identifier]
 );
 
 if (!$staff) {
-    jsonResponse(['success' => false, 'message' => 'No active staff member matches this NFC card'], 404);
+    jsonResponse(['success' => false, 'message' => 'No staff member matches this card or staff ID'], 404);
 }
 
 if (($staff['status'] ?? '') !== 'active') {
@@ -64,7 +63,7 @@ if (!$existing) {
         "INSERT INTO attendance (staff_id, date, time_in, status, notes) VALUES (?, ?, ?, ?, ?)",
         [(int)$staff['id'], $date, $time, $status, 'NFC tap']
     );
-    logActivity($isPublicKiosk ? null : (int)$_SESSION['user_id'], 'nfc_attendance_in', 'NFC time in: ' . $fullName);
+    logActivity(($isPublicKiosk || $isLocalKiosk) ? null : (int)($_SESSION['user_id'] ?? 0), 'nfc_attendance_in', 'NFC time in: ' . $fullName);
     jsonResponse([
         'success' => true,
         'action' => 'time_in',
@@ -78,7 +77,7 @@ if (!empty($existing['time_out'])) {
 }
 
 $db->query("UPDATE attendance SET time_out = ?, notes = ? WHERE id = ?", [$time, 'NFC tap', (int)$existing['id']]);
-logActivity($isPublicKiosk ? null : (int)$_SESSION['user_id'], 'nfc_attendance_out', 'NFC time out: ' . $fullName);
+logActivity(($isPublicKiosk || $isLocalKiosk) ? null : (int)($_SESSION['user_id'] ?? 0), 'nfc_attendance_out', 'NFC time out: ' . $fullName);
 jsonResponse([
     'success' => true,
     'action' => 'time_out',

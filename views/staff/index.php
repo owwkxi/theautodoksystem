@@ -990,7 +990,16 @@ include __DIR__ . '/../partials/header.php';
                     <?php else: ?>
                         <?php foreach ($staffList as $staff): ?>
                         <tr>
-                            <td><strong><?php echo escape($staff['staff_id']); ?></strong></td>
+                            <td>
+                                <strong><?php echo escape($staff['staff_id']); ?></strong>
+                                <div class="small mt-1">
+                                    <?php if (!empty($staff['nfc_uid'])): ?>
+                                        <span class="badge bg-success-subtle text-success-emphasis">NFC registered</span>
+                                    <?php else: ?>
+                                        <span class="badge bg-light text-muted">No NFC card</span>
+                                    <?php endif; ?>
+                                </div>
+                            </td>
                             <td>
                                 <div class="d-flex align-items-center">
                                     <?php if (!empty($staff['profile_image'])): ?>
@@ -1029,6 +1038,13 @@ include __DIR__ . '/../partials/header.php';
                                                 <i class="bi bi-eye me-2"></i>View
                                             </button>
                                         </li>
+                                        <?php if ($canManageStaff): ?>
+                                        <li>
+                                            <button type="button" class="dropdown-item" onclick="registerStaffNfc(<?php echo (int)$staff['id']; ?>)">
+                                                <i class="bi bi-credit-card-2-front me-2"></i>Register NFC card
+                                            </button>
+                                        </li>
+                                        <?php endif; ?>
                                         <?php if ($canManageStaff && !($isCashier && $staff['role'] === 'admin')): ?>
                                         <li>
                                             <button type="button" class="dropdown-item" onclick="editStaff(<?php echo $staff['id']; ?>)">
@@ -1380,6 +1396,36 @@ include __DIR__ . '/../partials/header.php';
 </div>
 <?php endif; ?>
 
+<?php if ($canManageStaff): ?>
+<div class="modal fade" id="registerNfcModal" tabindex="-1" aria-labelledby="registerNfcModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="registerNfcModalLabel"><i class="bi bi-credit-card-2-front"></i> Register NFC Card</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="registerNfcForm">
+                <div class="modal-body">
+                    <input type="hidden" id="nfc_staff_id">
+                    <p class="mb-2">Staff member: <strong id="nfc_staff_name"></strong></p>
+                    <label for="nfc_card_uid" class="form-label">Card UID</label>
+                    <input type="text" class="form-control" id="nfc_card_uid" maxlength="80" autocomplete="off" placeholder="Click here, then scan the card" required>
+                    <div class="form-text">Click Start Scan, then tap the card. Its UID is registered to this staff member automatically. If needed, enter a UID and choose Save Card.</div>
+                    <button type="button" class="btn btn-sm btn-outline-dark mt-2" id="startNfcScanButton"><i class="bi bi-broadcast-pin"></i> Start Scan</button>
+                    <button type="button" class="btn btn-sm btn-outline-primary mt-2" id="connectAcr122RegistrationButton"><i class="bi bi-usb-drive"></i> Connect ACR122</button>
+                    <div class="form-text" id="nfcScanStatus" aria-live="polite">Waiting for a card scan.</div>
+                    <button type="button" class="btn btn-sm btn-outline-secondary mt-2" id="clearNfcUidButton">Remove registered card</button>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-dark" id="saveNfcUidButton"><i class="bi bi-save"></i> Save Card</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
+
 <!-- View Staff Modal -->
 <div class="modal fade" id="viewStaffModal" tabindex="-1" aria-labelledby="viewStaffModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
@@ -1423,7 +1469,10 @@ include __DIR__ . '/../partials/header.php';
 
 <script>
     const APP_URL = '<?php echo APP_URL; ?>';
+    window.NFC_BRIDGE_PROXY_URL = <?php echo json_encode(APP_URL . '/api/nfc-bridge.php?route=', JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>;
 </script>
+<script src="<?php echo escape(APP_URL . '/assets/js/nfc-keyboard-reader.js?v=' . time()); ?>"></script>
+<script src="<?php echo escape(APP_URL . '/assets/js/nfc-pcsc-bridge.js?v=' . time()); ?>"></script>
 <script src="<?php echo APP_URL; ?>/assets/js/staff.js?v=<?php echo time(); ?>"></script>
 
 <?php include __DIR__ . '/../partials/footer.php'; ?>
