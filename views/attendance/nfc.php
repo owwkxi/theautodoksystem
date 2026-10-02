@@ -27,20 +27,27 @@ require_once __DIR__ . '/../../includes/functions.php';
 }
 .nfc-tap-card { border: 0; border-radius: 24px; background: radial-gradient(circle at 50% 0%, #535860, #222427 62%); color: #fff; box-shadow: 0 18px 40px rgba(0,0,0,.16); }
 .nfc-tap-icon { width: 82px; height: 82px; display: grid; place-items: center; border-radius: 50%; margin: 0 auto .8rem; background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.15); font-size: 2.6rem; }
-.nfc-reader-input { height: 52px; font-size: 1.05rem; text-align: center; letter-spacing: .08em; }
-.nfc-result { min-height: 64px; border-radius: 14px; background: #f8f9fa; font-weight: 600; }
-.nfc-result.success { background: #eaf7ef; color: #176b38; }
-.nfc-result.error { background: #fff0f0; color: #9b2424; }
-.nfc-help { color: #858b91; font-size: .84rem; }
+.nfc-tap-icon[hidden] { display: none; }
+.nfc-staff-card { display: flex; align-items: center; justify-content: center; gap: 1.5rem; width: min(100%, 620px); margin: 1.25rem auto .25rem; text-align: left; }
+.nfc-staff-photo, .nfc-staff-photo-fallback { width: 148px; height: 148px; flex: 0 0 148px; border-radius: 50%; object-fit: cover; border: 3px solid rgba(255,255,255,.8); }
+.nfc-staff-photo-fallback { display: grid; place-items: center; background: rgba(255,255,255,.12); color: #fff; font-size: 3rem; }
+.nfc-staff-photo-fallback[hidden] { display: none; }
+.nfc-staff-photo[hidden] { display: none; }
+.nfc-staff-name { margin: 0 0 .25rem; font-size: 1.5rem; font-weight: 700; }
+.nfc-staff-role { margin: 0; color: rgba(255,255,255,.75); text-transform: capitalize; }
+.nfc-attendance-action { display: inline-block; margin-top: .75rem; padding: .35rem .85rem; border-radius: 999px; background: rgba(255,255,255,.14); color: #fff; font-weight: 700; text-transform: capitalize; }
 .nfc-kiosk > .mb-4 { margin-bottom: 1rem !important; }
 .nfc-tap-card .card-body { padding: 2rem !important; }
-.nfc-kiosk .card.border-0 .card-body { padding: 1.25rem !important; }
+.nfc-attendance-list { border: 0; border-radius: 18px; }
+.nfc-attendance-list .table { margin-bottom: 0; }
+.nfc-attendance-list .table th { color: #6c757d; font-size: .8rem; font-weight: 700; text-transform: uppercase; white-space: nowrap; }
+.nfc-attendance-status { text-transform: capitalize; }
 @media (max-width: 576px) {
     .nfc-kiosk { max-width: 100%; }
     .nfc-tap-card .card-body { padding: 1.5rem 1rem !important; }
-    .nfc-reader-input { min-width: 0; }
-    .nfc-reader-input::placeholder { font-size: .9rem; }
-    .nfc-reader-input + button { padding-left: .8rem !important; padding-right: .8rem !important; }
+    .nfc-staff-card { justify-content: flex-start; gap: 1rem; }
+    .nfc-staff-photo, .nfc-staff-photo-fallback { width: 104px; height: 104px; flex-basis: 104px; }
+    .nfc-staff-name { font-size: 1.25rem; }
 }
 </style>
 
@@ -59,30 +66,48 @@ require_once __DIR__ . '/../../includes/functions.php';
     </div>
     <div class="card nfc-tap-card mb-3">
         <div class="card-body text-center p-5">
-            <div class="nfc-tap-icon"><i class="bi bi-phone-vibrate"></i></div>
-            <h2 class="h4">Ready for the next tap</h2>
-            <p class="opacity-75 mb-2">Tap a card on the connected reader.</p>
-            <div class="small opacity-75" id="nfcStatus">Ready for USB keyboard reader input.</div>
-            <button class="btn btn-light btn-sm mt-3" type="button" id="connectAcr122Button">
-                <i class="bi bi-usb-drive me-1"></i>Connect ACR122 PC/SC
-            </button>
+            <div class="nfc-tap-icon" id="nfcTapIcon"><i class="bi bi-phone-vibrate"></i></div>
+            <div id="nfcReadyContent">
+                <h2 class="h4">Ready for the next tap</h2>
+                <p class="opacity-75 mb-0">Tap ID card</p>
+                <div class="small opacity-75" id="nfcStatus" aria-live="polite"></div>
+            </div>
+            <div class="nfc-staff-card" id="nfcStaffCard" hidden aria-live="polite">
+                <img class="nfc-staff-photo" id="nfcStaffPhoto" alt="" hidden>
+                <div class="nfc-staff-photo-fallback" id="nfcStaffPhotoFallback" aria-hidden="true"><i class="bi bi-person-fill"></i></div>
+                <div>
+                    <h2 class="nfc-staff-name" id="nfcStaffName"></h2>
+                    <p class="nfc-staff-role" id="nfcStaffRole"></p>
+                    <div class="nfc-attendance-action" id="nfcStaffAction"></div>
+                    <p class="small opacity-75 mt-2 mb-0" id="nfcStaffTime"></p>
+                </div>
+            </div>
         </div>
     </div>
-
-    <div class="card border-0 shadow-sm">
-        <div class="card-body p-4">
-            <label for="nfcIdentifier" class="form-label fw-semibold">Staff ID or NFC card UID</label>
-            <div class="input-group">
-                <input id="nfcIdentifier" class="form-control nfc-reader-input" autocomplete="off"
-                       maxlength="64" placeholder="Scan card or enter staff ID">
-                <button class="btn btn-dark px-4" type="button" id="submitNfcButton">Record tap</button>
+    <section class="card nfc-attendance-list shadow-sm mt-3" aria-labelledby="staffAttendanceTitle">
+        <div class="card-body p-3 p-md-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div class="d-flex align-items-center gap-2">
+                    <h2 class="h5 mb-0" id="staffAttendanceTitle">Staff Attendance Today</h2>
+                    <span class="badge rounded-pill bg-transparent text-secondary border border-secondary-subtle" id="staffAttendancePeriod"></span>
+                </div>
+                <span class="small text-muted" id="staffAttendanceDate"></span>
             </div>
-            <div id="nfcResult" class="nfc-result d-flex align-items-center justify-content-center text-center mt-3 p-3" aria-live="polite">
-                Waiting for a tap…
+            <div class="table-responsive">
+                <table class="table table-sm align-middle">
+                    <thead>
+                        <tr>
+                            <th scope="colgroup" colspan="2">Staff</th>
+                        </tr>
+                    </thead>
+                    <tbody id="staffAttendanceRows">
+                        <tr><td class="text-center text-muted py-3" colspan="2">Loading staff attendance…</td></tr>
+                    </tbody>
+                </table>
             </div>
-            <div class="nfc-help text-center mt-2">Register each card UID in Staff Management first. ACR122 readers require the local PC/SC bridge to be running on this kiosk computer.</div>
         </div>
-    </div>
+    </section>
+    <input id="nfcIdentifier" type="text" autocomplete="off" maxlength="64" aria-label="NFC card UID" hidden>
 </div>
 </main>
 
@@ -95,70 +120,156 @@ require_once __DIR__ . '/../../includes/functions.php';
 (() => {
     const appUrl = <?php echo json_encode(APP_URL, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>;
     const input = document.getElementById('nfcIdentifier');
-    const submit = document.getElementById('submitNfcButton');
-    const connectAcr122 = document.getElementById('connectAcr122Button');
-    const result = document.getElementById('nfcResult');
     const status = document.getElementById('nfcStatus');
+    const attendanceRows = document.getElementById('staffAttendanceRows');
+    const attendanceDate = document.getElementById('staffAttendanceDate');
+    const attendancePeriod = document.getElementById('staffAttendancePeriod');
+    const readyContent = document.getElementById('nfcReadyContent');
+    const staffCard = document.getElementById('nfcStaffCard');
+    const tapIcon = document.getElementById('nfcTapIcon');
+    const staffPhoto = document.getElementById('nfcStaffPhoto');
+    const staffPhotoFallback = document.getElementById('nfcStaffPhotoFallback');
     let processing = false;
+    let resetStaffCardTimer;
     let stopAcr122Reader = null;
+    let retryAcr122Reader;
 
-    const showResult = (message, type = '') => {
-        result.className = `nfc-result d-flex align-items-center justify-content-center text-center mt-3 p-3 ${type}`;
-        result.textContent = message;
+    const appendCell = (row, value, className = '') => {
+        const cell = document.createElement('td');
+        cell.textContent = value;
+        if (className) cell.className = className;
+        row.appendChild(cell);
+    };
+
+    const refreshTechnicianAttendance = async () => {
+        const response = await fetch(`${appUrl}/api/attendance.php`, { cache: 'no-store' });
+        const data = await response.json();
+        if (!response.ok || !data.success) {
+            throw new Error(data.message || 'Unable to load staff attendance');
+        }
+
+        attendanceRows.replaceChildren();
+        attendanceDate.textContent = new Date(`${data.date}T00:00:00`).toLocaleDateString();
+        attendancePeriod.textContent = data.period;
+        if (!data.staff.length) {
+            const row = document.createElement('tr');
+            const cell = document.createElement('td');
+            cell.colSpan = 2;
+            cell.className = 'text-center text-muted py-3';
+            cell.textContent = 'No staff attendance recorded yet.';
+            row.appendChild(cell);
+            attendanceRows.appendChild(row);
+            return;
+        }
+
+        for (const member of data.staff) {
+            const row = document.createElement('tr');
+            appendCell(row, member.name);
+            appendCell(row, (member.role || '').replaceAll('_', ' '), 'text-end text-muted nfc-attendance-status');
+            attendanceRows.appendChild(row);
+        }
+    };
+
+    const showStaffCard = (staff) => {
+        window.clearTimeout(resetStaffCardTimer);
+        document.getElementById('nfcStaffName').textContent = staff.name || '';
+        document.getElementById('nfcStaffRole').textContent = (staff.role || '').replaceAll('_', ' ');
+        document.getElementById('nfcStaffAction').textContent = (staff.action || '').replaceAll('_', ' ');
+        document.getElementById('nfcStaffTime').textContent = staff.time || '';
+        staffPhoto.hidden = true;
+        staffPhotoFallback.hidden = false;
+        if (staff.photo) {
+            staffPhoto.onload = () => {
+                staffPhoto.hidden = false;
+                staffPhotoFallback.hidden = true;
+            };
+            staffPhoto.onerror = () => {
+                staffPhoto.hidden = true;
+                staffPhotoFallback.hidden = false;
+            };
+            staffPhoto.src = staff.photo;
+        } else {
+            staffPhoto.removeAttribute('src');
+        }
+        readyContent.hidden = true;
+        tapIcon.hidden = true;
+        staffCard.hidden = false;
+        resetStaffCardTimer = window.setTimeout(() => {
+            staffCard.hidden = true;
+            tapIcon.hidden = false;
+            readyContent.hidden = false;
+            status.textContent = '';
+        }, 6000);
     };
 
     const recordTap = async (identifier = input.value.trim()) => {
         if (processing || !identifier) return;
         processing = true;
-        submit.disabled = true;
-        showResult('Recording tap…');
+        window.clearTimeout(resetStaffCardTimer);
+        staffCard.hidden = true;
+        readyContent.hidden = false;
+        status.textContent = 'Recording attendance…';
         try {
             const body = new FormData();
             body.append('identifier', identifier);
             const response = await fetch(`${appUrl}/api/attendance.php`, { method: 'POST', body });
             const data = await response.json();
-            if (!response.ok || !data.success) throw new Error(data.message || 'Unable to record tap');
-            showResult(data.message, 'success');
+            if (!response.ok || !data.success) {
+                if (data.staff) {
+                    showStaffCard({ ...data.staff, action: data.action });
+                    void refreshTechnicianAttendance().catch((error) => {
+                        console.error('Unable to refresh staff attendance:', error);
+                    });
+                }
+                status.textContent = data.message || 'Unable to record tap';
+                throw new Error(data.message || 'Unable to record tap');
+            }
+            if (data.staff) showStaffCard({ ...data.staff, action: data.action });
             status.textContent = data.message;
+            void refreshTechnicianAttendance().catch((error) => {
+                console.error('Unable to refresh staff attendance:', error);
+            });
             input.value = '';
         } catch (error) {
-            showResult(error.message, 'error');
-            status.textContent = error.message;
+            if (!staffCard.hidden) {
+                status.textContent = 'Attendance already recorded.';
+            } else {
+                status.textContent = error.message;
+            }
         } finally {
             if (input.value === identifier) input.value = '';
             processing = false;
-            submit.disabled = false;
-            input.focus();
         }
     };
 
-    submit.addEventListener('click', () => recordTap());
-    input.addEventListener('keydown', event => {
-        if (event.key === 'Enter') {
-            event.preventDefault();
-            recordTap(input.value.trim());
-        }
+    void refreshTechnicianAttendance().catch((error) => {
+        console.error('Unable to load staff attendance:', error);
+        attendanceRows.replaceChildren();
+        const row = document.createElement('tr');
+        const cell = document.createElement('td');
+        cell.colSpan = 3;
+        cell.className = 'text-center text-danger py-3';
+        cell.textContent = 'Unable to load staff attendance.';
+        row.appendChild(cell);
+        attendanceRows.appendChild(row);
     });
-    const focusReaderInput = () => {
-        if (document.activeElement !== input) input.focus();
-    };
-    window.addEventListener('focus', focusReaderInput);
-    document.addEventListener('visibilitychange', () => {
-        if (!document.hidden) focusReaderInput();
-    });
-    focusReaderInput();
+    window.setInterval(() => {
+        void refreshTechnicianAttendance().catch((error) => {
+            console.error('Unable to refresh staff attendance:', error);
+        });
+    }, 30000);
 
-    connectAcr122.addEventListener('click', () => {
+    const connectAcr122Reader = () => {
         if (stopAcr122Reader) return;
-        connectAcr122.disabled = true;
+        window.clearTimeout(retryAcr122Reader);
         status.textContent = 'Connecting to the local ACR122 bridge…';
         stopAcr122Reader = window.NfcPcscBridge.start({
             onStatus: (message) => {
-                status.textContent = message;
+            status.textContent = message.startsWith('ACR122 reader ready.') ? '' : message;
                 if (message.startsWith('Cannot connect')) {
                     stopAcr122Reader?.();
                     stopAcr122Reader = null;
-                    connectAcr122.disabled = false;
+                    retryAcr122Reader = window.setTimeout(connectAcr122Reader, 3000);
                 }
             },
             onUid: (uid) => {
@@ -166,7 +277,9 @@ require_once __DIR__ . '/../../includes/functions.php';
                 recordTap(uid);
             },
         });
-    });
+    };
+
+    connectAcr122Reader();
 
     window.NfcKeyboardReader.attach({
         getInput: () => input,

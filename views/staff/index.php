@@ -13,6 +13,7 @@ requireAnyRole(['admin', 'cashier', 'chief_mechanic', 'service_adviser']);
 
 $isCashier = (($_SESSION['user_role'] ?? '') === 'cashier');
 $canManageStaff = hasAnyRole(['admin', 'cashier']);
+$canManageNfc = hasRole('admin');
 
 $pageTitle = 'Staff Management';
 
@@ -993,10 +994,12 @@ include __DIR__ . '/../partials/header.php';
                             <td>
                                 <strong><?php echo escape($staff['staff_id']); ?></strong>
                                 <div class="small mt-1">
-                                    <?php if (!empty($staff['nfc_uid'])): ?>
-                                        <span class="badge bg-success-subtle text-success-emphasis">NFC registered</span>
-                                    <?php else: ?>
-                                        <span class="badge bg-light text-muted">No NFC card</span>
+                                    <?php if ($canManageNfc): ?>
+                                        <?php if (!empty($staff['nfc_uid'])): ?>
+                                            <span class="badge bg-success-subtle text-success-emphasis">NFC registered</span>
+                                        <?php else: ?>
+                                            <span class="badge bg-light text-muted">No NFC card</span>
+                                        <?php endif; ?>
                                     <?php endif; ?>
                                 </div>
                             </td>
@@ -1038,7 +1041,7 @@ include __DIR__ . '/../partials/header.php';
                                                 <i class="bi bi-eye me-2"></i>View
                                             </button>
                                         </li>
-                                        <?php if ($canManageStaff): ?>
+                                        <?php if ($canManageNfc): ?>
                                         <li>
                                             <button type="button" class="dropdown-item" onclick="registerStaffNfc(<?php echo (int)$staff['id']; ?>)">
                                                 <i class="bi bi-credit-card-2-front me-2"></i>Register NFC card
@@ -1396,7 +1399,7 @@ include __DIR__ . '/../partials/header.php';
 </div>
 <?php endif; ?>
 
-<?php if ($canManageStaff): ?>
+<?php if ($canManageNfc): ?>
 <div class="modal fade" id="registerNfcModal" tabindex="-1" aria-labelledby="registerNfcModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -1410,9 +1413,7 @@ include __DIR__ . '/../partials/header.php';
                     <p class="mb-2">Staff member: <strong id="nfc_staff_name"></strong></p>
                     <label for="nfc_card_uid" class="form-label">Card UID</label>
                     <input type="text" class="form-control" id="nfc_card_uid" maxlength="80" autocomplete="off" placeholder="Click here, then scan the card" required>
-                    <div class="form-text">For the ACR122, choose Connect ACR122 and tap the card; its UID will be saved to this staff member automatically. Keyboard-mode readers can use Start Scan, then choose Save Card.</div>
-                    <button type="button" class="btn btn-sm btn-outline-dark mt-2" id="startNfcScanButton"><i class="bi bi-broadcast-pin"></i> Start Scan</button>
-                    <button type="button" class="btn btn-sm btn-outline-primary mt-2" id="connectAcr122RegistrationButton"><i class="bi bi-usb-drive"></i> Connect ACR122</button>
+                    <button type="button" class="btn btn-sm btn-outline-primary mt-2" id="connectAcr122RegistrationButton"><i class="bi bi-upc-scan"></i> Scan ID Card</button>
                     <div class="form-text" id="nfcScanStatus" aria-live="polite">Waiting for a card scan.</div>
                     <button type="button" class="btn btn-sm btn-outline-secondary mt-2" id="clearNfcUidButton">Remove registered card</button>
                 </div>

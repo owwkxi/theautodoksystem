@@ -559,11 +559,6 @@ document.getElementById("nfc_card_uid")?.addEventListener("keydown", (event) => 
   }
 });
 
-document.getElementById("startNfcScanButton")?.addEventListener("click", () => {
-  document.getElementById("nfcScanStatus").textContent = "Ready—scan the card now.";
-  document.getElementById("nfc_card_uid").focus();
-});
-
 (() => {
   const modal = document.getElementById("registerNfcModal");
   const uidInput = document.getElementById("nfc_card_uid");

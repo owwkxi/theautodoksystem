@@ -14,6 +14,24 @@ if (!$isPublicKiosk && !$isLocalKiosk && (!isLoggedIn() || !hasAnyRole(['admin',
     jsonResponse(['success' => false, 'message' => 'Attendance kiosk access is restricted'], 403);
 }
 
+$db = Database::getInstance();
+
+if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+    $now = new DateTime('now', new DateTimeZone(TIMEZONE));
+    $today = $now->format('Y-m-d');
+    $currentPeriod = (int)$now->format('G') < 12 ? 'Morning' : 'Afternoon';
+    $records = $db->fetchAll(
+        "SELECT CONCAT(s.first_name, ' ', s.last_name) AS name,
+                s.role
+         FROM attendance a
+         INNER JOIN staff s ON s.id = a.staff_id
+         WHERE a.date = ? AND a.time_out IS NULL AND LOWER(s.role) <> 'admin'
+         ORDER BY a.time_in DESC, s.first_name ASC, s.last_name ASC",
+        [$today]
+    );
+    jsonResponse(['success' => true, 'date' => $today, 'period' => $currentPeriod, 'staff' => $records]);
+}
+
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     jsonResponse(['success' => false, 'message' => 'Method not allowed'], 405);
 }
@@ -26,9 +44,8 @@ if ($identifier === '' || strlen($identifier) > 64 || !preg_match('/^[A-Z0-9._-]
     jsonResponse(['success' => false, 'message' => 'A valid staff ID or NFC card UID is required'], 400);
 }
 
-$db = Database::getInstance();
 $staff = $db->fetch(
-    "SELECT id, staff_id, first_name, last_name, role, status
+    "SELECT id, staff_id, first_name, last_name, role, status, profile_photo
      FROM staff
      WHERE (nfc_uid = ? OR (? REGEXP '^[0-9]{5}$' AND staff_id = ? AND LOWER(role) <> 'admin'))
      LIMIT 1",
@@ -57,6 +74,10 @@ $existing = $db->fetch(
 );
 
 $fullName = trim(($staff['first_name'] ?? '') . ' ' . ($staff['last_name'] ?? ''));
+$staffPhoto = trim((string)($staff['profile_photo'] ?? ''));
+$staffPhotoUrl = $staffPhoto !== ''
+    ? UPLOAD_URL . rawurlencode(basename($staffPhoto))
+    : null;
 if (!$existing) {
     $status = ((int)$now->format('H') < 12 && $time > '08:15:00') ? 'late' : 'present';
     $db->query(
@@ -68,12 +89,23 @@ if (!$existing) {
         'success' => true,
         'action' => 'time_in',
         'message' => $fullName . ' timed in at ' . $now->format('g:i A'),
-        'staff' => ['name' => $fullName, 'role' => $staff['role'], 'time' => $now->format('g:i A'), 'status' => $status]
+        'staff' => ['name' => $fullName, 'role' => $staff['role'], 'photo' => $staffPhotoUrl, 'time' => $now->format('g:i A'), 'status' => $status]
     ]);
 }
 
 if (!empty($existing['time_out'])) {
-    jsonResponse(['success' => false, 'message' => $fullName . ' already completed this attendance period'], 409);
+    jsonResponse([
+        'success' => false,
+        'action' => 'already_completed',
+        'message' => $fullName . ' already completed this attendance period',
+        'staff' => [
+            'name' => $fullName,
+            'role' => $staff['role'],
+            'photo' => $staffPhotoUrl,
+            'time' => date('g:i A', strtotime((string)$existing['time_out'])),
+            'status' => $existing['status']
+        ]
+    ], 409);
 }
 
 $db->query("UPDATE attendance SET time_out = ?, notes = ? WHERE id = ?", [$time, 'NFC tap', (int)$existing['id']]);
@@ -82,5 +114,5 @@ jsonResponse([
     'success' => true,
     'action' => 'time_out',
     'message' => $fullName . ' timed out at ' . $now->format('g:i A'),
-    'staff' => ['name' => $fullName, 'role' => $staff['role'], 'time' => $now->format('g:i A'), 'status' => $existing['status']]
+    'staff' => ['name' => $fullName, 'role' => $staff['role'], 'photo' => $staffPhotoUrl, 'time' => $now->format('g:i A'), 'status' => $existing['status']]
 ]);

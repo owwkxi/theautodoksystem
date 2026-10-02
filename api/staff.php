@@ -68,8 +68,8 @@ try {
                 break;
             }
             if (($_POST['action'] ?? '') === 'register_nfc') {
-                if (!$canManageStaff) {
-                    jsonResponse(['success' => false, 'message' => 'Insufficient permissions'], 403);
+                if (!hasRole('admin')) {
+                    jsonResponse(['success' => false, 'message' => 'Only admin can manage NFC card registration'], 403);
                 }
                 handleNfcRegistration($staffModel);
                 break;
@@ -278,6 +278,9 @@ function handleGet($staffModel) {
         
         // Remove password from response
         unset($staff['password']);
+        if (!hasRole('admin')) {
+            unset($staff['nfc_uid']);
+        }
 
         $staff['assigned_job_orders'] = [];
         $staff['attendance'] = [];
@@ -369,6 +372,9 @@ function handleGet($staffModel) {
     // Remove passwords from all staff records
     foreach ($staffList as &$staff) {
         unset($staff['password']);
+        if (!hasRole('admin')) {
+            unset($staff['nfc_uid']);
+        }
     }
     
     jsonResponse([
