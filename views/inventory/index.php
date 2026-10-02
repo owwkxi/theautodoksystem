@@ -123,7 +123,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_GET['action'])) {
             if ($productId > 0) {
                 $existingProductStmt = $db->prepare("SELECT product_name, status FROM products WHERE id=? LIMIT 1");
                 $existingProductStmt->execute([$productId]);
-                $existingProduct = $existingProductStmt->fetch(PDO::FETCH_ASSOC) ?: [];
+                $existingProduct = $existingProductStmt->fetch(PDO::FETCH_ASSOC);
+                if (!$existingProduct) {
+                    throw new Exception('Product not found');
+                }
                 $stmt = $db->prepare("UPDATE products SET product_name=?,category_id=?,brand_id=?,unit_id=?,description=?,supplier_id=?,cost_price=?,selling_price=?,min_stock_level=?,status=? WHERE id=?");
                 $stmt->execute([$productName !== '' ? $productName : 'Unnamed Product', $_POST['category_id'] ?: null, $brandId, $_POST['unit_id'] ?: null, $description, $_POST['supplier_id'] ?: null, (float)($_POST['cost_price'] ?? 0), (float)($_POST['selling_price'] ?? 0), max(0, (int)($_POST['min_stock_level'] ?? 10)), $status, $productId]);
                 $normalizedProductName = $productName !== '' ? $productName : 'Unnamed Product';
@@ -983,6 +986,7 @@ include __DIR__ . '/../partials/header.php';
         </div>
         <div class="col-md-3"><label class="form-label form-label-sm">Cost Price (₱)</label><input type="number" class="form-control form-control-sm" id="ep_cost" step="0.01" min="0"></div>
         <div class="col-md-3"><label class="form-label form-label-sm">Selling Price (₱)</label><input type="number" class="form-control form-control-sm" id="ep_sell" step="0.01" min="0"></div>
+        <div class="col-12"><small class="text-muted">Price changes apply to new job orders. Existing job orders keep their recorded product prices.</small></div>
         <div class="col-md-3"><label class="form-label form-label-sm">Min Stock Level</label><input type="number" class="form-control form-control-sm" id="ep_min" min="0"></div>
         <div class="col-md-3"><label class="form-label form-label-sm">Status</label><select class="form-select form-select-sm" id="ep_status"><option value="active">Active</option><option value="inactive">Inactive</option></select></div>
       </div>
